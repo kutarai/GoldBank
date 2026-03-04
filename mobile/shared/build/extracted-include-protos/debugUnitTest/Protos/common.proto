@@ -1,0 +1,43 @@
+syntax = "proto3";
+package unibank.v1.common;
+option csharp_namespace = "UniBank.Protos.Common";
+
+import "google/protobuf/timestamp.proto";
+
+
+// Represents a monetary amount with currency
+message Money {
+  string amount = 1;         // Decimal as string to avoid floating point issues
+  string currency = 2;       // ISO 4217 currency code (e.g., "ZAR")
+}
+
+// Pagination request parameters
+message PaginationRequest {
+  int32 page = 1;            // 1-based page number
+  int32 page_size = 2;       // Items per page (max 100)
+  string sort_by = 3;        // Field to sort by
+  bool descending = 4;       // Sort direction
+}
+
+// Pagination response metadata
+message PaginationResponse {
+  int32 total_count = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  int32 total_pages = 4;
+  bool has_next = 5;
+  bool has_previous = 6;
+}
+
+// Date range filter
+message DateRange {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+}
+
+// Generic status response
+message StatusResponse {
+  bool success = 1;
+  string message = 2;
+  string error_code = 3;
+}

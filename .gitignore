@@ -1,0 +1,73 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+*.csproj.user
+launchSettings.json
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+
+## NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+coverage/
+TestResults/
+
+## OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Docker
+docker-compose.override.yml
+
+## Secrets
+*.pfx
+*.key
+*.pem
+appsettings.*.local.json
+
+## Misc
+*.swp
+*.bak
+*.tmp
+*~
+
+## Project-specific
+_bmad/
+_bmad-output/
+.agent/
+.opencode/
+.qwen/

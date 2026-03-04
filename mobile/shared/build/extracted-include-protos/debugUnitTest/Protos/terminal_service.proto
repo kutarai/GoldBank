@@ -1,0 +1,66 @@
+syntax = "proto3";
+package unibank.v1.terminals;
+option csharp_namespace = "UniBank.Protos.Terminals";
+
+import "Protos/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Terminal management service - handles POS terminal lifecycle
+service TerminalService {
+  rpc RegisterTerminal(RegisterTerminalRequest) returns (RegisterTerminalResponse);
+  rpc GetTerminalStatus(TerminalStatusRequest) returns (TerminalStatusResponse);
+  rpc PushUpdate(PushUpdateRequest) returns (unibank.v1.common.StatusResponse);
+}
+
+message RegisterTerminalRequest {
+  string merchant_id = 1;
+  string serial_number = 2;
+  string model = 3;
+  string firmware_version = 4;
+  string location_description = 5;
+}
+
+message RegisterTerminalResponse {
+  bool success = 1;
+  string message = 2;
+  string terminal_id = 3;
+  string mqtt_topic_prefix = 4;
+  string initial_config = 5;
+}
+
+message TerminalStatusRequest {
+  string terminal_id = 1;
+}
+
+message TerminalStatusResponse {
+  string terminal_id = 1;
+  string serial_number = 2;
+  string model = 3;
+  string firmware_version = 4;
+  TerminalStatus status = 5;
+  google.protobuf.Timestamp last_heartbeat = 6;
+  google.protobuf.Timestamp last_key_injection = 7;
+  string ip_address = 8;
+}
+
+message PushUpdateRequest {
+  string terminal_id = 1;
+  UpdateType update_type = 2;
+  bytes payload = 3;
+  string version = 4;
+}
+
+enum TerminalStatus {
+  TERMINAL_STATUS_UNSPECIFIED = 0;
+  TERMINAL_STATUS_INACTIVE = 1;
+  TERMINAL_STATUS_ACTIVE = 2;
+  TERMINAL_STATUS_OFFLINE = 3;
+  TERMINAL_STATUS_DECOMMISSIONED = 4;
+}
+
+enum UpdateType {
+  UPDATE_TYPE_UNSPECIFIED = 0;
+  UPDATE_TYPE_FIRMWARE = 1;
+  UPDATE_TYPE_CONFIG = 2;
+  UPDATE_TYPE_KEYS = 3;
+}

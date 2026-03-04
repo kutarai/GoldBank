@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Observability packages for Logging/ and Metrics/ utilities (STORY-008) -->
+  <!-- Note: DI, Logging, and System.Text.Json abstractions come transitively via FrameworkReference -->
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="9.*" />
+    <PackageReference Include="Serilog.Sinks.Elasticsearch" Version="10.*" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.*" />
+    <PackageReference Include="prometheus-net" Version="8.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

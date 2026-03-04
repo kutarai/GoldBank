@@ -1,0 +1,179 @@
+@page "/reports/recon"
+@rendermode InteractiveServer
+@inject ReportingService.ReportingServiceClient ReportingClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Reconciliation Report</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Reconciliation Report</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_batchDate"
+                          Label="Batch Date (YYYY-MM-DD)"
+                          Placeholder="2026-02-24"
+                          Required="true"
+                          RequiredError="Batch date is required"
+                          Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_partnerCode"
+                          Label="Partner Code"
+                          Required="true"
+                          RequiredError="Partner code is required"
+                          Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="GenerateReportAsync"
+                       Disabled="_loading"
+                       StartIcon="@Icons.Material.Filled.CompareArrows">
+                @if (_loading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Generating...</span>
+                }
+                else
+                {
+                    <span>Generate</span>
+                }
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_response is not null)
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="4" lg="2">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Transactions</MudText>
+                    <MudText Typo="Typo.h5">@_response.TotalTransactions.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="4" lg="2">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Amount</MudText>
+                    <MudText Typo="Typo.h5">@FormatMoney(_response.TotalAmount)</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="4" lg="2">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Matched</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Success">@_response.MatchedCount.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="4" lg="2">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Unmatched</MudText>
+                    <MudText Typo="Typo.h5" Color="Color.Error">@_response.UnmatchedCount.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="4" lg="4">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Status</MudText>
+                    <MudChip T="string"
+                             Color="@GetStatusColor(_response.Status)"
+                             Variant="Variant.Filled"
+                             Size="Size.Large">
+                        @_response.Status
+                    </MudChip>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @if (_response.Discrepancies.Count > 0)
+    {
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-2">Discrepancies</MudText>
+            <MudTable Items="_response.Discrepancies" Dense="true" Hover="true" Striped="true" Bordered="true">
+                <HeaderContent>
+                    <MudTh>Transaction Ref</MudTh>
+                    <MudTh>Our Amount</MudTh>
+                    <MudTh>Partner Amount</MudTh>
+                    <MudTh>Type</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Transaction Ref">@context.TransactionReference</MudTd>
+                    <MudTd DataLabel="Our Amount">@FormatMoney(context.OurAmount)</MudTd>
+                    <MudTd DataLabel="Partner Amount">@FormatMoney(context.PartnerAmount)</MudTd>
+                    <MudTd DataLabel="Type">@context.DiscrepancyType</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-4">No discrepancies found for this batch.</MudAlert>
+    }
+}
+
+@code {
+    private string _batchDate = string.Empty;
+    private string _partnerCode = string.Empty;
+    private bool _loading;
+    private ReconReportResponse? _response;
+
+    private async Task GenerateReportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_batchDate) || string.IsNullOrWhiteSpace(_partnerCode))
+        {
+            Snackbar.Add("Batch date and partner code are required.", Severity.Warning);
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            var request = new ReconReportRequest
+            {
+                BatchDate = _batchDate,
+                PartnerCode = _partnerCode
+            };
+
+            _response = await ReportingClient.GetReconReportAsync(request);
+            Snackbar.Add("Report generated successfully.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to generate report: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FormatMoney(Money? money)
+    {
+        if (money is null || string.IsNullOrWhiteSpace(money.Amount))
+            return "$0.00";
+
+        var amount = decimal.Parse(money.Amount);
+        return $"${amount:N2}";
+    }
+
+    private static Color GetStatusColor(string status)
+    {
+        return status?.ToUpperInvariant() switch
+        {
+            "MATCHED" or "RECONCILED" or "COMPLETE" => Color.Success,
+            "PARTIAL" or "PENDING" => Color.Warning,
+            "FAILED" or "UNMATCHED" => Color.Error,
+            _ => Color.Default
+        };
+    }
+}

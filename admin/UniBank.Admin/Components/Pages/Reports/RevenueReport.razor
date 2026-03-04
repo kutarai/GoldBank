@@ -1,0 +1,170 @@
+@page "/reports/revenue"
+@rendermode InteractiveServer
+@inject ReportingService.ReportingServiceClient ReportingClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Revenue Report</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Revenue Report</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudDateRangePicker @bind-DateRange="_dateRange"
+                                Label="Date Range"
+                                Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect @bind-Value="_granularity"
+                       Label="Granularity"
+                       Variant="Variant.Outlined">
+                <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
+                <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
+                <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="GenerateReportAsync"
+                       Disabled="_loading"
+                       StartIcon="@Icons.Material.Filled.AttachMoney">
+                @if (_loading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Generating...</span>
+                }
+                else
+                {
+                    <span>Generate</span>
+                }
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_response is not null)
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="4">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Revenue</MudText>
+                    <MudText Typo="Typo.h5">@FormatMoney(_response.TotalRevenue)</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @if (_chartLabels.Length > 0)
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-2">Revenue Over Time</MudText>
+            <MudChart ChartType="ChartType.Bar"
+                      ChartSeries="_chartSeries"
+                      XAxisLabels="_chartLabels"
+                      Width="100%"
+                      Height="350px" />
+        </MudPaper>
+    }
+
+    @if (_response.RevenueByType.Count > 0)
+    {
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-2">Revenue by Transaction Type</MudText>
+            <MudTable Items="_response.RevenueByType" Dense="true" Hover="true" Striped="true" Bordered="true">
+                <HeaderContent>
+                    <MudTh>Transaction Type</MudTh>
+                    <MudTh>Revenue</MudTh>
+                    <MudTh>Count</MudTh>
+                    <MudTh>Percentage</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Transaction Type">@context.TransactionType</MudTd>
+                    <MudTd DataLabel="Revenue">@FormatMoney(context.Revenue)</MudTd>
+                    <MudTd DataLabel="Count">@context.Count.ToString("N0")</MudTd>
+                    <MudTd DataLabel="Percentage">@context.Percentage</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+}
+
+@code {
+    private MudBlazor.DateRange? _dateRange = new(DateTime.Now.AddMonths(-1), DateTime.Now);
+    private string _granularity = "Daily";
+    private bool _loading;
+    private RevenueReportResponse? _response;
+    private List<ChartSeries> _chartSeries = [];
+    private string[] _chartLabels = [];
+
+    private async Task GenerateReportAsync()
+    {
+        if (_dateRange?.Start is null || _dateRange?.End is null)
+        {
+            Snackbar.Add("Please select a valid date range.", Severity.Warning);
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            var request = new RevenueReportRequest
+            {
+                DateRange = new UniBank.Protos.Common.DateRange
+                {
+                    From = Timestamp.FromDateTime(_dateRange.Start.Value.ToUniversalTime()),
+                    To = Timestamp.FromDateTime(_dateRange.End.Value.ToUniversalTime())
+                },
+                Granularity = _granularity
+            };
+
+            _response = await ReportingClient.GetRevenueReportAsync(request);
+            BuildChartData();
+            Snackbar.Add("Report generated successfully.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to generate report: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void BuildChartData()
+    {
+        if (_response is null || _response.DataPoints.Count == 0)
+        {
+            _chartLabels = [];
+            _chartSeries = [];
+            return;
+        }
+
+        _chartLabels = _response.DataPoints.Select(dp => dp.Period).ToArray();
+
+        _chartSeries =
+        [
+            new ChartSeries
+            {
+                Name = "Revenue",
+                Data = _response.DataPoints
+                    .Select(dp => dp.Revenue is not null && !string.IsNullOrWhiteSpace(dp.Revenue.Amount)
+                        ? (double)decimal.Parse(dp.Revenue.Amount)
+                        : 0d)
+                    .ToArray()
+            }
+        ];
+    }
+
+    private static string FormatMoney(Money? money)
+    {
+        if (money is null || string.IsNullOrWhiteSpace(money.Amount))
+            return "$0.00";
+
+        var amount = decimal.Parse(money.Amount);
+        return $"${amount:N2}";
+    }
+}

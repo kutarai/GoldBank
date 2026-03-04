@@ -1,0 +1,299 @@
+name: unibank
+
+networks:
+  frontend:
+    driver: bridge
+    name: unibank-frontend
+  backend:
+    driver: bridge
+    name: unibank-backend
+  monitoring:
+    driver: bridge
+    name: unibank-monitoring
+
+volumes:
+  postgres-data:
+    name: unibank-postgres-data
+  redis-data:
+    name: unibank-redis-data
+  elasticsearch-data:
+    name: unibank-elasticsearch-data
+  grafana-data:
+    name: unibank-grafana-data
+  prometheus-data:
+    name: unibank-prometheus-data
+
+services:
+  # ─── Infrastructure ───
+  postgres:
+    image: postgres:18
+    container_name: unibank-postgres
+    profiles: ["infra", "core"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-unibank}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-unibank_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-unibank}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    container_name: unibank-redis
+    profiles: ["infra", "core"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ─── Application Services ───
+  gateway:
+    build:
+      context: .
+      dockerfile: server/UniBank.Gateway/Dockerfile
+    container_name: unibank-gateway
+    profiles: ["core"]
+    ports:
+      - "${GATEWAY_PORT:-5000}:5000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=${POSTGRES_DB:-unibank};Username=${POSTGRES_USER:-unibank};Password=${POSTGRES_PASSWORD:-unibank_dev_password}"
+      Redis__ConnectionString: redis:6379
+      Jwt__SecretKey: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars!!}
+      Jwt__Issuer: ${JWT_ISSUER:-unibank-dev}
+      Jwt__Audience: ${JWT_AUDIENCE:-unibank-api}
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  switching:
+    build:
+      context: .
+      dockerfile: switch/UniBank.Switching/Dockerfile
+    container_name: unibank-switching
+    profiles: ["core"]
+    ports:
+      - "${SWITCHING_PORT:-5003}:5003"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  terminal-manager:
+    build:
+      context: .
+      dockerfile: terminal/UniBank.TerminalManager/Dockerfile
+    container_name: unibank-terminal-manager
+    profiles: ["core"]
+    ports:
+      - "${TERMINAL_MANAGER_PORT:-5004}:5004"
+      - "${MQTT_PORT:-1883}:1883"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      Mqtt__BrokerHost: "0.0.0.0"
+      Mqtt__BrokerPort: "1883"
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  hsm:
+    build:
+      context: .
+      dockerfile: hsm/UniBank.HSM/Dockerfile
+    container_name: unibank-hsm
+    profiles: ["core"]
+    ports:
+      - "${HSM_PORT:-5005}:5005"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  admin:
+    build:
+      context: .
+      dockerfile: admin/UniBank.Admin/Dockerfile
+    container_name: unibank-admin
+    profiles: ["core"]
+    ports:
+      - "${ADMIN_PORT:-5010}:5010"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:5010
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      gateway:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  notifications:
+    build:
+      context: .
+      dockerfile: server/UniBank.Notifications/Dockerfile
+    container_name: unibank-notifications
+    profiles: ["core"]
+    ports:
+      - "${NOTIFICATIONS_PORT:-5007}:5007"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ─── Monitoring ───
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: unibank-prometheus
+    profiles: ["monitoring"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: unibank-grafana
+    profiles: ["monitoring"]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - monitoring
+      - frontend
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: unibank-elasticsearch
+    profiles: ["monitoring"]
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms${ELASTICSEARCH_MEMORY:-512m} -Xmx${ELASTICSEARCH_MEMORY:-512m}"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - monitoring
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.0
+    container_name: unibank-kibana
+    profiles: ["monitoring"]
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - monitoring
+      - frontend
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M

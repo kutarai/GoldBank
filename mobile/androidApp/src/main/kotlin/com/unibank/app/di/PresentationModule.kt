@@ -1,0 +1,29 @@
+package com.unibank.app.di
+
+import com.unibank.app.viewmodel.AgentViewModel
+import com.unibank.app.viewmodel.AuthViewModel
+import com.unibank.app.viewmodel.BillPayViewModel
+import com.unibank.app.viewmodel.BrandingViewModel
+import com.unibank.app.viewmodel.HomeViewModel
+import com.unibank.app.viewmodel.KycViewModel
+import com.unibank.app.viewmodel.LoanViewModel
+import com.unibank.app.viewmodel.MerchantViewModel
+import com.unibank.app.viewmodel.PaymentViewModel
+import com.unibank.app.viewmodel.ProfileViewModel
+import com.unibank.app.viewmodel.TransferViewModel
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
+
+val presentationModule = module {
+    viewModel { BrandingViewModel() }
+    viewModel { AuthViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get()) }
+    viewModel { PaymentViewModel(get(), get()) }
+    viewModel { TransferViewModel(get(), get()) }
+    viewModel { BillPayViewModel(get(), get()) }
+    viewModel { AgentViewModel(get(), get()) }
+    viewModel { LoanViewModel(get(), get()) }
+    viewModel { KycViewModel(get(), get()) }
+    viewModel { MerchantViewModel(get(), get()) }
+    viewModel { ProfileViewModel(get(), get(), get()) }
+}

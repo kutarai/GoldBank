@@ -1,0 +1,331 @@
+@page "/disputes"
+@rendermode InteractiveServer
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Disputes</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Dispute Management</MudText>
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_accountIdFilter" Label="Account ID" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudSelect @bind-Value="_statusFilter" Label="Status" Variant="Variant.Outlined" Clearable="true">
+                <MudSelectItem Value="@("")">All</MudSelectItem>
+                <MudSelectItem Value="@("open")">Open</MudSelectItem>
+                <MudSelectItem Value="@("under_review")">Under Review</MudSelectItem>
+                <MudSelectItem Value="@("resolved")">Resolved</MudSelectItem>
+                <MudSelectItem Value="@("rejected")">Rejected</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-end gap-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadDisputes"
+                       Disabled="_loading" StartIcon="@Icons.Material.Filled.Search">
+                Search
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="OpenCreateDialog"
+                       StartIcon="@Icons.Material.Filled.Add">
+                New Dispute
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable Items="_disputes" Dense="true" Hover="true" Striped="true" Loading="_loading" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>ID</MudTh>
+        <MudTh>Transaction ID</MudTh>
+        <MudTh>Account</MudTh>
+        <MudTh>Type</MudTh>
+        <MudTh>Description</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Resolution</MudTh>
+        <MudTh>Refund Amount</MudTh>
+        <MudTh>Admin</MudTh>
+        <MudTh>Created</MudTh>
+        <MudTh>Resolved</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="ID">
+            <MudTooltip Text="@context.DisputeId">
+                @Truncate(context.DisputeId)
+            </MudTooltip>
+        </MudTd>
+        <MudTd DataLabel="Transaction ID">
+            <MudTooltip Text="@context.TransactionId">
+                @Truncate(context.TransactionId)
+            </MudTooltip>
+        </MudTd>
+        <MudTd DataLabel="Account">@context.AccountId</MudTd>
+        <MudTd DataLabel="Type">@context.Type</MudTd>
+        <MudTd DataLabel="Description">@context.Description</MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string" Color="@GetDisputeStatusColor(context.Status)" Size="Size.Small">
+                @context.Status
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Resolution">@(string.IsNullOrEmpty(context.Resolution) ? "-" : context.Resolution)</MudTd>
+        <MudTd DataLabel="Refund Amount">@FormatMoney(context.RefundAmount)</MudTd>
+        <MudTd DataLabel="Admin">@context.AdminUserId</MudTd>
+        <MudTd DataLabel="Created">@FormatTimestamp(context.CreatedAt)</MudTd>
+        <MudTd DataLabel="Resolved">@FormatTimestamp(context.ResolvedAt)</MudTd>
+        <MudTd DataLabel="Actions">
+            @if (context.Status?.ToLowerInvariant() != "resolved")
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                           OnClick="() => OpenResolveDialog(context)">
+                    Resolve
+                </MudButton>
+            }
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No disputes found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new[] { 10, 25, 50 }" />
+    </PagerContent>
+</MudTable>
+
+@* Create Dispute Dialog *@
+<MudDialog @bind-Visible="_createDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Create New Dispute</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_createTransactionId" Label="Transaction ID" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+        <MudTextField @bind-Value="_createAccountId" Label="Account ID" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+        <MudTextField @bind-Value="_createType" Label="Type" Variant="Variant.Outlined" Required="true" Class="mb-3" />
+        <MudTextField @bind-Value="_createDescription" Label="Description" Variant="Variant.Outlined" Lines="3" Class="mb-3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelCreateDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_submitting" OnClick="SubmitCreateDispute">
+            @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Create
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* Resolve Dispute Dialog *@
+<MudDialog @bind-Visible="_resolveDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Resolve Dispute</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="_resolveResolution" Label="Resolution" Variant="Variant.Outlined" Lines="3" Required="true" Class="mb-3" />
+        <MudSelect @bind-Value="_resolveStatus" Label="Status" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelectItem Value="@("resolved")">Resolved</MudSelectItem>
+            <MudSelectItem Value="@("rejected")">Rejected</MudSelectItem>
+        </MudSelect>
+        <MudTextField @bind-Value="_resolveRefundAmount" Label="Refund Amount (ZWG)" Variant="Variant.Outlined" InputType="InputType.Number" Class="mb-3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelResolveDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_submitting" OnClick="SubmitResolveDispute">
+            @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Resolve
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private string _accountIdFilter = "";
+    private string _statusFilter = "";
+    private bool _loading;
+    private int _page = 1;
+    private int _pageSize = 25;
+    private bool _submitting;
+
+    private List<DisputeResponse> _disputes = new();
+    private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    // Create dialog state
+    private bool _createDialogVisible;
+    private string _createTransactionId = "";
+    private string _createAccountId = "";
+    private string _createType = "";
+    private string _createDescription = "";
+
+    // Resolve dialog state
+    private bool _resolveDialogVisible;
+    private string _resolveDisputeId = "";
+    private string _resolveResolution = "";
+    private string _resolveStatus = "resolved";
+    private string _resolveRefundAmount = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDisputes();
+    }
+
+    private async Task LoadDisputes()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new ListDisputesRequest
+            {
+                AccountId = _accountIdFilter ?? "",
+                StatusFilter = _statusFilter ?? "",
+                Pagination = new PaginationRequest
+                {
+                    Page = _page,
+                    PageSize = _pageSize,
+                    SortBy = "created_at",
+                    Descending = true
+                }
+            };
+
+            var response = await AdminClient.ListDisputesAsync(request);
+            _disputes = response.Disputes.ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading disputes: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenCreateDialog()
+    {
+        _createTransactionId = "";
+        _createAccountId = "";
+        _createType = "";
+        _createDescription = "";
+        _createDialogVisible = true;
+    }
+
+    private void CancelCreateDialog() => _createDialogVisible = false;
+
+    private async Task SubmitCreateDispute()
+    {
+        if (string.IsNullOrWhiteSpace(_createTransactionId) || string.IsNullOrWhiteSpace(_createAccountId))
+        {
+            Snackbar.Add("Transaction ID and Account ID are required.", Severity.Warning);
+            return;
+        }
+
+        _submitting = true;
+
+        try
+        {
+            var request = new CreateDisputeRequest
+            {
+                TransactionId = _createTransactionId,
+                AccountId = _createAccountId,
+                Type = _createType ?? "",
+                Description = _createDescription ?? "",
+                AdminId = "admin"
+            };
+
+            await AdminClient.CreateDisputeAsync(request);
+            Snackbar.Add("Dispute created successfully.", Severity.Success);
+            _createDialogVisible = false;
+            await LoadDisputes();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating dispute: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void OpenResolveDialog(DisputeResponse dispute)
+    {
+        _resolveDisputeId = dispute.DisputeId;
+        _resolveResolution = "";
+        _resolveStatus = "resolved";
+        _resolveRefundAmount = "";
+        _resolveDialogVisible = true;
+    }
+
+    private void CancelResolveDialog() => _resolveDialogVisible = false;
+
+    private async Task SubmitResolveDispute()
+    {
+        if (string.IsNullOrWhiteSpace(_resolveResolution))
+        {
+            Snackbar.Add("Resolution text is required.", Severity.Warning);
+            return;
+        }
+
+        _submitting = true;
+
+        try
+        {
+            var request = new ResolveDisputeRequest
+            {
+                DisputeId = _resolveDisputeId,
+                Resolution = _resolveResolution,
+                Status = _resolveStatus,
+                AdminId = "admin"
+            };
+
+            if (!string.IsNullOrWhiteSpace(_resolveRefundAmount))
+            {
+                request.RefundAmount = new Money { Amount = _resolveRefundAmount };
+            }
+
+            await AdminClient.ResolveDisputeAsync(request);
+            Snackbar.Add("Dispute resolved successfully.", Severity.Success);
+            _resolveDialogVisible = false;
+            await LoadDisputes();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error resolving dispute: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string FormatMoney(Money? money)
+    {
+        if (money is null || string.IsNullOrWhiteSpace(money.Amount))
+            return "$0.00";
+
+        var amount = decimal.Parse(money.Amount);
+        return $"${amount:N2}";
+    }
+
+    private static string FormatTimestamp(Timestamp? timestamp)
+    {
+        if (timestamp is null)
+            return "-";
+
+        return timestamp.ToDateTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    private static string Truncate(string value, int maxLength = 8)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "-";
+
+        return value.Length <= maxLength ? value : value[..maxLength] + "...";
+    }
+
+    private static Color GetDisputeStatusColor(string status) => status?.ToLowerInvariant() switch
+    {
+        "open" => Color.Info,
+        "under_review" => Color.Warning,
+        "resolved" => Color.Success,
+        "rejected" => Color.Error,
+        _ => Color.Default
+    };
+}

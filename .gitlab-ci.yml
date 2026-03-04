@@ -1,0 +1,293 @@
+# =============================================================================
+# UniBank CI/CD Pipeline - GitLab CI
+# .NET 10 Preview | Docker Compose v2 | Multi-service Build
+# =============================================================================
+
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_NOLOGO: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  SOLUTION_FILE: "UniBank.slnx"
+  DOCKER_REGISTRY: "${CI_REGISTRY}"
+  DOCKER_IMAGE_PREFIX: "${CI_REGISTRY_IMAGE}"
+  DOCKER_TAG: "${CI_COMMIT_SHORT_SHA}"
+  COVERAGE_THRESHOLD: "80"
+
+image: mcr.microsoft.com/dotnet/sdk:10.0-preview
+
+stages:
+  - restore
+  - build
+  - test
+  - docker-build
+  - docker-push
+  - deploy-staging
+
+# =============================================================================
+# Stage: Restore
+# =============================================================================
+restore:
+  stage: restore
+  script:
+    - dotnet restore ${SOLUTION_FILE}
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-nuget"
+    paths:
+      - ~/.nuget/packages
+  artifacts:
+    paths:
+      - "**/obj/**"
+    expire_in: 1 hour
+
+# =============================================================================
+# Stage: Build
+# =============================================================================
+build:
+  stage: build
+  needs: ["restore"]
+  script:
+    - dotnet build ${SOLUTION_FILE} --configuration Release --no-restore
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-nuget"
+    paths:
+      - ~/.nuget/packages
+    policy: pull
+  artifacts:
+    paths:
+      - "**/bin/**"
+      - "**/obj/**"
+    expire_in: 1 hour
+
+# =============================================================================
+# Stage: Test
+# =============================================================================
+unit-tests:
+  stage: test
+  needs: ["build"]
+  script:
+    - dotnet test tests/UniBank.Tests/UniBank.Tests.csproj
+        --configuration Release
+        --no-build
+        --logger "junit;LogFilePath=../../test-results/unit-tests.xml"
+        --collect:"XPlat Code Coverage"
+        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+    - |
+      # Extract line coverage percentage and enforce threshold
+      COVERAGE_FILE=$(find . -name "coverage.cobertura.xml" -path "*/UniBank.Tests/*" | head -1)
+      if [ -n "$COVERAGE_FILE" ]; then
+        LINE_RATE=$(grep -oP 'line-rate="\K[^"]+' "$COVERAGE_FILE" | head -1)
+        COVERAGE_PCT=$(echo "$LINE_RATE * 100" | bc -l | xargs printf "%.2f")
+        echo "Unit test coverage: ${COVERAGE_PCT}%"
+        THRESHOLD_MET=$(echo "$COVERAGE_PCT >= $COVERAGE_THRESHOLD" | bc -l)
+        if [ "$THRESHOLD_MET" -eq 0 ]; then
+          echo "ERROR: Coverage ${COVERAGE_PCT}% is below threshold ${COVERAGE_THRESHOLD}%"
+          exit 1
+        fi
+        echo "Coverage threshold met: ${COVERAGE_PCT}% >= ${COVERAGE_THRESHOLD}%"
+      else
+        echo "WARNING: No coverage report found"
+      fi
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-nuget"
+    paths:
+      - ~/.nuget/packages
+    policy: pull
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - "**/TestResults/**/coverage.cobertura.xml"
+    reports:
+      junit: test-results/unit-tests.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: "**/TestResults/**/coverage.cobertura.xml"
+    expire_in: 30 days
+
+integration-tests:
+  stage: test
+  needs: ["build"]
+  services:
+    - name: postgres:18
+      alias: postgres
+      variables:
+        POSTGRES_USER: unibank
+        POSTGRES_PASSWORD: unibank_test_password
+        POSTGRES_DB: unibank_test
+    - name: redis:7-alpine
+      alias: redis
+  variables:
+    ConnectionStrings__DefaultConnection: "Host=postgres;Database=unibank_test;Username=unibank;Password=unibank_test_password"
+    Redis__ConnectionString: "redis:6379"
+  script:
+    - dotnet test tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj
+        --configuration Release
+        --no-build
+        --logger "junit;LogFilePath=../../test-results/integration-tests.xml"
+        --collect:"XPlat Code Coverage"
+        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+  cache:
+    key: "${CI_COMMIT_REF_SLUG}-nuget"
+    paths:
+      - ~/.nuget/packages
+    policy: pull
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - "**/TestResults/**/coverage.cobertura.xml"
+    reports:
+      junit: test-results/integration-tests.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: "**/TestResults/**/coverage.cobertura.xml"
+    expire_in: 30 days
+
+# =============================================================================
+# Stage: Docker Build (parallel builds for all services)
+# =============================================================================
+.docker-build-template: &docker-build-template
+  stage: docker-build
+  image: docker:27
+  services:
+    - docker:27-dind
+  needs: ["unit-tests", "integration-tests"]
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker info
+
+docker-build-gateway:
+  <<: *docker-build-template
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG} -f server/UniBank.Gateway/Dockerfile .
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+docker-build-switching:
+  <<: *docker-build-template
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/switching:${DOCKER_TAG} -f switch/UniBank.Switching/Dockerfile .
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+docker-build-terminal-manager:
+  <<: *docker-build-template
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG} -f terminal/UniBank.TerminalManager/Dockerfile .
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+docker-build-hsm:
+  <<: *docker-build-template
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG} -f hsm/UniBank.HSM/Dockerfile .
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+docker-build-admin:
+  <<: *docker-build-template
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG} -f admin/UniBank.Admin/Dockerfile .
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+docker-build-notifications:
+  <<: *docker-build-template
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG} -f server/UniBank.Notifications/Dockerfile .
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
+# =============================================================================
+# Stage: Docker Push (main branch only)
+# =============================================================================
+.docker-push-template: &docker-push-template
+  stage: docker-push
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+docker-push-gateway:
+  <<: *docker-push-template
+  needs: ["docker-build-gateway"]
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/gateway:latest -f server/UniBank.Gateway/Dockerfile .
+    - docker push ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG}
+    - docker push ${DOCKER_IMAGE_PREFIX}/gateway:latest
+
+docker-push-switching:
+  <<: *docker-push-template
+  needs: ["docker-build-switching"]
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/switching:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/switching:latest -f switch/UniBank.Switching/Dockerfile .
+    - docker push ${DOCKER_IMAGE_PREFIX}/switching:${DOCKER_TAG}
+    - docker push ${DOCKER_IMAGE_PREFIX}/switching:latest
+
+docker-push-terminal-manager:
+  <<: *docker-push-template
+  needs: ["docker-build-terminal-manager"]
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:latest -f terminal/UniBank.TerminalManager/Dockerfile .
+    - docker push ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG}
+    - docker push ${DOCKER_IMAGE_PREFIX}/terminal-manager:latest
+
+docker-push-hsm:
+  <<: *docker-push-template
+  needs: ["docker-build-hsm"]
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/hsm:latest -f hsm/UniBank.HSM/Dockerfile .
+    - docker push ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG}
+    - docker push ${DOCKER_IMAGE_PREFIX}/hsm:latest
+
+docker-push-admin:
+  <<: *docker-push-template
+  needs: ["docker-build-admin"]
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/admin:latest -f admin/UniBank.Admin/Dockerfile .
+    - docker push ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG}
+    - docker push ${DOCKER_IMAGE_PREFIX}/admin:latest
+
+docker-push-notifications:
+  <<: *docker-push-template
+  needs: ["docker-build-notifications"]
+  script:
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/notifications:latest -f server/UniBank.Notifications/Dockerfile .
+    - docker push ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG}
+    - docker push ${DOCKER_IMAGE_PREFIX}/notifications:latest
+
+# =============================================================================
+# Stage: Deploy Staging (main branch only)
+# =============================================================================
+deploy-staging:
+  stage: deploy-staging
+  image: docker:27
+  services:
+    - docker:27-dind
+  needs:
+    - docker-push-gateway
+    - docker-push-switching
+    - docker-push-terminal-manager
+    - docker-push-hsm
+    - docker-push-admin
+    - docker-push-notifications
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - apk add --no-cache docker-cli-compose
+  script:
+    - export IMAGE_TAG=${DOCKER_TAG}
+    - docker compose -f docker-compose.yml --profile core pull
+    - docker compose -f docker-compose.yml --profile infra --profile core up -d
+  environment:
+    name: staging
+    url: https://staging.unibank.internal
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"

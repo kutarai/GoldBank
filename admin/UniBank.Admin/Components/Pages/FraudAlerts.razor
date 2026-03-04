@@ -1,0 +1,259 @@
+@page "/fraud"
+@rendermode InteractiveServer
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Fraud Alerts</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Fraud Alert Management</MudText>
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect @bind-Value="_statusFilter" Label="Status" Variant="Variant.Outlined" Clearable="true">
+                <MudSelectItem Value="@("")">All</MudSelectItem>
+                <MudSelectItem Value="@("new")">New</MudSelectItem>
+                <MudSelectItem Value="@("reviewed")">Reviewed</MudSelectItem>
+                <MudSelectItem Value="@("escalated")">Escalated</MudSelectItem>
+                <MudSelectItem Value="@("dismissed")">Dismissed</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect @bind-Value="_severityFilter" Label="Severity" Variant="Variant.Outlined" Clearable="true">
+                <MudSelectItem Value="@("")">All</MudSelectItem>
+                <MudSelectItem Value="@("high")">High</MudSelectItem>
+                <MudSelectItem Value="@("medium")">Medium</MudSelectItem>
+                <MudSelectItem Value="@("low")">Low</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudDateRangePicker @bind-DateRange="_dateRange" Label="Date Range" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadAlerts"
+                       Disabled="_loading" StartIcon="@Icons.Material.Filled.Search">
+                Search
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudTable Items="_alerts" Dense="true" Hover="true" Striped="true" Loading="_loading" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Alert ID</MudTh>
+        <MudTh>Account</MudTh>
+        <MudTh>Transaction</MudTh>
+        <MudTh>Type</MudTh>
+        <MudTh>Severity</MudTh>
+        <MudTh>Description</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Created</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Alert ID">
+            <MudTooltip Text="@context.AlertId">
+                @Truncate(context.AlertId)
+            </MudTooltip>
+        </MudTd>
+        <MudTd DataLabel="Account">@context.AccountId</MudTd>
+        <MudTd DataLabel="Transaction">
+            <MudTooltip Text="@context.TransactionId">
+                @Truncate(context.TransactionId)
+            </MudTooltip>
+        </MudTd>
+        <MudTd DataLabel="Type">@context.AlertType</MudTd>
+        <MudTd DataLabel="Severity">
+            <MudChip T="string" Color="@GetSeverityColor(context.Severity)" Size="Size.Small">
+                @context.Severity
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Description">@context.Description</MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string" Color="@GetAlertStatusColor(context.Status)" Size="Size.Small">
+                @context.Status
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Created">@FormatTimestamp(context.CreatedAt)</MudTd>
+        <MudTd DataLabel="Actions">
+            @if (context.Status?.ToLowerInvariant() is "new" or "")
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                           OnClick="() => OpenReviewDialog(context)">
+                    Review
+                </MudButton>
+            }
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No fraud alerts found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new[] { 10, 25, 50 }" />
+    </PagerContent>
+</MudTable>
+
+@* Review Fraud Alert Dialog *@
+<MudDialog @bind-Visible="_reviewDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Review Fraud Alert</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudSelect @bind-Value="_reviewDecision" Label="Decision" Variant="Variant.Outlined" Required="true" Class="mb-3">
+            <MudSelectItem Value="@("approve")">Approve</MudSelectItem>
+            <MudSelectItem Value="@("dismiss")">Dismiss</MudSelectItem>
+            <MudSelectItem Value="@("escalate")">Escalate</MudSelectItem>
+        </MudSelect>
+        <MudTextField @bind-Value="_reviewNotes" Label="Notes" Variant="Variant.Outlined" Lines="3" Class="mb-3" />
+        <MudCheckBox @bind-Value="_reviewSuspendAccount" Label="Suspend Account" Color="Color.Error" Class="mb-3" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelReviewDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_submitting" OnClick="SubmitReview">
+            @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+            Submit Review
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private string _statusFilter = "";
+    private string _severityFilter = "";
+    private MudBlazor.DateRange? _dateRange;
+    private bool _loading;
+    private int _page = 1;
+    private int _pageSize = 25;
+    private bool _submitting;
+
+    private List<FraudAlertSummary> _alerts = new();
+    private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    // Review dialog state
+    private bool _reviewDialogVisible;
+    private string _reviewAlertId = "";
+    private string _reviewDecision = "approve";
+    private string _reviewNotes = "";
+    private bool _reviewSuspendAccount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAlerts();
+    }
+
+    private async Task LoadAlerts()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new GetFraudAlertsRequest
+            {
+                StatusFilter = _statusFilter ?? "",
+                SeverityFilter = _severityFilter ?? "",
+                Pagination = new PaginationRequest
+                {
+                    Page = _page,
+                    PageSize = _pageSize,
+                    SortBy = "created_at",
+                    Descending = true
+                }
+            };
+
+            if (_dateRange?.Start is not null && _dateRange?.End is not null)
+            {
+                request.DateRange = new UniBank.Protos.Common.DateRange
+                {
+                    From = Timestamp.FromDateTime(DateTime.SpecifyKind(_dateRange.Start.Value, DateTimeKind.Utc)),
+                    To = Timestamp.FromDateTime(DateTime.SpecifyKind(_dateRange.End.Value, DateTimeKind.Utc))
+                };
+            }
+
+            var response = await AdminClient.GetFraudAlertsAsync(request);
+            _alerts = response.Alerts.ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading fraud alerts: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenReviewDialog(FraudAlertSummary alert)
+    {
+        _reviewAlertId = alert.AlertId;
+        _reviewDecision = "approve";
+        _reviewNotes = "";
+        _reviewSuspendAccount = false;
+        _reviewDialogVisible = true;
+    }
+
+    private void CancelReviewDialog() => _reviewDialogVisible = false;
+
+    private async Task SubmitReview()
+    {
+        _submitting = true;
+
+        try
+        {
+            var request = new ReviewFraudAlertRequest
+            {
+                AlertId = _reviewAlertId,
+                AdminId = "admin",
+                Decision = _reviewDecision,
+                Notes = _reviewNotes ?? "",
+                SuspendAccount = _reviewSuspendAccount
+            };
+
+            await AdminClient.ReviewFraudAlertAsync(request);
+            Snackbar.Add("Fraud alert reviewed successfully.", Severity.Success);
+            _reviewDialogVisible = false;
+            await LoadAlerts();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error reviewing fraud alert: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string FormatTimestamp(Timestamp? timestamp)
+    {
+        if (timestamp is null)
+            return "-";
+
+        return timestamp.ToDateTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    private static string Truncate(string value, int maxLength = 8)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "-";
+
+        return value.Length <= maxLength ? value : value[..maxLength] + "...";
+    }
+
+    private static Color GetSeverityColor(string severity) => severity?.ToLowerInvariant() switch
+    {
+        "high" => Color.Error,
+        "medium" => Color.Warning,
+        "low" => Color.Info,
+        _ => Color.Default
+    };
+
+    private static Color GetAlertStatusColor(string status) => status?.ToLowerInvariant() switch
+    {
+        "new" => Color.Error,
+        "reviewed" => Color.Success,
+        "escalated" => Color.Warning,
+        "dismissed" => Color.Default,
+        _ => Color.Default
+    };
+}

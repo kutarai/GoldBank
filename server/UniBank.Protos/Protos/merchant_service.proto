@@ -1,0 +1,217 @@
+syntax = "proto3";
+package unibank.v1.merchants;
+option csharp_namespace = "UniBank.Protos.Merchants";
+
+import "Protos/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Merchant service - handles registration, profile, transactions, and settlements
+service MerchantService {
+  rpc Register(MerchantRegisterRequest) returns (MerchantRegisterResponse);
+  rpc GetProfile(MerchantProfileRequest) returns (MerchantProfileResponse);
+  rpc UpdateProfile(UpdateMerchantProfileRequest) returns (MerchantProfileResponse);
+  rpc GetTransactions(MerchantTransactionsRequest) returns (stream MerchantTransactionResponse);
+  rpc GetSettlements(MerchantSettlementsRequest) returns (MerchantSettlementsResponse);
+  rpc UploadBusinessDocument(stream UploadBusinessDocumentRequest) returns (UploadBusinessDocumentResponse);
+  rpc GetMerchantStatus(GetMerchantStatusRequest) returns (GetMerchantStatusResponse);
+
+  // STORY-052: Merchant settlement and payout
+  rpc GetSettlement(GetSettlementRequest) returns (SettlementResponse);
+
+  // STORY-053: Merchant transaction history (server streaming)
+  rpc GetTransactionHistory(MerchantTransactionHistoryRequest) returns (stream MerchantTransactionResponse);
+
+  // STORY-054: Merchant commission reporting
+  rpc GetCommissionReport(MerchantCommissionRequest) returns (MerchantCommissionResponse);
+}
+
+message GpsLocation {
+  double latitude = 1;
+  double longitude = 2;
+  double accuracy_meters = 3;
+}
+
+message MerchantRegisterRequest {
+  string account_id = 1;
+  string business_name = 2;
+  string business_type = 3;
+  string registration_number = 4;
+  string tax_id = 5;
+  string category_code = 6;
+  MerchantAddress address = 7;
+  GpsLocation location = 8;
+  bool is_agent = 9;
+  bool agent_terms_accepted = 10;
+  string tenant_id = 11;
+}
+
+message MerchantAddress {
+  string line1 = 1;
+  string line2 = 2;
+  string city = 3;
+  string province = 4;
+  string postal_code = 5;
+  string country_code = 6;
+}
+
+message MerchantRegisterResponse {
+  bool success = 1;
+  string message = 2;
+  string merchant_id = 3;
+  MerchantStatus status = 4;
+}
+
+message MerchantProfileRequest {
+  string merchant_id = 1;
+}
+
+message MerchantProfileResponse {
+  string merchant_id = 1;
+  string business_name = 2;
+  string business_type = 3;
+  string category_code = 4;
+  MerchantAddress address = 5;
+  MerchantStatus status = 6;
+  string commission_rate = 7;
+  string settlement_frequency = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message UpdateMerchantProfileRequest {
+  string merchant_id = 1;
+  string business_name = 2;
+  string category_code = 3;
+  MerchantAddress address = 4;
+  GpsLocation location = 5;
+  string commission_rate = 6;
+  string settlement_frequency = 7;
+}
+
+message MerchantTransactionsRequest {
+  string merchant_id = 1;
+  unibank.v1.common.DateRange date_range = 2;
+  unibank.v1.common.PaginationRequest pagination = 3;
+}
+
+message MerchantTransactionResponse {
+  string transaction_id = 1;
+  unibank.v1.common.Money amount = 2;
+  unibank.v1.common.Money fee = 3;
+  string reference = 4;
+  string payment_method = 5;
+  string terminal_id = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message MerchantSettlementsRequest {
+  string merchant_id = 1;
+  unibank.v1.common.DateRange date_range = 2;
+}
+
+message MerchantSettlementsResponse {
+  repeated Settlement settlements = 1;
+}
+
+message Settlement {
+  string settlement_id = 1;
+  unibank.v1.common.Money amount = 2;
+  int32 transaction_count = 3;
+  string status = 4;
+  google.protobuf.Timestamp settlement_date = 5;
+  google.protobuf.Timestamp paid_at = 6;
+}
+
+enum MerchantStatus {
+  MERCHANT_STATUS_UNSPECIFIED = 0;
+  MERCHANT_STATUS_PENDING = 1;
+  MERCHANT_STATUS_ACTIVE = 2;
+  MERCHANT_STATUS_SUSPENDED = 3;
+  MERCHANT_STATUS_CLOSED = 4;
+}
+
+message UploadBusinessDocumentRequest {
+  oneof payload {
+    BusinessDocumentMetadata metadata = 1;
+    bytes chunk = 2;
+  }
+}
+
+message BusinessDocumentMetadata {
+  string merchant_id = 1;
+  string document_type = 2;
+  string file_name = 3;
+  string content_type = 4;
+  int64 file_size = 5;
+}
+
+message UploadBusinessDocumentResponse {
+  string document_id = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message GetMerchantStatusRequest {
+  string merchant_id = 1;
+}
+
+message GetMerchantStatusResponse {
+  string merchant_id = 1;
+  string business_name = 2;
+  MerchantStatus status = 3;
+  string kyc_status = 4;
+  bool is_agent = 5;
+  google.protobuf.Timestamp last_updated = 6;
+}
+
+// STORY-052: Settlement request/response messages
+message GetSettlementRequest {
+  string merchant_id = 1;
+  google.protobuf.Timestamp period_start = 2;
+  google.protobuf.Timestamp period_end = 3;
+  string currency = 4;
+}
+
+message SettlementResponse {
+  string settlement_id = 1;
+  string merchant_id = 2;
+  google.protobuf.Timestamp period_start = 3;
+  google.protobuf.Timestamp period_end = 4;
+  int32 total_transactions = 5;
+  unibank.v1.common.Money gross_amount = 6;
+  unibank.v1.common.Money total_fees = 7;
+  unibank.v1.common.Money net_amount = 8;
+  string status = 9;
+  google.protobuf.Timestamp paid_at = 10;
+  string reference = 11;
+  google.protobuf.Timestamp created_at = 12;
+}
+
+// STORY-053: Transaction history request message
+message MerchantTransactionHistoryRequest {
+  string merchant_id = 1;
+  unibank.v1.common.DateRange date_range = 2;
+  unibank.v1.common.PaginationRequest pagination = 3;
+  string type_filter = 4;
+}
+
+// STORY-054: Commission report request/response messages
+message MerchantCommissionRequest {
+  string merchant_id = 1;
+  unibank.v1.common.DateRange date_range = 2;
+}
+
+message MerchantCommissionResponse {
+  string merchant_id = 1;
+  repeated CommissionLineItem line_items = 2;
+  unibank.v1.common.Money total_commission = 3;
+  int32 total_transactions = 4;
+  unibank.v1.common.DateRange period = 5;
+}
+
+message CommissionLineItem {
+  string transaction_type = 1;
+  int32 transaction_count = 2;
+  unibank.v1.common.Money total_transaction_amount = 3;
+  string commission_rate = 4;
+  unibank.v1.common.Money commission_amount = 5;
+}

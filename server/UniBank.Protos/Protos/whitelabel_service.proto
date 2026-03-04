@@ -1,0 +1,73 @@
+syntax = "proto3";
+package unibank.v1.whitelabel;
+option csharp_namespace = "UniBank.Protos.WhiteLabel";
+
+service WhiteLabelService {
+  rpc GetBranding(GetBrandingRequest) returns (BrandingResponse);
+  rpc UpdateBranding(UpdateBrandingRequest) returns (BrandingResponse);
+  rpc GetFeeConfig(GetFeeConfigRequest) returns (FeeConfigResponse);
+  rpc UpdateFeeConfig(UpdateFeeConfigRequest) returns (FeeConfigResponse);
+}
+
+message GetBrandingRequest { string tenant_id = 1; }
+message UpdateBrandingRequest {
+  string tenant_id = 1;
+  string app_name = 2;
+  string logo_url = 3;
+  string primary_color = 4;
+  string secondary_color = 5;
+  string accent_color = 6;
+  string favicon_url = 7;
+  string support_email = 8;
+  string support_phone = 9;
+  string custom_css = 10;
+}
+message BrandingResponse {
+  bool success = 1;
+  string tenant_id = 2;
+  string app_name = 3;
+  string logo_url = 4;
+  string primary_color = 5;
+  string secondary_color = 6;
+  string accent_color = 7;
+  string favicon_url = 8;
+  string support_email = 9;
+  string support_phone = 10;
+  string custom_css = 11;
+}
+message GetFeeConfigRequest { string tenant_id = 1; }
+message UpdateFeeConfigRequest {
+  string tenant_id = 1;
+  repeated FeeRule fee_rules = 2;
+  repeated TransactionLimit limits = 3;
+  repeated CommissionRate commission_rates = 4;
+}
+message FeeConfigResponse {
+  bool success = 1;
+  string tenant_id = 2;
+  repeated FeeRule fee_rules = 3;
+  repeated TransactionLimit limits = 4;
+  repeated CommissionRate commission_rates = 5;
+}
+message FeeRule {
+  string transaction_type = 1;
+  string fee_type = 2;
+  string amount = 3;
+  string percentage = 4;
+  string min_fee = 5;
+  string max_fee = 6;
+  string currency = 7;
+}
+message TransactionLimit {
+  string transaction_type = 1;
+  string per_transaction_limit = 2;
+  string daily_limit = 3;
+  string monthly_limit = 4;
+  string currency = 5;
+}
+message CommissionRate {
+  string transaction_type = 1;
+  string base_rate = 2;
+  string volume_discount_threshold = 3;
+  string discounted_rate = 4;
+}

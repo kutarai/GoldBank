@@ -1,0 +1,140 @@
+using Microsoft.EntityFrameworkCore;
+using UniBank.Core.Modules.Accounts.Domain.Entities;
+using UniBank.Core.Modules.Accounts.Infrastructure.Persistence;
+using UniBank.Core.Modules.Agents.Domain.Entities;
+using UniBank.Core.Modules.Agents.Infrastructure.Persistence;
+using UniBank.Core.Modules.BillPay.Domain.Entities;
+using UniBank.Core.Modules.BillPay.Infrastructure.Persistence;
+using UniBank.Core.Modules.KYC.Domain.Entities;
+using UniBank.Core.Modules.KYC.Infrastructure.Persistence;
+using UniBank.Core.Modules.Merchants.Domain.Entities;
+using UniBank.Core.Modules.Merchants.Infrastructure.Persistence;
+using UniBank.Core.Modules.Payments.Domain.Entities;
+using UniBank.Core.Modules.Payments.Infrastructure.Persistence;
+using UniBank.Core.Modules.Transfers.Domain.Entities;
+using UniBank.Core.Modules.Transfers.Infrastructure.Persistence;
+using UniBank.Core.Modules.Admin.Domain.Entities;
+using UniBank.Core.Modules.Admin.Infrastructure.Persistence;
+using UniBank.Core.Modules.FraudDetection.Domain.Entities;
+using UniBank.Core.Modules.FraudDetection.Infrastructure.Persistence;
+using UniBank.Core.Modules.Loans.Domain.Entities;
+using UniBank.Core.Modules.Loans.Infrastructure.Persistence;
+using UniBank.Core.Modules.WhiteLabel.Domain.Entities;
+using UniBank.Core.Modules.WhiteLabel.Infrastructure.Persistence;
+using UniBank.SharedKernel.Domain;
+using UniBank.SharedKernel.MultiTenancy;
+
+namespace UniBank.Core.Common.Persistence;
+
+public class UniBankDbContext : DbContext
+{
+    private readonly string _tenantSchema;
+
+    public UniBankDbContext(DbContextOptions<UniBankDbContext> options, ITenantProvider tenantProvider)
+        : base(options)
+    {
+        var tenant = tenantProvider.GetTenantInfo();
+        _tenantSchema = tenant.SchemaName;
+    }
+
+    public UniBankDbContext(DbContextOptions<UniBankDbContext> options, string tenantSchema)
+        : base(options)
+    {
+        _tenantSchema = tenantSchema;
+    }
+
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<DeviceTransferRequest> DeviceTransferRequests => Set<DeviceTransferRequest>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<KycDocument> KycDocuments => Set<KycDocument>();
+    public DbSet<Merchant> Merchants => Set<Merchant>();
+    public DbSet<MerchantDocument> MerchantDocuments => Set<MerchantDocument>();
+    public DbSet<MerchantSettlement> MerchantSettlements => Set<MerchantSettlement>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<PaymentToken> PaymentTokens => Set<PaymentToken>();
+    public DbSet<AgentFloat> AgentFloats => Set<AgentFloat>();
+    public DbSet<AgentCommission> AgentCommissions => Set<AgentCommission>();
+    public DbSet<Transfer> TransferRecords => Set<Transfer>();
+    public DbSet<BillProvider> BillProviders => Set<BillProvider>();
+    public DbSet<SavedBiller> SavedBillers => Set<SavedBiller>();
+    public DbSet<BillPayment> BillPayments => Set<BillPayment>();
+
+    // Sprint 7 - Admin module (STORY-055 to STORY-061)
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();
+    public DbSet<Dispute> Disputes => Set<Dispute>();
+
+    // Sprint 8 - Fraud Detection (STORY-072)
+    public DbSet<FraudAlert> FraudAlerts => Set<FraudAlert>();
+    public DbSet<FraudRule> FraudRules => Set<FraudRule>();
+
+    // Loans module
+    public DbSet<Loan> Loans => Set<Loan>();
+    public DbSet<LoanPayment> LoanPayments => Set<LoanPayment>();
+
+    // Sprint 6 - WhiteLabel module (STORY-068, STORY-070)
+    public DbSet<TenantBranding> TenantBrandings => Set<TenantBranding>();
+    public DbSet<TenantFeeConfig> TenantFeeConfigs => Set<TenantFeeConfig>();
+    public DbSet<TenantTransactionLimit> TenantTransactionLimits => Set<TenantTransactionLimit>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasDefaultSchema(_tenantSchema);
+
+        // Exclude DomainEvent (owned by BaseEntity in-memory, not persisted)
+        modelBuilder.Ignore<DomainEvent>();
+
+        // Accounts module
+        modelBuilder.ApplyConfiguration(new AccountEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DeviceTransferRequestEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new RefreshTokenEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new TransactionEntityConfiguration());
+
+        // KYC module
+        modelBuilder.ApplyConfiguration(new KycDocumentEntityConfiguration());
+
+        // Merchants module
+        modelBuilder.ApplyConfiguration(new MerchantEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new MerchantDocumentEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new MerchantSettlementEntityConfiguration());
+
+        // Payments module
+        modelBuilder.ApplyConfiguration(new PaymentEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentTokenEntityConfiguration());
+
+        // Agents module
+        modelBuilder.ApplyConfiguration(new AgentFloatEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new AgentCommissionEntityConfiguration());
+
+        // Transfers module
+        modelBuilder.ApplyConfiguration(new TransferEntityConfiguration());
+
+        // BillPay module
+        modelBuilder.ApplyConfiguration(new BillProviderEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new SavedBillerEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new BillPaymentEntityConfiguration());
+
+        // Loans module
+        modelBuilder.ApplyConfiguration(new LoanEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new LoanPaymentEntityConfiguration());
+
+        // Sprint 7 - Admin module (STORY-055 to STORY-061)
+        modelBuilder.ApplyConfiguration(new AdminUserEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new AuditLogEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new SystemConfigEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DisputeEntityConfiguration());
+
+        // Sprint 8 - Fraud Detection module (STORY-072)
+        modelBuilder.ApplyConfiguration(new FraudAlertEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new FraudRuleEntityConfiguration());
+
+        // Sprint 6 - WhiteLabel module (STORY-068, STORY-070)
+        modelBuilder.ApplyConfiguration(new TenantBrandingEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantFeeConfigEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantTransactionLimitEntityConfiguration());
+
+        base.OnModelCreating(modelBuilder);
+    }
+}

@@ -1,0 +1,443 @@
+package com.unibank.app.navigation
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.unibank.app.ui.auth.CreatePinScreen
+import com.unibank.app.ui.auth.LoginScreen
+import com.unibank.app.ui.auth.OtpScreen
+import com.unibank.app.ui.auth.ProfileInfoScreen
+import com.unibank.app.ui.auth.RegisterScreen
+import com.unibank.app.ui.auth.RegistrationSelfieScreen
+import com.unibank.app.ui.agent.CashInScreen
+import com.unibank.app.ui.agent.CashOutScreen
+import com.unibank.app.ui.billpay.PayBillScreen
+import com.unibank.app.ui.billpay.ProviderListScreen
+import com.unibank.app.ui.home.HomeScreen
+import com.unibank.app.ui.loan.LoanApplyScreen
+import com.unibank.app.ui.loan.LoanDetailScreen
+import com.unibank.app.ui.loan.LoanListScreen
+import com.unibank.app.ui.home.TransactionDetailScreen
+import com.unibank.app.ui.home.TransactionListScreen
+import com.unibank.app.ui.kyc.DocumentUploadScreen
+import com.unibank.app.ui.kyc.KycDashboardScreen
+import com.unibank.app.ui.kyc.SelfieScreen
+import com.unibank.app.ui.merchant.MerchantCommissionScreen
+import com.unibank.app.ui.profile.DeviceTransferScreen
+import com.unibank.app.ui.profile.EditProfileScreen
+import com.unibank.app.ui.profile.NotificationSettingsScreen
+import com.unibank.app.ui.profile.ProfileScreen
+import com.unibank.app.ui.profile.SettingsScreen
+import com.unibank.app.ui.merchant.MerchantDashboardScreen
+import com.unibank.app.ui.merchant.MerchantRegisterScreen
+import com.unibank.app.ui.merchant.MerchantSettlementsScreen
+import com.unibank.app.ui.merchant.MerchantTransactionsScreen
+import com.unibank.app.ui.payment.NfcPaymentScreen
+import com.unibank.app.ui.payment.QrGenerateScreen
+import com.unibank.app.ui.payment.QrScanScreen
+import com.unibank.app.ui.transfer.P2PTransferScreen
+import com.unibank.app.viewmodel.*
+import com.unibank.shared.data.local.SessionManager
+import com.unibank.shared.domain.model.SessionState
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+
+@Composable
+fun AppNavGraph(modifier: Modifier = Modifier) {
+    val sessionManager: SessionManager = koinInject()
+    val sessionState by sessionManager.sessionState.collectAsState()
+
+    when (sessionState) {
+        is SessionState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        is SessionState.Unauthenticated -> {
+            AuthNavHost(modifier = modifier, startAtLogin = false)
+        }
+        is SessionState.PinRequired -> {
+            AuthNavHost(modifier = modifier, startAtLogin = true)
+        }
+        is SessionState.Authenticated -> {
+            MainNavHost(modifier = modifier)
+        }
+    }
+}
+
+@Composable
+private fun AuthNavHost(modifier: Modifier, startAtLogin: Boolean) {
+    val navController = rememberNavController()
+    val authViewModel: AuthViewModel = koinViewModel()
+
+    NavHost(
+        navController = navController,
+        startDestination = if (startAtLogin) Route.Login else Route.Register,
+        modifier = modifier,
+    ) {
+        composable<Route.Register> {
+            RegisterScreen(
+                viewModel = authViewModel,
+                onOtpSent = { registrationId, otpLength, ttlSeconds ->
+                    navController.navigate(Route.Otp(registrationId, otpLength, ttlSeconds))
+                },
+                onLoginClick = { navController.navigate(Route.Login) },
+            )
+        }
+        composable<Route.Otp> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.Otp>()
+            OtpScreen(
+                viewModel = authViewModel,
+                otpLength = route.otpLength,
+                ttlSeconds = route.ttlSeconds,
+                onVerified = { accountId ->
+                    navController.navigate(Route.CreatePin(accountId)) {
+                        popUpTo(Route.Register) { inclusive = false }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.CreatePin> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.CreatePin>()
+            CreatePinScreen(
+                viewModel = authViewModel,
+                accountId = route.accountId,
+                onAuthenticated = {
+                    navController.navigate(Route.RegistrationProfile(route.accountId)) {
+                        popUpTo(Route.Register) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.RegistrationProfile> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.RegistrationProfile>()
+            ProfileInfoScreen(
+                viewModel = authViewModel,
+                onProfileUpdated = {
+                    navController.navigate(Route.RegistrationSelfie(route.accountId)) {
+                        popUpTo(Route.RegistrationProfile(route.accountId)) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable<Route.RegistrationSelfie> {
+            RegistrationSelfieScreen(
+                viewModel = authViewModel,
+                onComplete = {
+                    // SessionManager.completeRegistration() transitions to Authenticated,
+                    // causing recomposition at the AppNavGraph level
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.Login> {
+            LoginScreen(
+                viewModel = authViewModel,
+                onAuthenticated = {
+                    // SessionManager will switch state to Authenticated
+                },
+                onRegisterClick = {
+                    navController.navigate(Route.Register) {
+                        popUpTo(Route.Login) { inclusive = true }
+                    }
+                },
+                showPhoneField = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainNavHost(modifier: Modifier) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Route.Home,
+        modifier = modifier,
+    ) {
+        // Home + Transactions (Phase 3)
+        composable<Route.Home> {
+            val homeViewModel: HomeViewModel = koinViewModel()
+            HomeScreen(
+                viewModel = homeViewModel,
+                onTransactionClick = { txnId ->
+                    navController.navigate(Route.TransactionDetail(txnId))
+                },
+                onViewAllTransactions = {
+                    navController.navigate(Route.TransactionList)
+                },
+                onQuickAction = { routeKey ->
+                    when (routeKey) {
+                        "p2p_transfer" -> navController.navigate(Route.P2PTransfer)
+                        "qr_scan" -> navController.navigate(Route.QrScan)
+                        "qr_generate" -> navController.navigate(Route.QrGenerate)
+                        "nfc_payment" -> navController.navigate(Route.NfcPayment)
+                        "bill_pay" -> navController.navigate(Route.ProviderList)
+                        "cash_in" -> navController.navigate(Route.CashIn)
+                        "cash_out" -> navController.navigate(Route.CashOut)
+                        "loan" -> navController.navigate(Route.LoanList)
+                    }
+                },
+                onProfileClick = { navController.navigate(Route.Profile) },
+                onLogout = { homeViewModel.logout() },
+            )
+        }
+        composable<Route.TransactionList> {
+            val homeViewModel: HomeViewModel = koinViewModel()
+            TransactionListScreen(
+                viewModel = homeViewModel,
+                onTransactionClick = { txnId ->
+                    navController.navigate(Route.TransactionDetail(txnId))
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.TransactionDetail> { backStackEntry ->
+            val homeViewModel: HomeViewModel = koinViewModel()
+            val route = backStackEntry.toRoute<Route.TransactionDetail>()
+            TransactionDetailScreen(
+                viewModel = homeViewModel,
+                transactionId = route.transactionId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // QR Payments (Phase 4)
+        composable<Route.QrGenerate> {
+            val paymentViewModel: PaymentViewModel = koinViewModel()
+            QrGenerateScreen(viewModel = paymentViewModel, onBack = { navController.popBackStack() })
+        }
+        composable<Route.QrScan> {
+            val paymentViewModel: PaymentViewModel = koinViewModel()
+            QrScanScreen(
+                viewModel = paymentViewModel,
+                onPaymentComplete = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // P2P Transfer (Phase 5)
+        composable<Route.P2PTransfer> {
+            val transferViewModel: TransferViewModel = koinViewModel()
+            P2PTransferScreen(
+                viewModel = transferViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Bill Pay (Phase 6)
+        composable<Route.ProviderList> {
+            val billPayViewModel: BillPayViewModel = koinViewModel()
+            ProviderListScreen(
+                viewModel = billPayViewModel,
+                onProviderSelected = { id, name ->
+                    navController.navigate(Route.PayBill(id, name))
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.PayBill> { backStackEntry ->
+            val billPayViewModel: BillPayViewModel = koinViewModel()
+            val route = backStackEntry.toRoute<Route.PayBill>()
+            PayBillScreen(
+                viewModel = billPayViewModel,
+                providerId = route.providerId,
+                providerName = route.providerName,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Agent (Phase 7)
+        composable<Route.CashIn> {
+            val agentViewModel: AgentViewModel = koinViewModel()
+            CashInScreen(
+                viewModel = agentViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.CashOut> {
+            val agentViewModel: AgentViewModel = koinViewModel()
+            CashOutScreen(
+                viewModel = agentViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Loans
+        composable<Route.LoanList> {
+            val loanViewModel: LoanViewModel = koinViewModel()
+            LoanListScreen(
+                viewModel = loanViewModel,
+                onApply = { navController.navigate(Route.LoanApply) },
+                onLoanClick = { loanId -> navController.navigate(Route.LoanDetail(loanId)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.LoanApply> {
+            val loanViewModel: LoanViewModel = koinViewModel()
+            LoanApplyScreen(
+                viewModel = loanViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.LoanDetail> { backStackEntry ->
+            val loanViewModel: LoanViewModel = koinViewModel()
+            val route = backStackEntry.toRoute<Route.LoanDetail>()
+            LoanDetailScreen(
+                viewModel = loanViewModel,
+                loanId = route.loanId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // KYC (Phase 8)
+        composable<Route.KycDashboard> {
+            val kycViewModel: KycViewModel = koinViewModel()
+            KycDashboardScreen(
+                viewModel = kycViewModel,
+                onUploadDocument = { docType ->
+                    navController.navigate(Route.DocumentUpload(docType))
+                },
+                onTakeSelfie = { navController.navigate(Route.Selfie) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.DocumentUpload> { backStackEntry ->
+            val kycViewModel: KycViewModel = koinViewModel()
+            val route = backStackEntry.toRoute<Route.DocumentUpload>()
+            DocumentUploadScreen(
+                viewModel = kycViewModel,
+                documentType = route.documentType,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.Selfie> {
+            val kycViewModel: KycViewModel = koinViewModel()
+            SelfieScreen(
+                viewModel = kycViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // NFC Payment (Phase 9)
+        composable<Route.NfcPayment> {
+            val paymentViewModel: PaymentViewModel = koinViewModel()
+            NfcPaymentScreen(
+                viewModel = paymentViewModel,
+                onPaymentComplete = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Merchant (Phase 10)
+        composable<Route.MerchantRegister> {
+            val merchantViewModel: MerchantViewModel = koinViewModel()
+            MerchantRegisterScreen(
+                viewModel = merchantViewModel,
+                onSuccess = {
+                    navController.navigate(Route.MerchantDashboard) {
+                        popUpTo(Route.MerchantRegister) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.MerchantDashboard> {
+            val merchantViewModel: MerchantViewModel = koinViewModel()
+            MerchantDashboardScreen(
+                viewModel = merchantViewModel,
+                merchantId = "",
+                onTransactions = { navController.navigate(Route.MerchantTransactions) },
+                onSettlements = { navController.navigate(Route.MerchantSettlements) },
+                onCommission = { navController.navigate(Route.MerchantCommission) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.MerchantTransactions> {
+            val merchantViewModel: MerchantViewModel = koinViewModel()
+            MerchantTransactionsScreen(
+                viewModel = merchantViewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.MerchantSettlements> {
+            val merchantViewModel: MerchantViewModel = koinViewModel()
+            MerchantSettlementsScreen(
+                viewModel = merchantViewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.MerchantCommission> {
+            val merchantViewModel: MerchantViewModel = koinViewModel()
+            MerchantCommissionScreen(
+                viewModel = merchantViewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Profile (Phase 11)
+        composable<Route.Profile> {
+            val profileViewModel: ProfileViewModel = koinViewModel()
+            ProfileScreen(
+                viewModel = profileViewModel,
+                onEditProfile = { navController.navigate(Route.EditProfile) },
+                onSettings = { navController.navigate(Route.Settings) },
+                onNotifications = { navController.navigate(Route.NotificationSettings) },
+                onDeviceTransfer = { navController.navigate(Route.DeviceTransfer) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.EditProfile> {
+            val profileViewModel: ProfileViewModel = koinViewModel()
+            EditProfileScreen(
+                viewModel = profileViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.Settings> {
+            val profileViewModel: ProfileViewModel = koinViewModel()
+            SettingsScreen(
+                viewModel = profileViewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.NotificationSettings> {
+            val profileViewModel: ProfileViewModel = koinViewModel()
+            NotificationSettingsScreen(
+                viewModel = profileViewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<Route.DeviceTransfer> {
+            val profileViewModel: ProfileViewModel = koinViewModel()
+            DeviceTransferScreen(
+                viewModel = profileViewModel,
+                onComplete = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+    }
+}

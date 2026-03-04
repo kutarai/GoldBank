@@ -1,0 +1,99 @@
+@page "/config"
+@rendermode InteractiveServer
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>System Configuration</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">System Configuration</MudText>
+
+<MudPaper Class="pa-6" Elevation="2">
+    <MudForm @ref="_form">
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_key"
+                              Label="Key"
+                              Required="true"
+                              RequiredError="Key is required"
+                              Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="_tenantId"
+                              Label="Tenant ID (optional)"
+                              Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_valueJson"
+                              Label="Value (JSON)"
+                              Lines="8"
+                              Required="true"
+                              RequiredError="Value is required"
+                              Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="SubmitAsync"
+                           Disabled="_submitting"
+                           StartIcon="@Icons.Material.Filled.Save">
+                    @if (_submitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save Configuration</span>
+                    }
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private MudForm _form = null!;
+    private string _key = string.Empty;
+    private string _valueJson = string.Empty;
+    private string _tenantId = string.Empty;
+    private bool _submitting;
+
+    private async Task SubmitAsync()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _submitting = true;
+
+        try
+        {
+            var request = new UpdateSystemConfigRequest
+            {
+                Key = _key,
+                ValueJson = _valueJson,
+                TenantId = _tenantId ?? string.Empty,
+                AdminId = string.Empty
+            };
+
+            await AdminClient.UpdateSystemConfigAsync(request);
+            Snackbar.Add("Configuration updated successfully.", Severity.Success);
+
+            _key = string.Empty;
+            _valueJson = string.Empty;
+            _tenantId = string.Empty;
+            await _form.ResetAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update configuration: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+}

@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/admin/">
+    <Project Path="admin/UniBank.Admin/UniBank.Admin.csproj" />
+  </Folder>
+  <Folder Name="/hsm/">
+    <Project Path="hsm/UniBank.HSM/UniBank.HSM.csproj" />
+  </Folder>
+  <Folder Name="/server/">
+    <Project Path="server/UniBank.Core/UniBank.Core.csproj" />
+    <Project Path="server/UniBank.Gateway/UniBank.Gateway.csproj" />
+    <Project Path="server/UniBank.Notifications/UniBank.Notifications.csproj" />
+    <Project Path="server/UniBank.Protos/UniBank.Protos.csproj" />
+    <Project Path="server/UniBank.Reporting/UniBank.Reporting.csproj" />
+    <Project Path="server/UniBank.SharedKernel/UniBank.SharedKernel.csproj" />
+    <Project Path="server/UniBank.Migrator/UniBank.Migrator.csproj" />
+  </Folder>
+  <Folder Name="/switch/">
+    <Project Path="switch/UniBank.Switching/UniBank.Switching.csproj" />
+    <Project Path="switch/UniBank.SwitchMigrator/UniBank.SwitchMigrator.csproj" />
+  </Folder>
+  <Folder Name="/terminal/">
+    <Project Path="terminal/UniBank.TerminalManager/UniBank.TerminalManager.csproj" />
+    <Project Path="terminal/UniBank.TerminalMigrator/UniBank.TerminalMigrator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj" />
+    <Project Path="tests/UniBank.Tests/UniBank.Tests.csproj" />
+  </Folder>
+</Solution>

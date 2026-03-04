@@ -1,0 +1,246 @@
+@page "/merchants"
+@rendermode InteractiveServer
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Merchants - UniBank Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Merchant Management</MudText>
+
+<MudPaper Elevation="2" Class="pa-6">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText Typo="Typo.h6" Class="mb-4">Manage Merchant</MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudTextField @bind-Value="_merchantId"
+                          Label="Merchant ID"
+                          Placeholder="Enter merchant ID..."
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Merchant ID is required." />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudSelect @bind-Value="_selectedAction"
+                       Label="Action"
+                       Variant="Variant.Outlined"
+                       Required="true"
+                       RequiredError="Please select an action.">
+                <MudSelectItem Value="MerchantAction.Approve">Approve</MudSelectItem>
+                <MudSelectItem Value="MerchantAction.Suspend">Suspend</MudSelectItem>
+                <MudSelectItem Value="MerchantAction.Activate">Activate</MudSelectItem>
+                <MudSelectItem Value="MerchantAction.Close">Close</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" sm="12" md="8">
+            <MudTextField @bind-Value="_reason"
+                          Label="Reason"
+                          Placeholder="Provide a reason for this action..."
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          Required="true"
+                          RequiredError="A reason is required." />
+        </MudItem>
+
+        <MudItem xs="12" sm="12" md="8">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="ShowConfirmationAsync"
+                       Disabled="@(!IsFormValid || _submitting)"
+                       StartIcon="@Icons.Material.Filled.Send"
+                       Class="mt-2">
+                @if (_submitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Submit Action
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_auditLog.Count > 0)
+{
+    <MudPaper Elevation="2" Class="pa-6 mt-6">
+        <MudText Typo="Typo.h6" Class="mb-4">Recent Actions (Session)</MudText>
+        <MudTable Items="_auditLog" Dense="true" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Time</MudTh>
+                <MudTh>Merchant ID</MudTh>
+                <MudTh>Action</MudTh>
+                <MudTh>Reason</MudTh>
+                <MudTh>Result</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Time">@context.Timestamp.ToString("HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Merchant ID">@context.MerchantId</MudTd>
+                <MudTd DataLabel="Action">
+                    <MudChip T="string" Color="@GetActionColor(context.Action)" Size="Size.Small">
+                        @GetActionName(context.Action)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Reason">@context.Reason</MudTd>
+                <MudTd DataLabel="Result">
+                    <MudChip T="string"
+                             Color="@(context.Success ? Color.Success : Color.Error)"
+                             Size="Size.Small">
+                        @(context.Success ? "Success" : "Failed")
+                    </MudChip>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+}
+
+@* Inline confirmation dialog *@
+<MudDialog @bind-Visible="_dialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Confirm Merchant Action</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText>
+            Are you sure you want to <strong>@GetActionName(_selectedAction)</strong> merchant
+            <strong>@_merchantId</strong>?
+        </MudText>
+        <MudText Typo="Typo.body2" Class="mt-2">
+            <strong>Reason:</strong> @_reason
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="SubmitActionAsync">
+            Confirm
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private string _merchantId = string.Empty;
+    private MerchantAction _selectedAction = MerchantAction.Approve;
+    private string _reason = string.Empty;
+    private bool _submitting;
+
+    // Dialog state
+    private bool _dialogVisible;
+    private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    // Session audit log
+    private readonly List<AuditEntry> _auditLog = [];
+
+    private bool IsFormValid =>
+        !string.IsNullOrWhiteSpace(_merchantId) &&
+        !string.IsNullOrWhiteSpace(_reason) &&
+        _selectedAction != MerchantAction.Unspecified;
+
+    private Task ShowConfirmationAsync()
+    {
+        if (!IsFormValid)
+            return Task.CompletedTask;
+
+        _dialogVisible = true;
+        return Task.CompletedTask;
+    }
+
+    private void CancelDialog()
+    {
+        _dialogVisible = false;
+    }
+
+    private async Task SubmitActionAsync()
+    {
+        _dialogVisible = false;
+        _submitting = true;
+
+        try
+        {
+            var request = new ManageMerchantRequest
+            {
+                MerchantId = _merchantId.Trim(),
+                Action = _selectedAction,
+                Reason = _reason.Trim(),
+                AdminId = "current-admin"
+            };
+
+            var response = await AdminClient.ManageMerchantAsync(request);
+
+            _auditLog.Insert(0, new AuditEntry
+            {
+                Timestamp = DateTime.Now,
+                MerchantId = _merchantId.Trim(),
+                Action = _selectedAction,
+                Reason = _reason.Trim(),
+                Success = response.Success,
+                Message = response.Message
+            });
+
+            if (response.Success)
+            {
+                Snackbar.Add($"Successfully performed {GetActionName(_selectedAction)} on merchant {_merchantId}.", Severity.Success);
+                _merchantId = string.Empty;
+                _reason = string.Empty;
+                _selectedAction = MerchantAction.Approve;
+            }
+            else
+            {
+                Snackbar.Add($"Action failed: {response.Message}", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _auditLog.Insert(0, new AuditEntry
+            {
+                Timestamp = DateTime.Now,
+                MerchantId = _merchantId.Trim(),
+                Action = _selectedAction,
+                Reason = _reason.Trim(),
+                Success = false,
+                Message = ex.Message
+            });
+
+            Snackbar.Add($"Failed to manage merchant: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private static string GetActionName(MerchantAction action)
+    {
+        return action switch
+        {
+            MerchantAction.Approve => "Approve",
+            MerchantAction.Suspend => "Suspend",
+            MerchantAction.Activate => "Activate",
+            MerchantAction.Close => "Close",
+            _ => action.ToString()
+        };
+    }
+
+    private static Color GetActionColor(MerchantAction action)
+    {
+        return action switch
+        {
+            MerchantAction.Approve => Color.Success,
+            MerchantAction.Suspend => Color.Warning,
+            MerchantAction.Activate => Color.Info,
+            MerchantAction.Close => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private sealed class AuditEntry
+    {
+        public DateTime Timestamp { get; init; }
+        public string MerchantId { get; init; } = string.Empty;
+        public MerchantAction Action { get; init; }
+        public string Reason { get; init; } = string.Empty;
+        public bool Success { get; init; }
+        public string Message { get; init; } = string.Empty;
+    }
+}

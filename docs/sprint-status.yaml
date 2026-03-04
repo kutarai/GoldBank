@@ -1,0 +1,482 @@
+version: "6.0.0"
+project_name: "UniBank"
+project_level: 4
+current_sprint: 6
+sprint_plan_path: "docs/sprint-plan-unibank-2026-02-24.md"
+
+sprints:
+  - sprint_number: 1
+    start_date: "2026-02-24"
+    end_date: "2026-03-16"
+    capacity_points: 144
+    committed_points: 62
+    completed_points: 62
+    status: "completed"
+    goal: "Establish development environment, core architecture, database, gRPC contracts, and user registration flow"
+    stories:
+      - story_id: "STORY-001"
+        title: "Solution Scaffolding & Project Structure"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-002"
+        title: "Docker Compose Development Environment"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-003"
+        title: "PostgreSQL Database Schema & Multi-Tenant"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-004"
+        title: "gRPC Proto Definitions & Shared Contracts"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-005"
+        title: "API Gateway with gRPC Interceptors"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-006"
+        title: "CI/CD Pipeline Setup"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-007"
+        title: "Wolverine Messaging & MQTT Broker"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-008"
+        title: "Monitoring & Logging Stack"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-009"
+        title: "User Self-Registration with Phone & OTP"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-010"
+        title: "Create Account PIN"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-073"
+        title: "Notification Service - Push & SMS"
+        points: 5
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 2
+    start_date: "2026-03-17"
+    end_date: "2026-04-06"
+    capacity_points: 144
+    committed_points: 49
+    completed_points: 49
+    status: "completed"
+    goal: "Complete KYC flow, user authentication, device binding, and core account features"
+    stories:
+      - story_id: "STORY-011"
+        title: "KYC - National ID Document Upload"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-012"
+        title: "KYC - Selfie Capture & Photo Match"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-013"
+        title: "Account Activation on KYC Approval"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-014"
+        title: "Device Binding on Registration"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-015"
+        title: "Account Profile View & Edit"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-016"
+        title: "Account Balance Inquiry with Redis Caching"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-017"
+        title: "Transaction History with Streaming"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-018"
+        title: "PIN & Biometric Authentication"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-019"
+        title: "Session Management & Auto-Timeout"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-020"
+        title: "Transaction Authorization (High-Value PIN)"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-050"
+        title: "Merchant Registration & KYC"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-051"
+        title: "Merchant Profile Management"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 3
+    start_date: "2026-04-07"
+    end_date: "2026-04-27"
+    capacity_points: 144
+    committed_points: 45
+    completed_points: 45
+    status: "completed"
+    goal: "Deliver NFC contactless payments, EMV QR payments, and HSM integration"
+    stories:
+      - story_id: "STORY-021"
+        title: "HSM Interface Service - Core Operations"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-022"
+        title: "NFC Payment Tokenization"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-023"
+        title: "NFC Contactless Payment at POS"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-024"
+        title: "PIN Entry for High-Value NFC Transactions"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-025"
+        title: "NFC Payment Notifications & Receipt"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-026"
+        title: "Generate EMV QR Code"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-027"
+        title: "Scan QR Code & Process Payment"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-028"
+        title: "QR Payment Confirmation & Notifications"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 4
+    start_date: "2026-04-28"
+    end_date: "2026-05-18"
+    capacity_points: 144
+    committed_points: 47
+    completed_points: 47
+    status: "completed"
+    goal: "Enable P2P transfers, cash-in/cash-out agent network, and bill payments"
+    stories:
+      - story_id: "STORY-029"
+        title: "P2P Domestic Transfer"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-030"
+        title: "P2P Cross-Border Transfer"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-031"
+        title: "Transfer Confirmation & Notifications"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-032"
+        title: "Cash-In at Merchant Agent"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-033"
+        title: "Cash-Out at Merchant Agent"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-034"
+        title: "Agent Commission Engine"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-035"
+        title: "Agent Float/Balance Management"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-036"
+        title: "Agent Transaction Receipt"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-037"
+        title: "Bill Provider Registry"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-038"
+        title: "Pay Bill"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-039"
+        title: "Saved/Favorite Billers"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 5
+    start_date: "2026-05-19"
+    end_date: "2026-06-08"
+    capacity_points: 144
+    committed_points: 47
+    completed_points: 47
+    status: "completed"
+    goal: "Connect to national payment switch with ISO 8583 and ISO 20022 adapters, plus reconciliation"
+    stories:
+      - story_id: "STORY-040"
+        title: "ISO 8583 Adapter"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-041"
+        title: "ISO 20022 Adapter"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-042"
+        title: "Message Router & Canonical Format"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-043"
+        title: "Outbound Transaction Routing"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-044"
+        title: "Inbound Transaction Processing"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-045"
+        title: "Daily Reconciliation"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-052"
+        title: "Merchant Settlement & Payout"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-053"
+        title: "Merchant Transaction History & Statements"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-054"
+        title: "Merchant Commission Reporting"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 6
+    start_date: "2026-06-09"
+    end_date: "2026-06-29"
+    capacity_points: 144
+    committed_points: 29
+    completed_points: 29
+    status: "completed"
+    goal: "Complete terminal management with MQTT, and white-label multi-tenant configuration"
+    stories:
+      - story_id: "STORY-046"
+        title: "Terminal Registration & Provisioning"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-047"
+        title: "Terminal Key Management via HSM"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-048"
+        title: "Terminal Status Monitoring"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-049"
+        title: "Remote Terminal Software Updates"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-068"
+        title: "Configurable Branding per Tenant"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-069"
+        title: "Tenant Data Isolation Verification"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-070"
+        title: "Per-Tenant Fee & Limit Configuration"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 7
+    start_date: "2026-06-30"
+    end_date: "2026-07-20"
+    capacity_points: 144
+    committed_points: 58
+    completed_points: 58
+    status: "completed"
+    goal: "Deliver complete admin back-office portal and reporting dashboard"
+    stories:
+      - story_id: "STORY-055"
+        title: "Admin Portal Foundation & RBAC"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-056"
+        title: "Customer Account Management (Admin)"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-057"
+        title: "Merchant/Agent Management (Admin)"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-058"
+        title: "Transaction Monitoring & Search (Admin)"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-059"
+        title: "KYC Review & Approval Workflow (Admin)"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-060"
+        title: "System Configuration Management (Admin)"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-061"
+        title: "Dispute/Chargeback Management (Admin)"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-062"
+        title: "Real-Time Transaction Dashboard"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-063"
+        title: "User Growth & Registration Reports"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-064"
+        title: "Merchant/Agent Performance Reports"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-065"
+        title: "Revenue & Fee Reports"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-066"
+        title: "Reconciliation Reports"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-067"
+        title: "Exportable Reports"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
+  - sprint_number: 8
+    start_date: "2026-07-21"
+    end_date: "2026-08-10"
+    capacity_points: 144
+    committed_points: 25
+    completed_points: 25
+    status: "completed"
+    goal: "Complete white-label admin access, fraud detection, performance validation, security audit, and pilot deployment"
+    stories:
+      - story_id: "STORY-071"
+        title: "Per-Tenant Admin Portal Access"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-072"
+        title: "Fraud Detection Alerts"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-074"
+        title: "Performance Testing & NFR Validation"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-075"
+        title: "Security Audit & Hardening"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-076"
+        title: "Pilot Deployment Preparation"
+        points: 5
+        status: "completed"
+        assigned_to: null
+
+velocity:
+  sprint_1: 62
+  sprint_2: 49
+  sprint_3: 45
+  sprint_4: 47
+  sprint_5: 47
+  sprint_6: 29
+  sprint_7: 58
+  sprint_8: 25
+  rolling_average: 45
+
+team:
+  size: 4
+  sprint_length_weeks: 3
+  capacity_per_sprint: 144

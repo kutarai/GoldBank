@@ -1,0 +1,90 @@
+@page "/kyc"
+@rendermode InteractiveServer
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>KYC Review</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">KYC Document Review</MudText>
+
+<MudPaper Class="pa-6" MaxWidth="600px">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="_documentId" Label="Document ID" Variant="Variant.Outlined"
+                          Required="true" RequiredError="Document ID is required" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudSelect @bind-Value="_decision" Label="Decision" Variant="Variant.Outlined"
+                       Required="true" RequiredError="Decision is required">
+                <MudSelectItem Value="KYCDecision.Approve">Approve</MudSelectItem>
+                <MudSelectItem Value="KYCDecision.Reject">Reject</MudSelectItem>
+                <MudSelectItem Value="KYCDecision.RequestResubmit">Request Resubmit</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="_notes" Label="Notes" Variant="Variant.Outlined"
+                          Lines="4" Placeholder="Enter review notes..." />
+        </MudItem>
+        <MudItem xs="12" Class="d-flex justify-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitReview"
+                       Disabled="_submitting" StartIcon="@Icons.Material.Filled.RateReview">
+                @if (_submitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Submitting...</span>
+                }
+                else
+                {
+                    <span>Submit Review</span>
+                }
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    private string _documentId = "";
+    private KYCDecision _decision = KYCDecision.Approve;
+    private string _notes = "";
+    private bool _submitting;
+
+    private async Task SubmitReview()
+    {
+        if (string.IsNullOrWhiteSpace(_documentId))
+        {
+            Snackbar.Add("Document ID is required.", Severity.Warning);
+            return;
+        }
+
+        _submitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new ReviewKYCRequest
+            {
+                DocumentId = _documentId,
+                Decision = _decision,
+                Notes = _notes ?? "",
+                AdminId = "admin"
+            };
+
+            await AdminClient.ReviewKYCAsync(request);
+
+            Snackbar.Add($"KYC review submitted successfully. Decision: {_decision}", Severity.Success);
+
+            _documentId = "";
+            _decision = KYCDecision.Approve;
+            _notes = "";
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error submitting KYC review: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+            StateHasChanged();
+        }
+    }
+}

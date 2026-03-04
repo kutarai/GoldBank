@@ -1,0 +1,117 @@
+{
+  "index_patterns": ["unibank-logs-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.lifecycle.name": "unibank-logs-policy",
+      "index.refresh_interval": "5s"
+    },
+    "mappings": {
+      "dynamic_templates": [
+        {
+          "strings_as_keywords": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "level": {
+          "type": "keyword"
+        },
+        "message": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 2048
+            }
+          }
+        },
+        "messageTemplate": {
+          "type": "text"
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "ServiceName": {
+              "type": "keyword"
+            },
+            "MachineName": {
+              "type": "keyword"
+            },
+            "EnvironmentName": {
+              "type": "keyword"
+            },
+            "RequestId": {
+              "type": "keyword"
+            },
+            "RequestPath": {
+              "type": "keyword"
+            },
+            "ConnectionId": {
+              "type": "keyword"
+            },
+            "CorrelationId": {
+              "type": "keyword"
+            },
+            "TenantId": {
+              "type": "keyword"
+            },
+            "UserId": {
+              "type": "keyword"
+            },
+            "SourceContext": {
+              "type": "keyword"
+            },
+            "ActionName": {
+              "type": "keyword"
+            },
+            "StatusCode": {
+              "type": "integer"
+            },
+            "Elapsed": {
+              "type": "float"
+            }
+          }
+        },
+        "exceptions": {
+          "type": "object",
+          "properties": {
+            "Depth": {
+              "type": "integer"
+            },
+            "ClassName": {
+              "type": "keyword"
+            },
+            "Message": {
+              "type": "text"
+            },
+            "Source": {
+              "type": "keyword"
+            },
+            "StackTraceString": {
+              "type": "text"
+            },
+            "HResult": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  },
+  "priority": 100,
+  "composed_of": [],
+  "version": 1,
+  "_meta": {
+    "description": "Index template for UniBank structured logs shipped via Serilog Elasticsearch sink."
+  }
+}

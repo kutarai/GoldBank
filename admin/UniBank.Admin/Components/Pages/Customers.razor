@@ -1,0 +1,307 @@
+@page "/customers"
+@rendermode InteractiveServer
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Customers - UniBank Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Customer Management</MudText>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="6" md="4">
+        <MudTextField @bind-Value="_searchQuery"
+                      Label="Search"
+                      Placeholder="Name or phone number..."
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="false"
+                      OnKeyUp="OnSearchKeyUp" />
+    </MudItem>
+    <MudItem xs="12" sm="4" md="3">
+        <MudSelect @bind-Value="_statusFilter"
+                   Label="Status Filter"
+                   Variant="Variant.Outlined"
+                   Clearable="true">
+            <MudSelectItem Value="@("")">All</MudSelectItem>
+            <MudSelectItem Value="@("ACTIVE")">Active</MudSelectItem>
+            <MudSelectItem Value="@("SUSPENDED")">Suspended</MudSelectItem>
+            <MudSelectItem Value="@("FROZEN")">Frozen</MudSelectItem>
+            <MudSelectItem Value="@("CLOSED")">Closed</MudSelectItem>
+        </MudSelect>
+    </MudItem>
+    <MudItem xs="12" sm="2" md="2">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="SearchAsync"
+                   Disabled="_loading"
+                   FullWidth="true"
+                   Class="mt-1">
+            Search
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+<MudTable @ref="_table"
+          ServerData="LoadCustomersAsync"
+          Dense="true"
+          Hover="true"
+          Striped="true"
+          Loading="_loading"
+          LoadingProgressColor="Color.Primary"
+          Elevation="2">
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Phone</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>KYC Level</MudTh>
+        <MudTh>Balance</MudTh>
+        <MudTh>Created</MudTh>
+        <MudTh>Last Login</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.FullName</MudTd>
+        <MudTd DataLabel="Phone">@context.PhoneNumber</MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string"
+                     Color="@GetStatusColor(context.Status)"
+                     Size="Size.Small">
+                @context.Status
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="KYC Level">@context.KycLevel</MudTd>
+        <MudTd DataLabel="Balance">@FormatMoney(context.Balance)</MudTd>
+        <MudTd DataLabel="Created">@FormatTimestamp(context.CreatedAt)</MudTd>
+        <MudTd DataLabel="Last Login">@FormatTimestamp(context.LastLoginAt)</MudTd>
+        <MudTd>
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                     Size="Size.Small"
+                     Dense="true"
+                     AnchorOrigin="Origin.BottomLeft">
+                <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.Activate))">
+                    Activate
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.Suspend))">
+                    Suspend
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.Freeze))">
+                    Freeze
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.Unfreeze))">
+                    Unfreeze
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.ResetPin))">
+                    Reset PIN
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.Close))">
+                    Close
+                </MudMenuItem>
+            </MudMenu>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No customers found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@* Inline confirmation dialog *@
+<MudDialog @bind-Visible="_dialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Confirm @_pendingActionName</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-4">
+            Are you sure you want to @(_pendingActionName.ToLowerInvariant()) account for
+            @(_pendingCustomer?.FullName) (@(_pendingCustomer?.PhoneNumber))?
+        </MudText>
+        <MudTextField @bind-Value="_actionReason"
+                      Label="Reason"
+                      Variant="Variant.Outlined"
+                      Lines="3"
+                      Required="true"
+                      RequiredError="A reason is required." />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@string.IsNullOrWhiteSpace(_actionReason)"
+                   OnClick="ConfirmActionAsync">
+            Confirm
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudTable<CustomerSummary>? _table;
+    private string _searchQuery = string.Empty;
+    private string _statusFilter = string.Empty;
+    private bool _loading;
+
+    // Dialog state
+    private bool _dialogVisible;
+    private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+    private CustomerSummary? _pendingCustomer;
+    private AccountAction _pendingAction;
+    private string _pendingActionName = string.Empty;
+    private string _actionReason = string.Empty;
+
+    private async Task<TableData<CustomerSummary>> LoadCustomersAsync(TableState state, CancellationToken ct)
+    {
+        _loading = true;
+
+        try
+        {
+            var request = new SearchCustomersRequest
+            {
+                Query = _searchQuery,
+                StatusFilter = _statusFilter,
+                Pagination = new PaginationRequest
+                {
+                    Page = state.Page + 1,
+                    PageSize = state.PageSize
+                }
+            };
+
+            var response = await AdminClient.SearchCustomersAsync(request, cancellationToken: ct);
+
+            return new TableData<CustomerSummary>
+            {
+                Items = response.Customers,
+                TotalItems = response.Pagination?.TotalCount ?? 0
+            };
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load customers: {ex.Message}", Severity.Error);
+            return new TableData<CustomerSummary> { Items = [], TotalItems = 0 };
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        if (_table is not null)
+        {
+            await _table.ReloadServerData();
+        }
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private Task ExecuteActionAsync(CustomerSummary customer, AccountAction action)
+    {
+        _pendingCustomer = customer;
+        _pendingAction = action;
+        _pendingActionName = GetActionName(action);
+        _actionReason = string.Empty;
+        _dialogVisible = true;
+        return Task.CompletedTask;
+    }
+
+    private void CancelDialog()
+    {
+        _dialogVisible = false;
+        _pendingCustomer = null;
+        _actionReason = string.Empty;
+    }
+
+    private async Task ConfirmActionAsync()
+    {
+        if (_pendingCustomer is null || string.IsNullOrWhiteSpace(_actionReason))
+            return;
+
+        _dialogVisible = false;
+
+        try
+        {
+            var request = new ManageAccountRequest
+            {
+                AccountId = _pendingCustomer.AccountId,
+                Action = _pendingAction,
+                Reason = _actionReason,
+                AdminId = "current-admin"
+            };
+
+            var response = await AdminClient.ManageAccountAsync(request);
+
+            if (response.Success)
+            {
+                Snackbar.Add($"Successfully performed {_pendingActionName} on {_pendingCustomer.FullName}.", Severity.Success);
+                if (_table is not null)
+                {
+                    await _table.ReloadServerData();
+                }
+            }
+            else
+            {
+                Snackbar.Add($"Action failed: {response.Message}", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to {_pendingActionName}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _pendingCustomer = null;
+            _actionReason = string.Empty;
+        }
+    }
+
+    private static string GetActionName(AccountAction action)
+    {
+        return action switch
+        {
+            AccountAction.Activate => "Activate",
+            AccountAction.Suspend => "Suspend",
+            AccountAction.Close => "Close",
+            AccountAction.Freeze => "Freeze",
+            AccountAction.Unfreeze => "Unfreeze",
+            AccountAction.ResetPin => "Reset PIN",
+            _ => action.ToString()
+        };
+    }
+
+    private static Color GetStatusColor(string status)
+    {
+        return status.ToUpperInvariant() switch
+        {
+            "ACTIVE" => Color.Success,
+            "SUSPENDED" => Color.Warning,
+            "FROZEN" => Color.Info,
+            "CLOSED" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private static string FormatMoney(Money? money)
+    {
+        if (money is null || string.IsNullOrEmpty(money.Amount))
+            return "ZWG 0.00";
+
+        var amount = decimal.Parse(money.Amount);
+        return $"ZWG {amount:N2}";
+    }
+
+    private static string FormatTimestamp(Timestamp? timestamp)
+    {
+        if (timestamp is null)
+            return "-";
+
+        return timestamp.ToDateTime().ToString("yyyy-MM-dd HH:mm");
+    }
+}

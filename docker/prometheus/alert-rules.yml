@@ -1,0 +1,64 @@
+groups:
+  - name: unibank-service-alerts
+    rules:
+      # ── HighErrorRate ──────────────────────────────────────────────────
+      # Fires when the HTTP 5xx error rate exceeds 1 % of total requests
+      # for any service over a 5-minute window.
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (job) (rate(http_requests_received_total{code=~"5.."}[5m]))
+            /
+            sum by (job) (rate(http_requests_received_total[5m]))
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: >-
+            Service {{ $labels.job }} is returning more than 1 % server
+            errors over the last 5 minutes (current value: {{ $value | humanizePercentage }}).
+
+      # ── HighLatency ────────────────────────────────────────────────────
+      # Fires when the p95 HTTP request duration exceeds 2 seconds for
+      # any service over a 5-minute window.
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (job, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ $labels.job }}"
+          description: >-
+            Service {{ $labels.job }} p95 latency is above 2 s for the last
+            5 minutes (current value: {{ $value | humanizeDuration }}).
+
+      # ── ServiceDown ────────────────────────────────────────────────────
+      # Fires when a scrape target has been unreachable for 1 minute.
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: >-
+            Prometheus has been unable to scrape {{ $labels.instance }}
+            (job {{ $labels.job }}) for more than 1 minute.
+
+      # ── HighMemoryUsage ────────────────────────────────────────────────
+      # Fires when a .NET service's working set exceeds 512 MB for 10 min.
+      - alert: HighMemoryUsage
+        expr: process_working_set_bytes > 536870912
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: >-
+            Service {{ $labels.job }} working set has exceeded 512 MB for
+            the last 10 minutes (current value: {{ $value | humanize1024 }}B).

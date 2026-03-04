@@ -1,0 +1,89 @@
+syntax = "proto3";
+package unibank.v1.agents;
+option csharp_namespace = "UniBank.Protos.Agents";
+
+import "Protos/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Agent service - handles cash-in, cash-out, and float management
+service AgentService {
+  rpc CashIn(CashInRequest) returns (CashOperationResponse);
+  rpc CashOut(CashOutRequest) returns (CashOperationResponse);
+  rpc GetFloatBalance(FloatBalanceRequest) returns (FloatBalanceResponse);
+  rpc GetCommissionReport(CommissionReportRequest) returns (CommissionReportResponse);
+  rpc GetTransactionReceipt(GetReceiptRequest) returns (TransactionReceiptResponse);
+}
+
+message CashInRequest {
+  string agent_id = 1;
+  string customer_phone = 2;
+  unibank.v1.common.Money amount = 3;
+  string agent_pin = 4;
+}
+
+message CashOutRequest {
+  string agent_id = 1;
+  string customer_account_id = 2;
+  unibank.v1.common.Money amount = 3;
+  string customer_pin = 4;
+  string agent_pin = 5;
+}
+
+message CashOperationResponse {
+  bool success = 1;
+  string message = 2;
+  string transaction_id = 3;
+  string reference = 4;
+  unibank.v1.common.Money amount = 5;
+  unibank.v1.common.Money commission = 6;
+  unibank.v1.common.Money new_float_balance = 7;
+  google.protobuf.Timestamp completed_at = 8;
+}
+
+message FloatBalanceRequest {
+  string agent_id = 1;
+}
+
+message FloatBalanceResponse {
+  string agent_id = 1;
+  unibank.v1.common.Money float_balance = 2;
+  unibank.v1.common.Money float_limit = 3;
+  unibank.v1.common.Money available_float = 4;
+}
+
+message CommissionReportRequest {
+  string agent_id = 1;
+  unibank.v1.common.DateRange date_range = 2;
+}
+
+message CommissionReportResponse {
+  string agent_id = 1;
+  unibank.v1.common.Money total_commission = 2;
+  int32 total_transactions = 3;
+  repeated CommissionLineItem items = 4;
+}
+
+message CommissionLineItem {
+  string transaction_type = 1;
+  int32 count = 2;
+  unibank.v1.common.Money total_amount = 3;
+  unibank.v1.common.Money total_commission = 4;
+}
+
+message GetReceiptRequest {
+  string transaction_id = 1;
+  string agent_id = 2;
+}
+
+message TransactionReceiptResponse {
+  string receipt_number = 1;
+  string transaction_type = 2;
+  string customer_phone = 3;
+  unibank.v1.common.Money amount = 4;
+  unibank.v1.common.Money commission = 5;
+  unibank.v1.common.Money net_amount = 6;
+  string agent_name = 7;
+  string reference = 8;
+  google.protobuf.Timestamp timestamp = 9;
+  string status = 10;
+}

@@ -1,0 +1,32 @@
+<variant
+    name="debug"
+    package="com.unibank.shared"
+    minSdkVersion="26"
+    targetSdkVersion="26"
+    debuggable="true"
+    mergedManifest="build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml"
+    proguardFiles="build/intermediates/default_proguard_files/global/proguard-android.txt-8.9.1"
+    partialResultsDir="build/intermediates/lint_partial_results/debug/lintAnalyzeDebug/out"
+    desugaredMethodsFiles="/home/wmapundu/.gradle/caches/8.11.1/transforms/8fef346ab451ffdcc794ab80cca53dcb/transformed/D8BackportedDesugaredMethods.txt">
+  <buildFeatures
+      namespacing="REQUIRED"/>
+  <sourceProviders>
+    <sourceProvider
+        manifests="src/androidMain/AndroidManifest.xml"
+        javaDirectories="src/main/java:src/debug/java:src/androidMain/kotlin:src/main/kotlin:src/debug/kotlin"
+        resDirectories="src/main/res:src/androidMain/res:src/debug/res:src/androidDebug/res"
+        assetsDirectories="src/main/assets:src/androidMain/assets:src/debug/assets:src/androidDebug/assets"/>
+  </sourceProviders>
+  <testSourceProviders>
+  </testSourceProviders>
+  <testFixturesSourceProviders>
+  </testFixturesSourceProviders>
+  <artifact
+      classOutputs="build/intermediates/javac/debug/compileDebugJavaWithJavac/classes:build/tmp/kotlin-classes/debug:build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar"
+      type="MAIN"
+      applicationId="com.unibank.shared"
+      generatedSourceFolders="build/generated/source/proto/debug/java:build/generated/source/proto/debug/kotlin:build/generated/source/proto/debug/grpc:build/generated/source/proto/debug/grpckt:build/generated/ap_generated_sources/debug/out"
+      generatedResourceFolders="build/generated/res/resValues/debug"
+      desugaredMethodsFiles="/home/wmapundu/.gradle/caches/8.11.1/transforms/8fef346ab451ffdcc794ab80cca53dcb/transformed/D8BackportedDesugaredMethods.txt">
+  </artifact>
+</variant>
