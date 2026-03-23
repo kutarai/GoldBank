@@ -1,0 +1,695 @@
+@page "/users"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.UserManagement)]
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>User Management - UniBank Admin</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" Style="flex:1">User Management</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.PersonAdd"
+               OnClick="OpenCreateDialog">
+        Create User
+    </MudButton>
+</MudStack>
+
+@* Filters *@
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect @bind-Value="_roleFilter"
+                       Label="Role"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       T="string">
+                <MudSelectItem Value="@("")">All Roles</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.Admin)">Admin</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.KycOfficer)">KYC Officer</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.FraudAnalyst)">Fraud Analyst</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.CustomerService)">Customer Service</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.LoanOfficer)">Loan Officer</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.ComplianceOfficer)">Compliance Officer</MudSelectItem>
+                <MudSelectItem Value="@(AdminRoles.BranchManager)">Branch Manager</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect @bind-Value="_statusFilter"
+                       Label="Status"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       T="string">
+                <MudSelectItem Value="@("")">All</MudSelectItem>
+                <MudSelectItem Value="@("active")">Active</MudSelectItem>
+                <MudSelectItem Value="@("inactive")">Inactive</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSelect @bind-Value="_branchFilter"
+                       Label="Branch"
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       T="string">
+                <MudSelectItem Value="@("")">All Branches</MudSelectItem>
+                @foreach (var branch in _branches)
+                {
+                    <MudSelectItem Value="@branch.Id">@branch.Name (@branch.Code)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Search"
+                       OnClick="LoadUsersAsync"
+                       Disabled="_loading"
+                       FullWidth="true">
+                Search
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@* Data Grid *@
+<MudTable Items="_users"
+          Dense="true"
+          Hover="true"
+          Striped="true"
+          Loading="_loading"
+          LoadingProgressColor="Color.Primary"
+          Breakpoint="Breakpoint.Sm"
+          Elevation="2">
+    <HeaderContent>
+        <MudTh>Username</MudTh>
+        <MudTh>Full Name</MudTh>
+        <MudTh>Email</MudTh>
+        <MudTh>Role</MudTh>
+        <MudTh>Branch</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Username">@context.Username</MudTd>
+        <MudTd DataLabel="Full Name">@context.FullName</MudTd>
+        <MudTd DataLabel="Email">@context.Email</MudTd>
+        <MudTd DataLabel="Role">
+            <MudChip T="string"
+                     Color="@GetRoleColor(context.Role)"
+                     Size="Size.Small">
+                @context.Role
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Branch">
+            @if (!string.IsNullOrEmpty(context.BranchId))
+            {
+                @(GetBranchName(context.BranchId))
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">—</MudText>
+            }
+        </MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string"
+                     Color="@(context.IsActive ? Color.Success : Color.Default)"
+                     Size="Size.Small">
+                @(context.IsActive ? "Active" : "Inactive")
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Actions">
+            <MudStack Row="true" Spacing="1">
+                <MudTooltip Text="Edit">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(context))" />
+                </MudTooltip>
+                @if (context.IsActive)
+                {
+                    <MudTooltip Text="Deactivate">
+                        <MudIconButton Icon="@Icons.Material.Filled.PersonOff"
+                                       Size="Size.Small"
+                                       Color="Color.Warning"
+                                       OnClick="@(() => OpenDeactivateDialog(context))" />
+                    </MudTooltip>
+                }
+                else
+                {
+                    <MudTooltip Text="Activate">
+                        <MudIconButton Icon="@Icons.Material.Filled.PersonAdd"
+                                       Size="Size.Small"
+                                       Color="Color.Success"
+                                       OnClick="@(() => ActivateUserAsync(context))" />
+                    </MudTooltip>
+                }
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No admin users found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new[] { 10, 25, 50 }" />
+    </PagerContent>
+</MudTable>
+
+@* Create / Edit User Dialog *@
+<MudDialog @bind-Visible="_userDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @(_isEditMode ? "Edit User" : "Create Admin User")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_form.Username"
+                              Label="Username"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Disabled="_isEditMode"
+                              Class="mb-3" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_form.FullName"
+                              Label="Full Name"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Class="mb-3" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_form.Email"
+                              Label="Email"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Email"
+                              Required="true"
+                              Class="mb-3" />
+            </MudItem>
+            @if (!_isEditMode)
+            {
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_form.Password"
+                                  Label="Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Password"
+                                  Required="true"
+                                  Class="mb-3" />
+                </MudItem>
+            }
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="_form.Role"
+                           Label="Role"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           Class="mb-3"
+                           T="string">
+                    <MudSelectItem Value="@(AdminRoles.Admin)">Admin</MudSelectItem>
+                    <MudSelectItem Value="@(AdminRoles.KycOfficer)">KYC Officer</MudSelectItem>
+                    <MudSelectItem Value="@(AdminRoles.FraudAnalyst)">Fraud Analyst</MudSelectItem>
+                    <MudSelectItem Value="@(AdminRoles.CustomerService)">Customer Service</MudSelectItem>
+                    <MudSelectItem Value="@(AdminRoles.LoanOfficer)">Loan Officer</MudSelectItem>
+                    <MudSelectItem Value="@(AdminRoles.ComplianceOfficer)">Compliance Officer</MudSelectItem>
+                    <MudSelectItem Value="@(AdminRoles.BranchManager)">Branch Manager</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect @bind-Value="_form.BranchId"
+                           Label="Branch (optional)"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Class="mb-3"
+                           T="string">
+                    <MudSelectItem Value="@("")">None</MudSelectItem>
+                    @foreach (var branch in _branches)
+                    {
+                        <MudSelectItem Value="@branch.Id">@branch.Name (@branch.Code)</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            @if (_form.Role == AdminRoles.Admin)
+            {
+                <MudItem xs="12">
+                    <MudSelect @bind-Value="_form.TenantId"
+                               Label="Tenant (Admin role only)"
+                               Variant="Variant.Outlined"
+                               Clearable="true"
+                               Class="mb-3"
+                               T="string">
+                        <MudSelectItem Value="@("")">Default Tenant</MudSelectItem>
+                        @foreach (var tenant in _tenants)
+                        {
+                            <MudSelectItem Value="@tenant.Id">@tenant.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            }
+            @if (_isEditMode)
+            {
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_form.IsActive"
+                               Label="Active"
+                               Color="Color.Success" />
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseUserDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(_submitting || !IsFormValid())"
+                   OnClick="SubmitUserAsync">
+            @if (_submitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(_isEditMode ? "Save Changes" : "Create User")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@* Deactivate Confirmation Dialog *@
+<MudDialog @bind-Visible="_deactivateDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Deactivate User</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-3">
+            Are you sure you want to deactivate <strong>@_pendingUser?.FullName</strong>
+            (@_pendingUser?.Username)?
+        </MudText>
+        <MudTextField @bind-Value="_deactivateReason"
+                      Label="Reason"
+                      Variant="Variant.Outlined"
+                      Lines="3"
+                      Required="true"
+                      RequiredError="A reason is required." />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDeactivateDialog">Cancel</MudButton>
+        <MudButton Color="Color.Warning"
+                   Variant="Variant.Filled"
+                   Disabled="@(_submitting || string.IsNullOrWhiteSpace(_deactivateReason))"
+                   OnClick="ConfirmDeactivateAsync">
+            @if (_submitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Deactivate
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // -------------------------------------------------------------------------
+    // State
+    // -------------------------------------------------------------------------
+
+    private bool _loading;
+    private bool _submitting;
+
+    private List<AdminUserResponse> _users = [];
+    private List<BranchResponse> _branches = [];
+
+    // Placeholder tenant list — populated from a real source once a ListTenants
+    // RPC is added; for now we fall back to this static seed.
+    private List<(string Id, string Name)> _tenants =
+    [
+        ("default",  "Default Tenant"),
+        ("tenant_a", "Tenant A"),
+        ("tenant_b", "Tenant B"),
+    ];
+
+    // Filters
+    private string _roleFilter   = string.Empty;
+    private string _statusFilter = string.Empty;
+    private string _branchFilter = string.Empty;
+
+    // Dialog options
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth         = MaxWidth.Medium,
+        FullWidth        = true,
+    };
+
+    // User dialog
+    private bool _userDialogVisible;
+    private bool _isEditMode;
+    private string _editingUserId = string.Empty;
+    private UserFormModel _form = new();
+
+    // Deactivate dialog
+    private bool _deactivateDialogVisible;
+    private AdminUserResponse? _pendingUser;
+    private string _deactivateReason = string.Empty;
+
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadBranchesAsync(), LoadUsersAsync());
+    }
+
+    // -------------------------------------------------------------------------
+    // Data loading
+    // -------------------------------------------------------------------------
+
+    private async Task LoadBranchesAsync()
+    {
+        try
+        {
+            var response = await AdminClient.ListBranchesAsync(new ListBranchesRequest
+            {
+                ActiveOnly = true,
+                Pagination = new PaginationRequest { Page = 1, PageSize = 200 }
+            });
+
+            _branches = response.Branches.ToList();
+        }
+        catch (Exception ex)
+        {
+            // Non-fatal — branch dropdown will simply be empty.
+            Snackbar.Add($"Could not load branches: {ex.Message}", Severity.Warning);
+        }
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new ListAdminUsersRequest
+            {
+                RoleFilter = _roleFilter  ?? string.Empty,
+                ActiveOnly = _statusFilter == "active",
+                Pagination = new PaginationRequest { Page = 1, PageSize = 100 }
+            };
+
+            var response = await AdminClient.ListAdminUsersAsync(request);
+            var users    = response.Users.ToList();
+
+            // Client-side branch filter (proto has no branch_id filter field).
+            if (!string.IsNullOrEmpty(_branchFilter))
+                users = users.Where(u => u.BranchId == _branchFilter).ToList();
+
+            // Client-side inactive filter when "inactive" is selected explicitly.
+            if (_statusFilter == "inactive")
+                users = users.Where(u => !u.IsActive).ToList();
+
+            _users = users;
+        }
+        catch (Grpc.Core.RpcException ex) when (
+            ex.StatusCode == Grpc.Core.StatusCode.Unimplemented ||
+            ex.StatusCode == Grpc.Core.StatusCode.Unavailable)
+        {
+            // Handler not yet implemented — fall back to stub data so the page
+            // remains usable during development.
+            Snackbar.Add("User management RPC not yet implemented — showing stub data.", Severity.Info);
+            _users = GetStubUsers();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load users: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Create dialog
+    // -------------------------------------------------------------------------
+
+    private void OpenCreateDialog()
+    {
+        _isEditMode    = false;
+        _editingUserId = string.Empty;
+        _form          = new UserFormModel();
+        _userDialogVisible = true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Edit dialog
+    // -------------------------------------------------------------------------
+
+    private void OpenEditDialog(AdminUserResponse user)
+    {
+        _isEditMode    = true;
+        _editingUserId = user.Id;
+        _form = new UserFormModel
+        {
+            Username = user.Username,
+            FullName = user.FullName,
+            Email    = user.Email,
+            Role     = user.Role,
+            BranchId = user.BranchId,
+            TenantId = user.TenantId,
+            IsActive = user.IsActive,
+        };
+        _userDialogVisible = true;
+    }
+
+    private void CloseUserDialog() => _userDialogVisible = false;
+
+    private async Task SubmitUserAsync()
+    {
+        if (!IsFormValid()) return;
+
+        _submitting = true;
+
+        try
+        {
+            if (_isEditMode)
+            {
+                var req = new UpdateAdminUserRequest
+                {
+                    Id       = _editingUserId,
+                    FullName = _form.FullName,
+                    Email    = _form.Email,
+                    Role     = _form.Role,
+                    BranchId = _form.BranchId ?? string.Empty,
+                    IsActive = _form.IsActive,
+                };
+                await AdminClient.UpdateAdminUserAsync(req);
+                Snackbar.Add($"User '{_form.Username}' updated successfully.", Severity.Success);
+            }
+            else
+            {
+                var req = new CreateAdminUserRequest
+                {
+                    Username = _form.Username,
+                    FullName = _form.FullName,
+                    Email    = _form.Email,
+                    Role     = _form.Role,
+                    BranchId = _form.BranchId  ?? string.Empty,
+                    TenantId = _form.TenantId  ?? string.Empty,
+                    Password = _form.Password,
+                };
+                await AdminClient.CreateAdminUserAsync(req);
+                Snackbar.Add($"User '{_form.Username}' created successfully.", Severity.Success);
+            }
+
+            _userDialogVisible = false;
+            await LoadUsersAsync();
+        }
+        catch (Grpc.Core.RpcException ex) when (
+            ex.StatusCode == Grpc.Core.StatusCode.Unimplemented ||
+            ex.StatusCode == Grpc.Core.StatusCode.Unavailable)
+        {
+            Snackbar.Add("Save RPC not yet implemented on the server.", Severity.Warning);
+            _userDialogVisible = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving user: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Deactivate dialog
+    // -------------------------------------------------------------------------
+
+    private void OpenDeactivateDialog(AdminUserResponse user)
+    {
+        _pendingUser          = user;
+        _deactivateReason     = string.Empty;
+        _deactivateDialogVisible = true;
+    }
+
+    private void CloseDeactivateDialog()
+    {
+        _deactivateDialogVisible = false;
+        _pendingUser             = null;
+        _deactivateReason        = string.Empty;
+    }
+
+    private async Task ConfirmDeactivateAsync()
+    {
+        if (_pendingUser is null || string.IsNullOrWhiteSpace(_deactivateReason))
+            return;
+
+        _submitting = true;
+
+        try
+        {
+            var req = new DeactivateAdminUserRequest
+            {
+                Id      = _pendingUser.Id,
+                AdminId = "current-admin",
+                Reason  = _deactivateReason,
+            };
+            await AdminClient.DeactivateAdminUserAsync(req);
+            Snackbar.Add($"User '{_pendingUser.FullName}' deactivated.", Severity.Success);
+            _deactivateDialogVisible = false;
+            await LoadUsersAsync();
+        }
+        catch (Grpc.Core.RpcException ex) when (
+            ex.StatusCode == Grpc.Core.StatusCode.Unimplemented ||
+            ex.StatusCode == Grpc.Core.StatusCode.Unavailable)
+        {
+            Snackbar.Add("Deactivate RPC not yet implemented on the server.", Severity.Warning);
+            _deactivateDialogVisible = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deactivating user: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+            _pendingUser      = null;
+            _deactivateReason = string.Empty;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Activate (inline — no dialog needed)
+    // -------------------------------------------------------------------------
+
+    private async Task ActivateUserAsync(AdminUserResponse user)
+    {
+        try
+        {
+            var req = new UpdateAdminUserRequest
+            {
+                Id       = user.Id,
+                FullName = user.FullName,
+                Email    = user.Email,
+                Role     = user.Role,
+                BranchId = user.BranchId,
+                IsActive = true,
+            };
+            await AdminClient.UpdateAdminUserAsync(req);
+            Snackbar.Add($"User '{user.FullName}' activated.", Severity.Success);
+            await LoadUsersAsync();
+        }
+        catch (Grpc.Core.RpcException ex) when (
+            ex.StatusCode == Grpc.Core.StatusCode.Unimplemented ||
+            ex.StatusCode == Grpc.Core.StatusCode.Unavailable)
+        {
+            Snackbar.Add("Activate RPC not yet implemented on the server.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error activating user: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private bool IsFormValid()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Username) ||
+            string.IsNullOrWhiteSpace(_form.FullName)  ||
+            string.IsNullOrWhiteSpace(_form.Email)      ||
+            string.IsNullOrWhiteSpace(_form.Role))
+            return false;
+
+        if (!_isEditMode && string.IsNullOrWhiteSpace(_form.Password))
+            return false;
+
+        return true;
+    }
+
+    private string GetBranchName(string branchId)
+    {
+        var branch = _branches.FirstOrDefault(b => b.Id == branchId);
+        return branch is not null ? $"{branch.Name} ({branch.Code})" : branchId;
+    }
+
+    private static Color GetRoleColor(string role) => role switch
+    {
+        AdminRoles.Admin             => Color.Error,
+        AdminRoles.KycOfficer        => Color.Info,
+        AdminRoles.FraudAnalyst      => Color.Warning,
+        AdminRoles.CustomerService   => Color.Success,
+        AdminRoles.LoanOfficer       => Color.Tertiary,
+        AdminRoles.ComplianceOfficer => Color.Dark,
+        AdminRoles.BranchManager     => Color.Primary,
+        _                            => Color.Default
+    };
+
+    // Stub data used when the gRPC handler is not yet implemented.
+    private static List<AdminUserResponse> GetStubUsers() =>
+    [
+        new AdminUserResponse
+        {
+            Id       = "stub-001",
+            Username = "admin",
+            FullName = "System Administrator",
+            Email    = "admin@unibank.local",
+            Role     = AdminRoles.Admin,
+            IsActive = true,
+        },
+        new AdminUserResponse
+        {
+            Id       = "stub-002",
+            Username = "kyc",
+            FullName = "KYC Officer",
+            Email    = "kyc@unibank.local",
+            Role     = AdminRoles.KycOfficer,
+            IsActive = true,
+        },
+        new AdminUserResponse
+        {
+            Id       = "stub-003",
+            Username = "branch",
+            FullName = "Branch Manager",
+            Email    = "branch@unibank.local",
+            Role     = AdminRoles.BranchManager,
+            IsActive = false,
+        },
+    ];
+
+    // -------------------------------------------------------------------------
+    // Form model
+    // -------------------------------------------------------------------------
+
+    private sealed class UserFormModel
+    {
+        public string  Username { get; set; } = string.Empty;
+        public string  FullName { get; set; } = string.Empty;
+        public string  Email    { get; set; } = string.Empty;
+        public string  Password { get; set; } = string.Empty;
+        public string  Role     { get; set; } = string.Empty;
+        public string? BranchId { get; set; }
+        public string? TenantId { get; set; }
+        public bool    IsActive { get; set; } = true;
+    }
+}
