@@ -20,6 +20,15 @@ service AdminService {
   // STORY-072: Fraud detection RPCs
   rpc GetFraudAlerts(GetFraudAlertsRequest) returns (GetFraudAlertsResponse);
   rpc ReviewFraudAlert(ReviewFraudAlertRequest) returns (unibank.v1.common.StatusResponse);
+  // EPIC-019: User management RPCs
+  rpc ListAdminUsers(ListAdminUsersRequest) returns (ListAdminUsersResponse);
+  rpc CreateAdminUser(CreateAdminUserRequest) returns (AdminUserResponse);
+  rpc UpdateAdminUser(UpdateAdminUserRequest) returns (AdminUserResponse);
+  rpc DeactivateAdminUser(DeactivateAdminUserRequest) returns (unibank.v1.common.StatusResponse);
+  // EPIC-019: Branch management RPCs
+  rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
+  rpc CreateBranch(CreateBranchRequest) returns (BranchResponse);
+  rpc UpdateBranch(UpdateBranchRequest) returns (BranchResponse);
 }
 
 message SearchCustomersRequest {
@@ -194,4 +203,94 @@ message DisputeResponse {
 message ListDisputesResponse {
   repeated DisputeResponse disputes = 1;
   unibank.v1.common.PaginationResponse pagination = 2;
+}
+
+// EPIC-019: User management messages
+message ListAdminUsersRequest {
+  string tenant_id = 1;
+  string role_filter = 2;
+  bool active_only = 3;
+  unibank.v1.common.PaginationRequest pagination = 4;
+}
+
+message ListAdminUsersResponse {
+  repeated AdminUserResponse users = 1;
+  unibank.v1.common.PaginationResponse pagination = 2;
+}
+
+message AdminUserResponse {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string full_name = 4;
+  string role = 5;
+  string branch_id = 6;
+  string tenant_id = 7;
+  bool is_active = 8;
+}
+
+message CreateAdminUserRequest {
+  string username = 1;
+  string email = 2;
+  string full_name = 3;
+  string role = 4;
+  string branch_id = 5;
+  string tenant_id = 6;
+  string password = 7;
+}
+
+message UpdateAdminUserRequest {
+  string id = 1;
+  string email = 2;
+  string full_name = 3;
+  string role = 4;
+  string branch_id = 5;
+  bool is_active = 6;
+}
+
+message DeactivateAdminUserRequest {
+  string id = 1;
+  string admin_id = 2;
+  string reason = 3;
+}
+
+// EPIC-019: Branch management messages
+message ListBranchesRequest {
+  string tenant_id = 1;
+  bool active_only = 2;
+  unibank.v1.common.PaginationRequest pagination = 3;
+}
+
+message ListBranchesResponse {
+  repeated BranchResponse branches = 1;
+  unibank.v1.common.PaginationResponse pagination = 2;
+}
+
+message BranchResponse {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  string address = 4;
+  string city = 5;
+  string phone = 6;
+  string tenant_id = 7;
+  bool is_active = 8;
+}
+
+message CreateBranchRequest {
+  string name = 1;
+  string code = 2;
+  string address = 3;
+  string city = 4;
+  string phone = 5;
+  string tenant_id = 6;
+}
+
+message UpdateBranchRequest {
+  string id = 1;
+  string name = 2;
+  string address = 3;
+  string city = 4;
+  string phone = 5;
+  bool is_active = 6;
 }

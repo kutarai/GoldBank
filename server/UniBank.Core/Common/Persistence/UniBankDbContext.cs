@@ -19,8 +19,12 @@ using UniBank.Core.Modules.FraudDetection.Domain.Entities;
 using UniBank.Core.Modules.FraudDetection.Infrastructure.Persistence;
 using UniBank.Core.Modules.Loans.Domain.Entities;
 using UniBank.Core.Modules.Loans.Infrastructure.Persistence;
+using UniBank.Core.Modules.CardTransactions.Domain.Entities;
+using UniBank.Core.Modules.CardTransactions.Infrastructure.Persistence;
 using UniBank.Core.Modules.WhiteLabel.Domain.Entities;
 using UniBank.Core.Modules.WhiteLabel.Infrastructure.Persistence;
+using UniBank.Core.Modules.AI.Domain.Entities;
+using UniBank.Core.Modules.AI.Infrastructure.Persistence;
 using UniBank.SharedKernel.Domain;
 using UniBank.SharedKernel.MultiTenancy;
 
@@ -66,6 +70,9 @@ public class UniBankDbContext : DbContext
     public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();
     public DbSet<Dispute> Disputes => Set<Dispute>();
 
+    // Sprint 19 - Branch management (EPIC-019)
+    public DbSet<Branch> Branches => Set<Branch>();
+
     // Sprint 8 - Fraud Detection (STORY-072)
     public DbSet<FraudAlert> FraudAlerts => Set<FraudAlert>();
     public DbSet<FraudRule> FraudRules => Set<FraudRule>();
@@ -73,6 +80,14 @@ public class UniBankDbContext : DbContext
     // Loans module
     public DbSet<Loan> Loans => Set<Loan>();
     public DbSet<LoanPayment> LoanPayments => Set<LoanPayment>();
+
+    // Sprint 9 - Card Transactions module (EPIC-015)
+    public DbSet<CardTransaction> CardTransactions => Set<CardTransaction>();
+
+    // Sprint 11-14 - AI module (EPIC-017)
+    public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
+    public DbSet<AiInteraction> AiInteractions => Set<AiInteraction>();
+    public DbSet<TransactionDispute> TransactionDisputes => Set<TransactionDispute>();
 
     // Sprint 6 - WhiteLabel module (STORY-068, STORY-070)
     public DbSet<TenantBranding> TenantBrandings => Set<TenantBranding>();
@@ -126,9 +141,20 @@ public class UniBankDbContext : DbContext
         modelBuilder.ApplyConfiguration(new SystemConfigEntityConfiguration());
         modelBuilder.ApplyConfiguration(new DisputeEntityConfiguration());
 
+        // Sprint 19 - Branch management (EPIC-019)
+        modelBuilder.ApplyConfiguration(new BranchEntityConfiguration());
+
         // Sprint 8 - Fraud Detection module (STORY-072)
         modelBuilder.ApplyConfiguration(new FraudAlertEntityConfiguration());
         modelBuilder.ApplyConfiguration(new FraudRuleEntityConfiguration());
+
+        // Sprint 9 - Card Transactions module (EPIC-015)
+        modelBuilder.ApplyConfiguration(new CardTransactionEntityConfiguration());
+
+        // Sprint 11-14 - AI module (EPIC-017)
+        modelBuilder.ApplyConfiguration(new KycVerificationEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new AiInteractionEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new TransactionDisputeEntityConfiguration());
 
         // Sprint 6 - WhiteLabel module (STORY-068, STORY-070)
         modelBuilder.ApplyConfiguration(new TenantBrandingEntityConfiguration());
