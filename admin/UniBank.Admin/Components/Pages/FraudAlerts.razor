@@ -1,5 +1,7 @@
 @page "/fraud"
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.FraudAccess)]
 @inject AdminService.AdminServiceClient AdminClient
 @inject ISnackbar Snackbar
 
@@ -7,6 +9,32 @@
 
 <MudText Typo="Typo.h4" Class="mb-4">Fraud Alert Management</MudText>
 
+@* ── Stats Cards ─────────────────────────────────────────────────────────── *@
+<MudGrid Class="mb-6">
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2"
+                  Style="border-top: 4px solid var(--mud-palette-error);">
+            <MudText Typo="Typo.h3" Color="Color.Error">@_statsActiveHigh</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Active High Alerts</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2"
+                  Style="border-top: 4px solid var(--mud-palette-warning);">
+            <MudText Typo="Typo.h3" Color="Color.Warning">@_statsUnderInvestigation</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Under Investigation</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2"
+                  Style="border-top: 4px solid var(--mud-palette-success);">
+            <MudText Typo="Typo.h3" Color="Color.Success">@_statsResolvedToday</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Resolved Today</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@* ── Filters ─────────────────────────────────────────────────────────────── *@
 <MudPaper Class="pa-4 mb-4">
     <MudGrid>
         <MudItem xs="12" sm="6" md="3">
@@ -38,6 +66,7 @@
     </MudGrid>
 </MudPaper>
 
+@* ── Alerts Table ─────────────────────────────────────────────────────────── *@
 <MudTable Items="_alerts" Dense="true" Hover="true" Striped="true" Loading="_loading" Breakpoint="Breakpoint.Sm">
     <HeaderContent>
         <MudTh>Alert ID</MudTh>
@@ -76,6 +105,11 @@
         </MudTd>
         <MudTd DataLabel="Created">@FormatTimestamp(context.CreatedAt)</MudTd>
         <MudTd DataLabel="Actions">
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Visibility"
+                       OnClick="() => OpenDetailDialog(context)">
+                View
+            </MudButton>
             @if (context.Status?.ToLowerInvariant() is "new" or "")
             {
                 <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
@@ -93,25 +127,222 @@
     </PagerContent>
 </MudTable>
 
-@* Review Fraud Alert Dialog *@
+@* ── Detail / Investigation Dialog ───────────────────────────────────────── *@
+<MudDialog @bind-Visible="_detailDialogVisible" Options="_wideDialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Security" Color="Color.Warning" />
+            <MudText Typo="Typo.h6">Alert Detail</MudText>
+            @if (_detailAlert is not null)
+            {
+                <MudChip T="string" Color="@GetSeverityColor(_detailAlert.Severity)" Size="Size.Small" Class="ml-2">
+                    @_detailAlert.Severity
+                </MudChip>
+                <MudChip T="string" Color="@GetAlertStatusColor(_detailAlert.Status)" Size="Size.Small">
+                    @_detailAlert.Status
+                </MudChip>
+            }
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        @if (_detailAlert is not null)
+        {
+            @* Transaction context *@
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Account ID</MudText>
+                    <MudText Typo="Typo.body1">@_detailAlert.AccountId</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Transaction ID</MudText>
+                    <MudText Typo="Typo.body1">@_detailAlert.TransactionId</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Alert Type</MudText>
+                    <MudText Typo="Typo.body1">@_detailAlert.AlertType</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Created</MudText>
+                    <MudText Typo="Typo.body1">@FormatTimestamp(_detailAlert.CreatedAt)</MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Description</MudText>
+                    <MudText Typo="Typo.body1">@_detailAlert.Description</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="mb-4" />
+
+            @* Alert type badge + description context *@
+            <MudPaper Elevation="0" Class="pa-3 mb-4" Style="background-color: var(--mud-palette-background-grey);">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Policy" Size="Size.Small" Color="Color.Warning" />
+                    <MudText Typo="Typo.subtitle2" Color="Color.Warning">Alert Context</MudText>
+                </MudStack>
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                    <MudChip T="string" Color="Color.Warning" Variant="Variant.Outlined" Size="Size.Small">
+                        @_detailAlert.AlertType
+                    </MudChip>
+                    <MudChip T="string" Color="@GetSeverityColor(_detailAlert.Severity)" Variant="Variant.Outlined" Size="Size.Small">
+                        @_detailAlert.Severity severity
+                    </MudChip>
+                </MudStack>
+            </MudPaper>
+
+            @* Investigation Timeline *@
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Investigation Timeline</MudText>
+            <MudTimeline TimelineOrientation="TimelineOrientation.Horizontal" TimelinePosition="TimelinePosition.Top" Class="mb-4">
+                <MudTimelineItem Color="Color.Error" Variant="Variant.Filled" Size="Size.Small">
+                    <ItemContent>
+                        <MudText Typo="Typo.caption" Align="Align.Center">Alert Created</MudText>
+                        <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary">
+                            @FormatTimestamp(_detailAlert.CreatedAt)
+                        </MudText>
+                    </ItemContent>
+                </MudTimelineItem>
+                <MudTimelineItem Color="@(_detailAlert.Status?.ToLowerInvariant() is "reviewed" or "escalated" or "dismissed" ? Color.Warning : Color.Default)"
+                                 Variant="@(_detailAlert.Status?.ToLowerInvariant() is "reviewed" or "escalated" or "dismissed" ? Variant.Filled : Variant.Outlined)"
+                                 Size="Size.Small">
+                    <ItemContent>
+                        <MudText Typo="Typo.caption" Align="Align.Center">Under Investigation</MudText>
+                    </ItemContent>
+                </MudTimelineItem>
+                <MudTimelineItem Color="@(_detailAlert.Status?.ToLowerInvariant() is "dismissed" or "reviewed" ? Color.Success : Color.Default)"
+                                 Variant="@(_detailAlert.Status?.ToLowerInvariant() is "dismissed" or "reviewed" ? Variant.Filled : Variant.Outlined)"
+                                 Size="Size.Small">
+                    <ItemContent>
+                        <MudText Typo="Typo.caption" Align="Align.Center">Resolved / Dismissed</MudText>
+                    </ItemContent>
+                </MudTimelineItem>
+            </MudTimeline>
+
+            @* Assign to Me / Investigation Notes *@
+            @if (_detailAlert.Status?.ToLowerInvariant() is "new" or "")
+            {
+                <MudDivider Class="mb-3" />
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.AssignmentInd"
+                               OnClick="AssignToMe"
+                               Disabled="_submitting">
+                        Assign to Me
+                    </MudButton>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Marks this alert as under investigation and assigns it to your account.
+                    </MudText>
+                </MudStack>
+                <MudTextField @bind-Value="_investigationNotes" Label="Investigation Notes" Variant="Variant.Outlined"
+                              Lines="3" Class="mb-3"
+                              Placeholder="Enter initial observations or findings..." />
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseDetailDialog">Close</MudButton>
+        @if (_detailAlert?.Status?.ToLowerInvariant() is "new" or "")
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       OnClick="() => OpenReviewDialogFromDetail()">
+                Open Investigation
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@* ── Review / Resolution Dialog ───────────────────────────────────────────── *@
 <MudDialog @bind-Visible="_reviewDialogVisible" Options="_dialogOptions">
     <TitleContent>
         <MudText Typo="Typo.h6">Review Fraud Alert</MudText>
     </TitleContent>
     <DialogContent>
+        @* Resolution type selection *@
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Resolution Action</MudText>
         <MudSelect @bind-Value="_reviewDecision" Label="Decision" Variant="Variant.Outlined" Required="true" Class="mb-3">
             <MudSelectItem Value="@("approve")">Approve</MudSelectItem>
-            <MudSelectItem Value="@("dismiss")">Dismiss</MudSelectItem>
+            <MudSelectItem Value="@("dismiss")">Dismiss (False Positive)</MudSelectItem>
             <MudSelectItem Value="@("escalate")">Escalate</MudSelectItem>
+            <MudSelectItem Value="@("block_account")">Block Account</MudSelectItem>
+            <MudSelectItem Value="@("create_investigation")">Create Investigation</MudSelectItem>
         </MudSelect>
-        <MudTextField @bind-Value="_reviewNotes" Label="Notes" Variant="Variant.Outlined" Lines="3" Class="mb-3" />
-        <MudCheckBox @bind-Value="_reviewSuspendAccount" Label="Suspend Account" Color="Color.Error" Class="mb-3" />
+
+        @* Investigation notes *@
+        <MudTextField @bind-Value="_reviewNotes" Label="Investigation Notes" Variant="Variant.Outlined"
+                      Lines="3" Class="mb-3"
+                      HelperText="Document your findings and rationale for this decision." />
+
+        @* Legacy suspend checkbox – kept for backward compat, hidden when block_account chosen *@
+        @if (_reviewDecision != "block_account")
+        {
+            <MudCheckBox @bind-Value="_reviewSuspendAccount" Label="Suspend Account" Color="Color.Error" Class="mb-3" />
+        }
+
+        @* Block account warning *@
+        @if (_reviewDecision == "block_account")
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-3">
+                <MudText Typo="Typo.body2">
+                    <strong>Warning:</strong> Blocking this account will immediately prevent the customer from
+                    performing any transactions. Please confirm you want to proceed.
+                </MudText>
+            </MudAlert>
+        }
+
+        @* Create investigation info *@
+        @if (_reviewDecision == "create_investigation")
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-3">
+                <MudText Typo="Typo.body2">
+                    A formal investigation case will be opened and assigned to the Fraud team queue.
+                </MudText>
+            </MudAlert>
+        }
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="CancelReviewDialog">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_submitting" OnClick="SubmitReview">
+        @if (_reviewDecision == "block_account")
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Filled" Disabled="_submitting"
+                       StartIcon="@Icons.Material.Filled.Block"
+                       OnClick="OpenBlockConfirmDialog">
+                Block Account
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="_submitting" OnClick="SubmitReview">
+                @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Submit Review
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@* ── Block Account Confirmation Dialog ───────────────────────────────────── *@
+<MudDialog @bind-Visible="_blockConfirmDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Block" Color="Color.Error" />
+            <MudText Typo="Typo.h6" Color="Color.Error">Confirm Account Block</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Error" Class="mb-3">
+            You are about to <strong>block</strong> account
+            <strong>@_blockTargetAccountId</strong>.
+            This action will immediately suspend all transactions on this account.
+        </MudAlert>
+        <MudText Typo="Typo.body2" Class="mb-3">
+            Are you sure you want to proceed? This action can only be reversed by a
+            senior administrator.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CancelBlockConfirmDialog">Cancel</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" Disabled="_submitting"
+                   StartIcon="@Icons.Material.Filled.Block"
+                   OnClick="SubmitReview">
             @if (_submitting) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
-            Submit Review
+            Confirm Block
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -125,8 +356,26 @@
     private int _pageSize = 25;
     private bool _submitting;
 
+    // Stats
+    private int _statsActiveHigh;
+    private int _statsUnderInvestigation;
+    private int _statsResolvedToday;
+
     private List<FraudAlertSummary> _alerts = new();
-    private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    private readonly DialogOptions _wideDialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true
+    };
 
     // Review dialog state
     private bool _reviewDialogVisible;
@@ -134,6 +383,15 @@
     private string _reviewDecision = "approve";
     private string _reviewNotes = "";
     private bool _reviewSuspendAccount;
+
+    // Detail dialog state
+    private bool _detailDialogVisible;
+    private FraudAlertSummary? _detailAlert;
+    private string _investigationNotes = "";
+
+    // Block confirmation dialog state
+    private bool _blockConfirmDialogVisible;
+    private string _blockTargetAccountId = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -171,6 +429,7 @@
 
             var response = await AdminClient.GetFraudAlertsAsync(request);
             _alerts = response.Alerts.ToList();
+            ComputeStats();
         }
         catch (Exception ex)
         {
@@ -183,9 +442,82 @@
         }
     }
 
+    private void ComputeStats()
+    {
+        var today = DateTime.UtcNow.Date;
+        _statsActiveHigh = _alerts.Count(a =>
+            a.Severity?.ToLowerInvariant() == "high" &&
+            a.Status?.ToLowerInvariant() is "new" or "escalated");
+
+        _statsUnderInvestigation = _alerts.Count(a =>
+            a.Status?.ToLowerInvariant() is "reviewed" or "escalated");
+
+        _statsResolvedToday = _alerts.Count(a =>
+            (a.Status?.ToLowerInvariant() is "dismissed" or "reviewed") &&
+            a.CreatedAt?.ToDateTime().Date == today);
+    }
+
+    // ── Detail dialog ────────────────────────────────────────────────────────
+
+    private void OpenDetailDialog(FraudAlertSummary alert)
+    {
+        _detailAlert = alert;
+        _investigationNotes = "";
+        _detailDialogVisible = true;
+    }
+
+    private void CloseDetailDialog() => _detailDialogVisible = false;
+
+    private void OpenReviewDialogFromDetail()
+    {
+        if (_detailAlert is null) return;
+        _detailDialogVisible = false;
+        OpenReviewDialog(_detailAlert);
+    }
+
+    // ── Assign to Me ─────────────────────────────────────────────────────────
+
+    private async Task AssignToMe()
+    {
+        if (_detailAlert is null) return;
+        _submitting = true;
+
+        try
+        {
+            // Set the alert as under review by submitting with "approve" status
+            // and the investigation notes captured so far.
+            var request = new ReviewFraudAlertRequest
+            {
+                AlertId = _detailAlert.AlertId,
+                AdminId = "admin",
+                Decision = "approve",
+                Notes = string.IsNullOrWhiteSpace(_investigationNotes)
+                    ? "Assigned to analyst for investigation."
+                    : _investigationNotes,
+                SuspendAccount = false
+            };
+
+            await AdminClient.ReviewFraudAlertAsync(request);
+            Snackbar.Add("Alert assigned to you and marked as under investigation.", Severity.Success);
+            _detailDialogVisible = false;
+            await LoadAlerts();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error assigning alert: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    // ── Review dialog ────────────────────────────────────────────────────────
+
     private void OpenReviewDialog(FraudAlertSummary alert)
     {
         _reviewAlertId = alert.AlertId;
+        _blockTargetAccountId = alert.AccountId;
         _reviewDecision = "approve";
         _reviewNotes = "";
         _reviewSuspendAccount = false;
@@ -194,24 +526,39 @@
 
     private void CancelReviewDialog() => _reviewDialogVisible = false;
 
+    // ── Block confirmation ────────────────────────────────────────────────────
+
+    private void OpenBlockConfirmDialog()
+    {
+        _blockConfirmDialogVisible = true;
+    }
+
+    private void CancelBlockConfirmDialog() => _blockConfirmDialogVisible = false;
+
+    // ── Submit review ─────────────────────────────────────────────────────────
+
     private async Task SubmitReview()
     {
         _submitting = true;
 
         try
         {
+            var decision = _reviewDecision;
+            var shouldBlock = decision == "block_account";
+
             var request = new ReviewFraudAlertRequest
             {
                 AlertId = _reviewAlertId,
                 AdminId = "admin",
-                Decision = _reviewDecision,
+                Decision = shouldBlock ? "escalate" : decision,
                 Notes = _reviewNotes ?? "",
-                SuspendAccount = _reviewSuspendAccount
+                SuspendAccount = shouldBlock || _reviewSuspendAccount
             };
 
             await AdminClient.ReviewFraudAlertAsync(request);
             Snackbar.Add("Fraud alert reviewed successfully.", Severity.Success);
             _reviewDialogVisible = false;
+            _blockConfirmDialogVisible = false;
             await LoadAlerts();
         }
         catch (Exception ex)
@@ -223,6 +570,8 @@
             _submitting = false;
         }
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static string FormatTimestamp(Timestamp? timestamp)
     {
@@ -242,18 +591,18 @@
 
     private static Color GetSeverityColor(string severity) => severity?.ToLowerInvariant() switch
     {
-        "high" => Color.Error,
+        "high"   => Color.Error,
         "medium" => Color.Warning,
-        "low" => Color.Info,
-        _ => Color.Default
+        "low"    => Color.Info,
+        _        => Color.Default
     };
 
     private static Color GetAlertStatusColor(string status) => status?.ToLowerInvariant() switch
     {
-        "new" => Color.Error,
-        "reviewed" => Color.Success,
+        "new"       => Color.Error,
+        "reviewed"  => Color.Success,
         "escalated" => Color.Warning,
         "dismissed" => Color.Default,
-        _ => Color.Default
+        _           => Color.Default
     };
 }

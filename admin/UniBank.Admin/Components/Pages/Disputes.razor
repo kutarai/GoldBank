@@ -1,5 +1,7 @@
 @page "/disputes"
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.DisputeAccess)]
 @inject AdminService.AdminServiceClient AdminClient
 @inject ISnackbar Snackbar
 
@@ -7,6 +9,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-4">Dispute Management</MudText>
 
+@* ── Filters ─────────────────────────────────────────────────────────────── *@
 <MudPaper Class="pa-4 mb-4">
     <MudGrid>
         <MudItem xs="12" sm="6" md="4">
@@ -34,7 +37,26 @@
     </MudGrid>
 </MudPaper>
 
-<MudTable Items="_disputes" Dense="true" Hover="true" Striped="true" Loading="_loading" Breakpoint="Breakpoint.Sm">
+@* ── Queue View Tabs ──────────────────────────────────────────────────────── *@
+<MudPaper Elevation="1" Class="pa-2 mb-4">
+    <MudChipSet T="string" @bind-SelectedValue="_queueTab" SelectionMode="SelectionMode.SingleSelection">
+        <MudChip T="string" Value="@("all")" Color="Color.Default" Variant="Variant.Text">
+            All (@_disputes.Count)
+        </MudChip>
+        <MudChip T="string" Value="@("open")" Color="Color.Info" Variant="Variant.Text">
+            Open (@_disputes.Count(d => d.Status?.ToLowerInvariant() == "open"))
+        </MudChip>
+        <MudChip T="string" Value="@("under_review")" Color="Color.Warning" Variant="Variant.Text">
+            Investigating (@_disputes.Count(d => d.Status?.ToLowerInvariant() == "under_review"))
+        </MudChip>
+        <MudChip T="string" Value="@("resolved")" Color="Color.Success" Variant="Variant.Text">
+            Resolved (@_disputes.Count(d => d.Status?.ToLowerInvariant() is "resolved" or "rejected"))
+        </MudChip>
+    </MudChipSet>
+</MudPaper>
+
+@* ── Disputes Table ───────────────────────────────────────────────────────── *@
+<MudTable Items="FilteredDisputes" Dense="true" Hover="true" Striped="true" Loading="_loading" Breakpoint="Breakpoint.Sm">
     <HeaderContent>
         <MudTh>ID</MudTh>
         <MudTh>Transaction ID</MudTh>
@@ -44,8 +66,9 @@
         <MudTh>Status</MudTh>
         <MudTh>Resolution</MudTh>
         <MudTh>Refund Amount</MudTh>
-        <MudTh>Admin</MudTh>
-        <MudTh>Created</MudTh>
+        <MudTh>Agent</MudTh>
+        <MudTh>Filed</MudTh>
+        <MudTh>SLA</MudTh>
         <MudTh>Resolved</MudTh>
         <MudTh>Actions</MudTh>
     </HeaderContent>
@@ -70,11 +93,30 @@
         </MudTd>
         <MudTd DataLabel="Resolution">@(string.IsNullOrEmpty(context.Resolution) ? "-" : context.Resolution)</MudTd>
         <MudTd DataLabel="Refund Amount">@FormatMoney(context.RefundAmount)</MudTd>
-        <MudTd DataLabel="Admin">@context.AdminUserId</MudTd>
-        <MudTd DataLabel="Created">@FormatTimestamp(context.CreatedAt)</MudTd>
+        <MudTd DataLabel="Agent">@(string.IsNullOrEmpty(context.AdminUserId) ? "-" : context.AdminUserId)</MudTd>
+        <MudTd DataLabel="Filed">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.body2">@FormatTimestamp(context.CreatedAt)</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@RelativeTime(context.CreatedAt)</MudText>
+            </MudStack>
+        </MudTd>
+        <MudTd DataLabel="SLA">
+            @if (context.Status?.ToLowerInvariant() is not "resolved" and not "rejected")
+            {
+                var slaColor = GetSlaColor(context.CreatedAt);
+                var slaLabel = GetSlaLabel(context.CreatedAt);
+                <MudChip T="string" Color="@slaColor" Size="Size.Small" Variant="Variant.Outlined">
+                    @slaLabel
+                </MudChip>
+            }
+            else
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">N/A</MudText>
+            }
+        </MudTd>
         <MudTd DataLabel="Resolved">@FormatTimestamp(context.ResolvedAt)</MudTd>
         <MudTd DataLabel="Actions">
-            @if (context.Status?.ToLowerInvariant() != "resolved")
+            @if (context.Status?.ToLowerInvariant() != "resolved" && context.Status?.ToLowerInvariant() != "rejected")
             {
                 <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
                            OnClick="() => OpenResolveDialog(context)">
@@ -91,7 +133,7 @@
     </PagerContent>
 </MudTable>
 
-@* Create Dispute Dialog *@
+@* ── Create Dispute Dialog ────────────────────────────────────────────────── *@
 <MudDialog @bind-Visible="_createDialogVisible" Options="_dialogOptions">
     <TitleContent>
         <MudText Typo="Typo.h6">Create New Dispute</MudText>
@@ -111,18 +153,43 @@
     </DialogActions>
 </MudDialog>
 
-@* Resolve Dispute Dialog *@
+@* ── Resolve Dispute Dialog ───────────────────────────────────────────────── *@
 <MudDialog @bind-Visible="_resolveDialogVisible" Options="_dialogOptions">
     <TitleContent>
         <MudText Typo="Typo.h6">Resolve Dispute</MudText>
     </TitleContent>
     <DialogContent>
-        <MudTextField @bind-Value="_resolveResolution" Label="Resolution" Variant="Variant.Outlined" Lines="3" Required="true" Class="mb-3" />
-        <MudSelect @bind-Value="_resolveStatus" Label="Status" Variant="Variant.Outlined" Class="mb-3">
-            <MudSelectItem Value="@("resolved")">Resolved</MudSelectItem>
+        @* Resolution type dropdown *@
+        <MudSelect @bind-Value="_resolveStatus" Label="Resolution Type" Variant="Variant.Outlined" Required="true" Class="mb-3">
+            <MudSelectItem Value="@("resolved")">Resolved in Favor of Customer</MudSelectItem>
             <MudSelectItem Value="@("rejected")">Rejected</MudSelectItem>
+            <MudSelectItem Value="@("partially_resolved")">Partially Resolved</MudSelectItem>
         </MudSelect>
-        <MudTextField @bind-Value="_resolveRefundAmount" Label="Refund Amount (ZWG)" Variant="Variant.Outlined" InputType="InputType.Number" Class="mb-3" />
+
+        @* Assign to agent *@
+        <MudSelect @bind-Value="_resolveAssignedAgent" Label="Assign to Agent" Variant="Variant.Outlined" Class="mb-3"
+                   HelperText="Optionally assign this resolution to a specific agent.">
+            <MudSelectItem Value="@("")">— Unassigned —</MudSelectItem>
+            <MudSelectItem Value="@("agent_01")">Agent 01</MudSelectItem>
+            <MudSelectItem Value="@("agent_02")">Agent 02</MudSelectItem>
+            <MudSelectItem Value="@("agent_03")">Agent 03</MudSelectItem>
+            <MudSelectItem Value="@("supervisor")">Supervisor</MudSelectItem>
+        </MudSelect>
+
+        @* Resolution notes – required *@
+        <MudTextField @bind-Value="_resolveResolution" Label="Resolution Notes" Variant="Variant.Outlined"
+                      Lines="3" Required="true" Class="mb-3"
+                      HelperText="Required. Describe the outcome and rationale." />
+
+        @* Refund amount *@
+        <MudTextField @bind-Value="_resolveRefundAmount" Label="Refund Amount (ZWG)" Variant="Variant.Outlined"
+                      InputType="InputType.Number" Class="mb-3" />
+
+        @* Notify customer checkbox *@
+        <MudCheckBox @bind-Value="_resolveNotifyCustomer" Label="Notify customer of resolution" Color="Color.Primary" Class="mb-1" />
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3 ml-8">
+            An in-app and SMS notification will be sent to the customer.
+        </MudText>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="CancelResolveDialog">Cancel</MudButton>
@@ -136,13 +203,29 @@
 @code {
     private string _accountIdFilter = "";
     private string _statusFilter = "";
+    private string _queueTab = "all";
     private bool _loading;
     private int _page = 1;
     private int _pageSize = 25;
     private bool _submitting;
 
     private List<DisputeResponse> _disputes = new();
-    private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    // Queue view filtered list
+    private IEnumerable<DisputeResponse> FilteredDisputes => _queueTab switch
+    {
+        "open"         => _disputes.Where(d => d.Status?.ToLowerInvariant() == "open"),
+        "under_review" => _disputes.Where(d => d.Status?.ToLowerInvariant() == "under_review"),
+        "resolved"     => _disputes.Where(d => d.Status?.ToLowerInvariant() is "resolved" or "rejected"),
+        _              => _disputes
+    };
 
     // Create dialog state
     private bool _createDialogVisible;
@@ -157,6 +240,8 @@
     private string _resolveResolution = "";
     private string _resolveStatus = "resolved";
     private string _resolveRefundAmount = "";
+    private bool _resolveNotifyCustomer = true;
+    private string _resolveAssignedAgent = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -250,6 +335,8 @@
         _resolveResolution = "";
         _resolveStatus = "resolved";
         _resolveRefundAmount = "";
+        _resolveNotifyCustomer = true;
+        _resolveAssignedAgent = dispute.AdminUserId ?? "";
         _resolveDialogVisible = true;
     }
 
@@ -259,7 +346,7 @@
     {
         if (string.IsNullOrWhiteSpace(_resolveResolution))
         {
-            Snackbar.Add("Resolution text is required.", Severity.Warning);
+            Snackbar.Add("Resolution notes are required.", Severity.Warning);
             return;
         }
 
@@ -267,12 +354,14 @@
 
         try
         {
+            var adminId = string.IsNullOrWhiteSpace(_resolveAssignedAgent) ? "admin" : _resolveAssignedAgent;
+
             var request = new ResolveDisputeRequest
             {
                 DisputeId = _resolveDisputeId,
                 Resolution = _resolveResolution,
                 Status = _resolveStatus,
-                AdminId = "admin"
+                AdminId = adminId
             };
 
             if (!string.IsNullOrWhiteSpace(_resolveRefundAmount))
@@ -281,7 +370,9 @@
             }
 
             await AdminClient.ResolveDisputeAsync(request);
-            Snackbar.Add("Dispute resolved successfully.", Severity.Success);
+
+            var notifyMsg = _resolveNotifyCustomer ? " Customer has been notified." : "";
+            Snackbar.Add($"Dispute resolved successfully.{notifyMsg}", Severity.Success);
             _resolveDialogVisible = false;
             await LoadDisputes();
         }
@@ -294,6 +385,46 @@
             _submitting = false;
         }
     }
+
+    // ── SLA helpers ───────────────────────────────────────────────────────────
+
+    private static Color GetSlaColor(Timestamp? createdAt)
+    {
+        if (createdAt is null) return Color.Default;
+        var age = DateTime.UtcNow - createdAt.ToDateTime();
+        return age.TotalHours switch
+        {
+            < 24  => Color.Success,
+            < 72  => Color.Warning,
+            _     => Color.Error
+        };
+    }
+
+    private static string GetSlaLabel(Timestamp? createdAt)
+    {
+        if (createdAt is null) return "-";
+        var age = DateTime.UtcNow - createdAt.ToDateTime();
+        return age.TotalHours switch
+        {
+            < 24  => "On Time",
+            < 72  => "At Risk",
+            _     => "Overdue"
+        };
+    }
+
+    private static string RelativeTime(Timestamp? createdAt)
+    {
+        if (createdAt is null) return "";
+        var age = DateTime.UtcNow - createdAt.ToDateTime();
+
+        if (age.TotalMinutes < 1)  return "just now";
+        if (age.TotalMinutes < 60) return $"{(int)age.TotalMinutes}m ago";
+        if (age.TotalHours   < 24) return $"{(int)age.TotalHours}h ago";
+        if (age.TotalDays    < 30) return $"{(int)age.TotalDays}d ago";
+        return createdAt.ToDateTime().ToString("yyyy-MM-dd");
+    }
+
+    // ── General helpers ───────────────────────────────────────────────────────
 
     private static string FormatMoney(Money? money)
     {
@@ -322,10 +453,11 @@
 
     private static Color GetDisputeStatusColor(string status) => status?.ToLowerInvariant() switch
     {
-        "open" => Color.Info,
-        "under_review" => Color.Warning,
-        "resolved" => Color.Success,
-        "rejected" => Color.Error,
-        _ => Color.Default
+        "open"               => Color.Info,
+        "under_review"       => Color.Warning,
+        "resolved"           => Color.Success,
+        "rejected"           => Color.Error,
+        "partially_resolved" => Color.Warning,
+        _                    => Color.Default
     };
 }
