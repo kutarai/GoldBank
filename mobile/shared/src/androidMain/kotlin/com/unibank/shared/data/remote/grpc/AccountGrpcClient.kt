@@ -146,4 +146,59 @@ class AccountGrpcClient(channel: ManagedChannel) {
             .build()
         return stub.getTransactions(request).map { AccountMapper.toTransaction(it) }
     }
+
+    suspend fun listMyDisputes(accountId: String, statusFilter: String = "all"): Result<List<com.unibank.shared.domain.model.DisputeSummary>> =
+        grpcCall {
+            val request = ListMyDisputesRequest.newBuilder()
+                .setAccountId(accountId)
+                .setStatusFilter(statusFilter)
+                .build()
+            stub.listMyDisputes(request).disputesList.map { AccountMapper.toDisputeSummary(it) }
+        }
+
+    suspend fun getDisputeDetail(accountId: String, disputeId: String): Result<DisputeDetail> =
+        grpcCall {
+            val request = GetDisputeDetailRequest.newBuilder()
+                .setAccountId(accountId)
+                .setDisputeId(disputeId)
+                .build()
+            AccountMapper.toDisputeDetail(stub.getDisputeDetail(request))
+        }
+
+    suspend fun listMyFraudAlerts(accountId: String): Result<Pair<List<com.unibank.shared.domain.model.FraudAlertSummary>, Int>> =
+        grpcCall {
+            val request = ListMyFraudAlertsRequest.newBuilder()
+                .setAccountId(accountId)
+                .build()
+            val response = stub.listMyFraudAlerts(request)
+            Pair(response.alertsList.map { AccountMapper.toFraudAlertSummary(it) }, response.unreadCount)
+        }
+
+    suspend fun getFraudAlertDetail(accountId: String, alertId: String): Result<FraudAlertDetail> =
+        grpcCall {
+            val request = GetFraudAlertDetailRequest.newBuilder()
+                .setAccountId(accountId)
+                .setAlertId(alertId)
+                .build()
+            AccountMapper.toFraudAlertDetail(stub.getFraudAlertDetail(request))
+        }
+
+    suspend fun confirmTransaction(accountId: String, alertId: String): Result<Boolean> =
+        grpcCall {
+            val request = ConfirmTransactionRequest.newBuilder()
+                .setAccountId(accountId)
+                .setAlertId(alertId)
+                .build()
+            stub.confirmTransaction(request).success
+        }
+
+    suspend fun reportFraud(accountId: String, alertId: String, description: String): Result<String> =
+        grpcCall {
+            val request = ReportFraudRequest.newBuilder()
+                .setAccountId(accountId)
+                .setAlertId(alertId)
+                .setDescription(description)
+                .build()
+            stub.reportFraud(request).disputeReference
+        }
 }

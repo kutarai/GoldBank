@@ -74,6 +74,15 @@ object AccountMapper {
         kycLevel = response.kycLevel,
         createdAt = response.createdAt?.let { "${it.seconds}" } ?: "",
         lastLoginAt = response.lastLoginAt?.let { "${it.seconds}" } ?: "",
+        accounts = response.accountsList.map { acct ->
+            AccountSummary(
+                accountId = acct.accountId,
+                currency = acct.currency,
+                balance = toMoney(acct.balance),
+                availableBalance = toMoney(acct.availableBalance),
+                cardPanLast4 = acct.cardPanLast4,
+            )
+        },
     )
 
     fun toDeviceTransferInit(response: Proto.InitiateDeviceTransferResponse) = DeviceTransferInitResult(
@@ -101,6 +110,80 @@ object AccountMapper {
         createdAt = response.createdAt?.let { "${it.seconds}" } ?: "",
         completedAt = response.completedAt?.let { "${it.seconds}" } ?: "",
     )
+
+    fun toDisputeSummary(proto: Proto.DisputeSummary): DisputeSummary {
+        val money = proto.amount
+        return DisputeSummary(
+            disputeId = proto.disputeId,
+            reference = proto.reference,
+            transactionId = proto.transactionId,
+            disputeType = proto.disputeType,
+            priority = proto.priority,
+            status = proto.status,
+            amount = money?.amount ?: "0",
+            currency = money?.currency?.ifEmpty { "ZWG" } ?: "ZWG",
+            summary = proto.summary,
+            createdAt = proto.createdAt?.seconds?.times(1000) ?: 0L,
+            resolvedAt = proto.resolvedAt?.let { if (it.seconds > 0) it.seconds * 1000 else null },
+        )
+    }
+
+    fun toDisputeDetail(proto: Proto.DisputeDetailResponse): DisputeDetail {
+        val money = proto.amount
+        return DisputeDetail(
+            disputeId = proto.disputeId,
+            reference = proto.reference,
+            transactionId = proto.transactionId,
+            disputeType = proto.disputeType,
+            priority = proto.priority,
+            status = proto.status,
+            assignedTeam = proto.assignedTeam,
+            amount = money?.amount ?: "0",
+            currency = money?.currency?.ifEmpty { "ZWG" } ?: "ZWG",
+            userDescription = proto.userDescription,
+            aiSummary = proto.aiSummary,
+            aiRecommendedAction = proto.aiRecommendedAction,
+            classificationConfidence = proto.classificationConfidence,
+            resolutionNotes = proto.resolutionNotes.ifEmpty { null },
+            expectedResolution = proto.expectedResolution,
+            createdAt = proto.createdAt?.seconds?.times(1000) ?: 0L,
+            resolvedAt = proto.resolvedAt?.let { if (it.seconds > 0) it.seconds * 1000 else null },
+        )
+    }
+
+    fun toFraudAlertSummary(proto: Proto.FraudAlertSummary): FraudAlertSummary {
+        val money = proto.amount
+        return FraudAlertSummary(
+            alertId = proto.alertId,
+            transactionId = proto.transactionId,
+            transactionDescription = proto.transactionDescription,
+            amount = money?.amount ?: "0",
+            currency = money?.currency?.ifEmpty { "ZWG" } ?: "ZWG",
+            riskScore = proto.riskScore,
+            riskLevel = proto.riskLevel,
+            isRead = proto.isRead,
+            createdAt = proto.createdAt?.seconds?.times(1000) ?: 0L,
+        )
+    }
+
+    fun toFraudAlertDetail(proto: Proto.FraudAlertDetailResponse): FraudAlertDetail {
+        val money = proto.amount
+        return FraudAlertDetail(
+            alertId = proto.alertId,
+            transactionId = proto.transactionId,
+            transactionDescription = proto.transactionDescription,
+            amount = money?.amount ?: "0",
+            currency = money?.currency?.ifEmpty { "ZWG" } ?: "ZWG",
+            riskScore = proto.riskScore,
+            riskLevel = proto.riskLevel,
+            aiExplanation = proto.aiExplanation,
+            triggeredRules = proto.triggeredRulesList.toList(),
+            counterparty = proto.counterparty,
+            location = proto.location,
+            transactionAt = proto.transactionAt?.seconds?.times(1000) ?: 0L,
+            alertAt = proto.alertAt?.seconds?.times(1000) ?: 0L,
+        )
+    }
 
     private fun toMoney(proto: unibank.v1.common.Common.Money?): Money {
         if (proto == null) return Money.ZERO_ZWG
