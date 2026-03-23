@@ -55,9 +55,16 @@ import com.unibank.app.ui.kyc.KycDashboardScreen
 import com.unibank.app.ui.kyc.KycVerificationResultScreen
 import com.unibank.app.ui.kyc.ProofOfAddressScreen
 import com.unibank.app.ui.kyc.SelfieScreen
+import com.unibank.app.ui.dispute.DisputeDetailScreen
+import com.unibank.app.ui.dispute.DisputeListScreen
+import com.unibank.app.ui.dispute.DisputeWizardScreen
+import com.unibank.app.ui.fraud.FraudAlertDetailScreen
+import com.unibank.app.ui.fraud.FraudAlertListScreen
 import com.unibank.app.ui.scan.BillScanScreen
 import com.unibank.app.ui.scan.ChequeScanScreen
+import com.unibank.app.viewmodel.DisputeViewModel
 import com.unibank.app.viewmodel.DocumentScanViewModel
+import com.unibank.app.viewmodel.FraudAlertViewModel
 import com.unibank.app.ui.merchant.MerchantCommissionScreen
 import com.unibank.app.ui.profile.DeviceTransferScreen
 import com.unibank.app.ui.profile.EditProfileScreen
@@ -297,6 +304,8 @@ private fun MainNavHost(modifier: Modifier) {
                 viewModel = homeViewModel,
                 transactionId = route.transactionId,
                 onBack = { navController.popBackStack() },
+                onDispute = { txnId -> navController.navigate(Route.DisputeWizard(txnId)) },
+                onAttachReceipt = { /* Sprint 18 */ },
             )
         }
 
@@ -587,6 +596,58 @@ private fun MainNavHost(modifier: Modifier) {
                     }
                     navController.popBackStack()
                 },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Disputes (Sprint 17)
+        composable<Route.DisputeWizard> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.DisputeWizard>()
+            val disputeViewModel: DisputeViewModel = koinViewModel()
+            DisputeWizardScreen(
+                viewModel = disputeViewModel,
+                transactionId = route.transactionId,
+                onComplete = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.DisputeList> {
+            val disputeViewModel: DisputeViewModel = koinViewModel()
+            DisputeListScreen(
+                viewModel = disputeViewModel,
+                onDisputeClick = { navController.navigate(Route.DisputeDetail(it)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.DisputeDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.DisputeDetail>()
+            val disputeViewModel: DisputeViewModel = koinViewModel()
+            DisputeDetailScreen(
+                viewModel = disputeViewModel,
+                disputeId = route.disputeId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Fraud Alerts (Sprint 17)
+        composable<Route.FraudAlertList> {
+            val fraudViewModel: FraudAlertViewModel = koinViewModel()
+            FraudAlertListScreen(
+                viewModel = fraudViewModel,
+                onAlertClick = { navController.navigate(Route.FraudAlertDetail(it)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.FraudAlertDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.FraudAlertDetail>()
+            val fraudViewModel: FraudAlertViewModel = koinViewModel()
+            FraudAlertDetailScreen(
+                viewModel = fraudViewModel,
+                alertId = route.alertId,
+                onDisputeCreated = { navController.popBackStack() },
                 onBack = { navController.popBackStack() },
             )
         }

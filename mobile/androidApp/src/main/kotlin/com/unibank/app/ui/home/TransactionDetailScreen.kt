@@ -1,5 +1,6 @@
 package com.unibank.app.ui.home
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,13 +8,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -34,6 +39,8 @@ fun TransactionDetailScreen(
     viewModel: HomeViewModel,
     transactionId: String,
     onBack: () -> Unit,
+    onDispute: (String) -> Unit = {},
+    onAttachReceipt: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val transaction = remember(transactionId, uiState.recentTransactions) {
@@ -113,6 +120,40 @@ fun TransactionDetailScreen(
                 DetailRow("Completed", transaction.completedAt)
             }
             DetailRow("Transaction ID", transaction.transactionId)
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { onDispute(transactionId) },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Gavel,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text("Dispute")
+                }
+                OutlinedButton(
+                    onClick = onAttachReceipt,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Receipt,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text("Attach Receipt")
+                }
+            }
         }
     }
 }
