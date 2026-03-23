@@ -59,6 +59,12 @@ sealed interface Route {
     @Serializable data object LoanApply : Route
     @Serializable data class LoanDetail(val loanId: String) : Route
 
+    // Loan AI
+    @Serializable data object LoanEligibility : Route
+
+    // Notifications
+    @Serializable data object Notifications : Route
+
     // KYC
     @Serializable data object KycGraph : Route
     @Serializable data object KycDashboard : Route

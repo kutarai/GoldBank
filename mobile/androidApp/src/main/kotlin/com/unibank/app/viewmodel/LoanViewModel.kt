@@ -3,9 +3,11 @@ package com.unibank.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unibank.shared.data.local.SessionManager
+import com.unibank.shared.data.remote.grpc.AiGrpcClient
 import com.unibank.shared.data.remote.grpc.LoanGrpcClient
 import com.unibank.shared.domain.model.LoanApplicationResult
 import com.unibank.shared.domain.model.LoanDetail
+import com.unibank.shared.domain.model.LoanEligibility
 import com.unibank.shared.domain.model.LoanScheduleEntry
 import com.unibank.shared.domain.model.LoanSummary
 import com.unibank.shared.domain.util.Result
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 class LoanViewModel(
     private val loanClient: LoanGrpcClient,
     private val sessionManager: SessionManager,
+    private val aiClient: AiGrpcClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<LoanUiState>(LoanUiState.Idle)
@@ -36,6 +39,44 @@ class LoanViewModel(
 
     private val _schedule = MutableStateFlow<List<LoanScheduleEntry>>(emptyList())
     val schedule: StateFlow<List<LoanScheduleEntry>> = _schedule.asStateFlow()
+
+    private val _eligibility = MutableStateFlow<LoanEligibility?>(null)
+    val eligibility: StateFlow<LoanEligibility?> = _eligibility.asStateFlow()
+
+    private val _isCheckingEligibility = MutableStateFlow(false)
+    val isCheckingEligibility: StateFlow<Boolean> = _isCheckingEligibility.asStateFlow()
+
+    private val _eligibilityError = MutableStateFlow<String?>(null)
+    val eligibilityError: StateFlow<String?> = _eligibilityError.asStateFlow()
+
+    fun checkEligibility(amount: String, tenureMonths: Int, purpose: String) {
+        _isCheckingEligibility.value = true
+        _eligibility.value = null
+        _eligibilityError.value = null
+        viewModelScope.launch {
+            val accountId = sessionManager.getAccountId() ?: run {
+                _eligibilityError.value = "Session expired. Please log in again."
+                _isCheckingEligibility.value = false
+                return@launch
+            }
+            when (val result = aiClient.checkLoanEligibility(
+                accountId = accountId,
+                desiredAmount = amount,
+                currency = "ZWG",
+                tenureMonths = tenureMonths,
+                purpose = purpose,
+            )) {
+                is Result.Success -> _eligibility.value = result.data
+                is Result.Failure -> _eligibilityError.value = result.error.message
+            }
+            _isCheckingEligibility.value = false
+        }
+    }
+
+    fun resetEligibility() {
+        _eligibility.value = null
+        _eligibilityError.value = null
+    }
 
     fun applyForLoan(
         amount: String,
@@ -62,7 +103,7 @@ class LoanViewModel(
                         _uiState.value = LoanUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = LoanUiState.Error("Loan application failed")
+                is Result.Failure -> _uiState.value = LoanUiState.Error(result.error.message)
             }
         }
     }

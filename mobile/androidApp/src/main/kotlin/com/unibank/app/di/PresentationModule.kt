@@ -27,7 +27,7 @@ val presentationModule = module {
     viewModel { TransferViewModel(get(), get()) }
     viewModel { BillPayViewModel(get(), get()) }
     viewModel { AgentViewModel(get(), get()) }
-    viewModel { LoanViewModel(get(), get()) }
+    viewModel { LoanViewModel(get(), get(), get()) }
     viewModel { KycViewModel(get(), get(), get()) }
     viewModel { MerchantViewModel(get(), get()) }
     viewModel { ProfileViewModel(get(), get(), get()) }
