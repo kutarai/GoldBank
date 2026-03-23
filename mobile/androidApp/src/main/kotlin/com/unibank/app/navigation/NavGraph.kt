@@ -1,9 +1,13 @@
 package com.unibank.app.navigation
 
 import androidx.biometric.BiometricManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -11,13 +15,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.unibank.app.ui.chat.ChatScreen
+import com.unibank.app.ui.components.ChatFAB
+import com.unibank.app.viewmodel.ChatViewModel
 import com.unibank.app.ui.auth.BiometricPromptScreen
 import com.unibank.app.ui.auth.CreatePinScreen
 import com.unibank.app.ui.auth.LoginScreen
@@ -227,12 +238,15 @@ private fun AuthNavHost(modifier: Modifier, startAtLogin: Boolean) {
 @Composable
 private fun MainNavHost(modifier: Modifier) {
     val navController = rememberNavController()
+    var showChat by remember { mutableStateOf(false) }
+    val chatViewModel: ChatViewModel = org.koin.compose.viewmodel.koinViewModel()
 
-    NavHost(
-        navController = navController,
-        startDestination = Route.Home,
-        modifier = modifier,
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = Route.Home,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         // Home + Transactions (Phase 3)
         composable<Route.Home> {
             val homeViewModel: HomeViewModel = koinViewModel()
@@ -510,6 +524,30 @@ private fun MainNavHost(modifier: Modifier) {
             SecuritySettingsScreen(
                 viewModel = securityViewModel,
                 onBack = { navController.popBackStack() },
+            )
+        }
+        }
+
+        // ChatFAB overlay — only visible when chat is not open
+        if (!showChat) {
+            ChatFAB(
+                onClick = { showChat = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            )
+        }
+
+        // Fullscreen chat overlay
+        AnimatedVisibility(
+            visible = showChat,
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            ChatScreen(
+                viewModel = chatViewModel,
+                onBack = { showChat = false },
             )
         }
     }
