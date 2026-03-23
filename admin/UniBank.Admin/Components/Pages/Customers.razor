@@ -1,5 +1,7 @@
 @page "/customers"
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.CustomerAccess)]
 @inject AdminService.AdminServiceClient AdminClient
 @inject ISnackbar Snackbar
 
@@ -79,6 +81,11 @@
                      Size="Size.Small"
                      Dense="true"
                      AnchorOrigin="Origin.BottomLeft">
+                <MudMenuItem Icon="@Icons.Material.Filled.PersonSearch"
+                             OnClick="@(() => OpenDetailDialog(context))">
+                    View Details
+                </MudMenuItem>
+                <MudDivider />
                 <MudMenuItem OnClick="@(() => ExecuteActionAsync(context, AccountAction.Activate))">
                     Activate
                 </MudMenuItem>
@@ -107,6 +114,220 @@
         <MudTablePager />
     </PagerContent>
 </MudTable>
+
+@* ── Customer Detail Dialog ────────────────────────────────────────────── *@
+<MudDialog @bind-Visible="_detailDialogVisible" Options="_detailDialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">
+                Customer Profile — @(_detailCustomer?.FullName ?? "")
+            </MudText>
+        </MudStack>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_detailCustomer is not null)
+        {
+            <MudGrid Spacing="4">
+
+                @* Left column — Profile info + KYC *@
+                <MudItem xs="12" md="5">
+
+                    @* Avatar + status *@
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
+                        <MudAvatar Color="Color.Primary" Style="width:64px; height:64px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size:36px;" />
+                        </MudAvatar>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h6">@_detailCustomer.FullName</MudText>
+                            <MudChip T="string"
+                                     Color="@GetStatusColor(_detailCustomer.Status)"
+                                     Size="Size.Small">
+                                @_detailCustomer.Status
+                            </MudChip>
+                        </MudStack>
+                    </MudStack>
+
+                    @* Profile fields *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Profile Information</MudText>
+                    <MudSimpleTable Dense="true" Bordered="true" Striped="true" Class="mb-4">
+                        <tbody>
+                            <tr>
+                                <td><MudText Typo="Typo.caption" Color="Color.Secondary">Phone</MudText></td>
+                                <td><MudText Typo="Typo.body2">@_detailCustomer.PhoneNumber</MudText></td>
+                            </tr>
+                            <tr>
+                                <td><MudText Typo="Typo.caption" Color="Color.Secondary">Email</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @(_detailStub.Email ?? "—")
+                                    </MudText>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><MudText Typo="Typo.caption" Color="Color.Secondary">ID Number</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @(_detailStub.IdNumber ?? "—")
+                                    </MudText>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><MudText Typo="Typo.caption" Color="Color.Secondary">Member Since</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @FormatTimestamp(_detailCustomer.CreatedAt)
+                                    </MudText>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><MudText Typo="Typo.caption" Color="Color.Secondary">Last Login</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @FormatTimestamp(_detailCustomer.LastLoginAt)
+                                    </MudText>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    @* KYC status *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">KYC Status</MudText>
+                    <MudPaper Outlined="true" Class="pa-3 mb-4">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser"
+                                     Color="@GetKycColor(_detailCustomer.KycLevel)" />
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body1">
+                                    <strong>Level @_detailCustomer.KycLevel</strong>
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    KYC Verification Level
+                                </MudText>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+
+                    @* Counters — disputes & loans *@
+                    <MudGrid Spacing="2" Class="mb-2">
+                        <MudItem xs="6">
+                            <MudPaper Outlined="true" Class="pa-3 d-flex flex-column align-center">
+                                <MudText Typo="Typo.h5"
+                                         Color="@(_detailStub.ActiveDisputesCount > 0 ? Color.Warning : Color.Default)">
+                                    @_detailStub.ActiveDisputesCount
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Active Disputes</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudPaper Outlined="true" Class="pa-3 d-flex flex-column align-center">
+                                <MudText Typo="Typo.h5"
+                                         Color="@(_detailStub.ActiveLoansCount > 0 ? Color.Info : Color.Default)">
+                                    @_detailStub.ActiveLoansCount
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Active Loans</MudText>
+                            </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+
+                </MudItem>
+
+                @* Right column — Balances + recent transactions *@
+                <MudItem xs="12" md="7">
+
+                    @* Account balances *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Account Balances</MudText>
+                    <MudGrid Spacing="2" Class="mb-4">
+                        <MudItem xs="6">
+                            <MudPaper Outlined="true" Class="pa-3"
+                                      Style="border-top: 3px solid var(--mud-palette-primary);">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">ZWG Balance</MudText>
+                                <MudText Typo="Typo.h6" Color="Color.Primary">
+                                    ZWG @_detailStub.ZwgBalance.ToString("N2")
+                                </MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudPaper Outlined="true" Class="pa-3"
+                                      Style="border-top: 3px solid var(--mud-palette-success);">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">USD Balance</MudText>
+                                <MudText Typo="Typo.h6" Color="Color.Success">
+                                    USD @_detailStub.UsdBalance.ToString("N2")
+                                </MudText>
+                            </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+
+                    @* Recent transactions *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Recent Transactions</MudText>
+                    <MudSimpleTable Dense="true" Striped="true" Bordered="true" Class="mb-4">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tx in _detailStub.RecentTransactions)
+                            {
+                                <tr>
+                                    <td>
+                                        <MudText Typo="Typo.caption">
+                                            @tx.Date.ToString("yyyy-MM-dd")
+                                        </MudText>
+                                    </td>
+                                    <td>
+                                        <MudText Typo="Typo.body2">@tx.Description</MudText>
+                                    </td>
+                                    <td>
+                                        <MudText Typo="Typo.body2"
+                                                 Color="@(tx.IsDebit ? Color.Error : Color.Success)">
+                                            @(tx.IsDebit ? "-" : "+")@tx.Currency @tx.Amount.ToString("N2")
+                                        </MudText>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+
+                    @* Quick links *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Quick Links</MudText>
+                    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.VerifiedUser"
+                                   Href="/kyc">
+                            View KYC
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Warning"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Gavel"
+                                   Href="/disputes">
+                            View Disputes
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Info"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.AccountBalance"
+                                   Href="/loans">
+                            View Loans
+                        </MudButton>
+                    </MudStack>
+
+                </MudItem>
+
+            </MudGrid>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="CloseDetailDialog">Close</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @* Inline confirmation dialog *@
 <MudDialog @bind-Visible="_dialogVisible" Options="_dialogOptions">
@@ -142,13 +363,24 @@
     private string _statusFilter = string.Empty;
     private bool _loading;
 
-    // Dialog state
+    // ── Confirmation dialog state ────────────────────────────────────────────
     private bool _dialogVisible;
     private readonly DialogOptions _dialogOptions = new() { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
     private CustomerSummary? _pendingCustomer;
     private AccountAction _pendingAction;
     private string _pendingActionName = string.Empty;
     private string _actionReason = string.Empty;
+
+    // ── Customer detail dialog state ─────────────────────────────────────────
+    private bool _detailDialogVisible;
+    private readonly DialogOptions _detailDialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth         = MaxWidth.Large,
+        FullWidth        = true,
+    };
+    private CustomerSummary? _detailCustomer;
+    private CustomerDetailStub _detailStub = new();
 
     private async Task<TableData<CustomerSummary>> LoadCustomersAsync(TableState state, CancellationToken ct)
     {
@@ -303,5 +535,120 @@
             return "-";
 
         return timestamp.ToDateTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    // ── Customer detail dialog ───────────────────────────────────────────────
+
+    private void OpenDetailDialog(CustomerSummary customer)
+    {
+        _detailCustomer      = customer;
+        _detailStub          = BuildDetailStub(customer);
+        _detailDialogVisible = true;
+    }
+
+    private void CloseDetailDialog()
+    {
+        _detailDialogVisible = false;
+        _detailCustomer      = null;
+    }
+
+    /// <summary>
+    /// Builds stub supplementary data for the detail dialog.
+    /// Replace with real API calls once the admin GetCustomerDetail RPC is available.
+    /// </summary>
+    private static CustomerDetailStub BuildDetailStub(CustomerSummary customer)
+    {
+        // Derive seed from account id for deterministic stub values.
+        var seed = Math.Abs(customer.AccountId.GetHashCode());
+        var rng  = new Random(seed);
+
+        // Stub email and ID derived from phone to appear plausible.
+        var phoneDigits = new string(customer.PhoneNumber.Where(char.IsDigit).ToArray());
+        var emailUser   = customer.FullName.ToLowerInvariant()
+                              .Replace(" ", ".")
+                              .Replace("'", "");
+
+        return new CustomerDetailStub
+        {
+            Email               = $"{emailUser}@customers.unibank.zw",
+            IdNumber            = $"ZW-NID-{phoneDigits[^6..]}",
+            ZwgBalance          = Math.Round(rng.NextDouble() * 50_000, 2),
+            UsdBalance          = Math.Round(rng.NextDouble() * 5_000,  2),
+            ActiveDisputesCount = rng.Next(0, 3),
+            ActiveLoansCount    = rng.Next(0, 2),
+            RecentTransactions  =
+            [
+                new StubTransaction
+                {
+                    Date        = DateTime.UtcNow.AddDays(-1),
+                    Description = "Mobile Money Transfer",
+                    Amount      = 1_200m,
+                    Currency    = "ZWG",
+                    IsDebit     = true,
+                },
+                new StubTransaction
+                {
+                    Date        = DateTime.UtcNow.AddDays(-2),
+                    Description = "Salary Credit",
+                    Amount      = 18_500m,
+                    Currency    = "ZWG",
+                    IsDebit     = false,
+                },
+                new StubTransaction
+                {
+                    Date        = DateTime.UtcNow.AddDays(-3),
+                    Description = "ZESA Utility Payment",
+                    Amount      = 450m,
+                    Currency    = "ZWG",
+                    IsDebit     = true,
+                },
+                new StubTransaction
+                {
+                    Date        = DateTime.UtcNow.AddDays(-5),
+                    Description = "USD Wallet Top-Up",
+                    Amount      = 200m,
+                    Currency    = "USD",
+                    IsDebit     = false,
+                },
+                new StubTransaction
+                {
+                    Date        = DateTime.UtcNow.AddDays(-7),
+                    Description = "Loan Repayment",
+                    Amount      = 430m,
+                    Currency    = "ZWG",
+                    IsDebit     = true,
+                },
+            ],
+        };
+    }
+
+    private static Color GetKycColor(int kycLevel) => kycLevel switch
+    {
+        >= 3 => Color.Success,
+        2    => Color.Warning,
+        1    => Color.Info,
+        _    => Color.Default,
+    };
+
+    // ── Stub models for detail dialog ────────────────────────────────────────
+
+    private sealed class CustomerDetailStub
+    {
+        public string? Email              { get; init; }
+        public string? IdNumber           { get; init; }
+        public double  ZwgBalance         { get; init; }
+        public double  UsdBalance         { get; init; }
+        public int     ActiveDisputesCount { get; init; }
+        public int     ActiveLoansCount    { get; init; }
+        public List<StubTransaction> RecentTransactions { get; init; } = [];
+    }
+
+    private sealed class StubTransaction
+    {
+        public DateTime Date        { get; init; }
+        public string   Description { get; init; } = string.Empty;
+        public decimal  Amount      { get; init; }
+        public string   Currency    { get; init; } = "ZWG";
+        public bool     IsDebit     { get; init; }
     }
 }
