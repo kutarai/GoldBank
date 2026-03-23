@@ -166,6 +166,19 @@ class AiGrpcClient(channel: ManagedChannel) {
         AiMapper.toLoanDocVerification(stub.verifyLoanDocuments(request))
     }
 
+    /** Convenience wrapper that hardcodes DOCUMENT_TYPE_PAYSLIP for the loan apply flow. */
+    suspend fun verifyPayslip(
+        accountId: String,
+        documentImage: ByteArray,
+        declaredIncome: String,
+    ): Result<LoanDocVerification> = verifyLoanDocuments(
+        accountId = accountId,
+        loanApplicationId = "",
+        documentImage = documentImage,
+        documentType = DocumentType.DOCUMENT_TYPE_PAYSLIP,
+        declaredIncome = declaredIncome,
+    )
+
     suspend fun triageDispute(
         accountId: String,
         transactionId: String,

@@ -7,6 +7,7 @@ import com.unibank.shared.data.remote.grpc.AiGrpcClient
 import com.unibank.shared.data.remote.grpc.LoanGrpcClient
 import com.unibank.shared.domain.model.LoanApplicationResult
 import com.unibank.shared.domain.model.LoanDetail
+import com.unibank.shared.domain.model.LoanDocVerification
 import com.unibank.shared.domain.model.LoanEligibility
 import com.unibank.shared.domain.model.LoanScheduleEntry
 import com.unibank.shared.domain.model.LoanSummary
@@ -49,6 +50,15 @@ class LoanViewModel(
     private val _eligibilityError = MutableStateFlow<String?>(null)
     val eligibilityError: StateFlow<String?> = _eligibilityError.asStateFlow()
 
+    private val _loanDocVerification = MutableStateFlow<LoanDocVerification?>(null)
+    val loanDocVerification: StateFlow<LoanDocVerification?> = _loanDocVerification.asStateFlow()
+
+    private val _isVerifyingDoc = MutableStateFlow(false)
+    val isVerifyingDoc: StateFlow<Boolean> = _isVerifyingDoc.asStateFlow()
+
+    private val _docVerificationError = MutableStateFlow<String?>(null)
+    val docVerificationError: StateFlow<String?> = _docVerificationError.asStateFlow()
+
     fun checkEligibility(amount: String, tenureMonths: Int, purpose: String) {
         _isCheckingEligibility.value = true
         _eligibility.value = null
@@ -76,6 +86,33 @@ class LoanViewModel(
     fun resetEligibility() {
         _eligibility.value = null
         _eligibilityError.value = null
+    }
+
+    fun verifyLoanDocuments(documentBytes: ByteArray, declaredIncome: String) {
+        _isVerifyingDoc.value = true
+        _loanDocVerification.value = null
+        _docVerificationError.value = null
+        viewModelScope.launch {
+            val accountId = sessionManager.getAccountId() ?: run {
+                _docVerificationError.value = "Session expired. Please log in again."
+                _isVerifyingDoc.value = false
+                return@launch
+            }
+            when (val result = aiClient.verifyPayslip(
+                accountId = accountId,
+                documentImage = documentBytes,
+                declaredIncome = declaredIncome,
+            )) {
+                is Result.Success -> _loanDocVerification.value = result.data
+                is Result.Failure -> _docVerificationError.value = result.error.message
+            }
+            _isVerifyingDoc.value = false
+        }
+    }
+
+    fun resetDocVerification() {
+        _loanDocVerification.value = null
+        _docVerificationError.value = null
     }
 
     fun applyForLoan(

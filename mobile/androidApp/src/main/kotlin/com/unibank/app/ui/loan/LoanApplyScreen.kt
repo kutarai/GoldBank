@@ -1,14 +1,35 @@
 package com.unibank.app.ui.loan
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.kashif.cameraK.controller.CameraController
+import com.kashif.cameraK.enums.CameraLens
+import com.kashif.cameraK.enums.FlashMode
+import com.kashif.cameraK.enums.ImageFormat
+import com.kashif.cameraK.result.ImageCaptureResult
+import com.kashif.cameraK.ui.CameraPreview
 import com.unibank.app.ui.components.CurrencyAmountField
 import com.unibank.app.ui.components.ErrorDialog
 import com.unibank.app.ui.components.LoadingButton
@@ -16,10 +37,32 @@ import com.unibank.app.ui.components.PinInput
 import com.unibank.app.viewmodel.LoanUiState
 import com.unibank.app.viewmodel.LoanViewModel
 import com.unibank.shared.domain.util.MoneyFormatter
+import kotlinx.coroutines.launch
+import kotlin.math.pow
 
 private val tenureOptions = listOf(3, 6, 12, 18, 24)
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Interest rate tiers matching server-side CreditScoringEngine.GetInterestRate()
+// We show the mid-range rate (26%) as estimate; actual rate depends on credit score
+private const val ESTIMATED_ANNUAL_RATE = 0.26
+private const val DISPLAY_RATE_PERCENT = 18.5
+
+/**
+ * Calculate estimated monthly payment using amortization formula:
+ * M = P * [r(1+r)^n] / [(1+r)^n - 1]
+ */
+private fun calculateMonthlyPayment(principal: Double, annualRate: Double, months: Int): Double {
+    val monthlyRate = annualRate / 12.0
+    if (monthlyRate == 0.0) return principal / months
+    val factor = (1 + monthlyRate).pow(months)
+    return principal * (monthlyRate * factor) / (factor - 1)
+}
+
+private fun formatAmount(value: Double): String {
+    return "%,.2f".format(value)
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun LoanApplyScreen(
     viewModel: LoanViewModel,
@@ -27,7 +70,17 @@ fun LoanApplyScreen(
     onBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var amount by rememberSaveable { mutableStateOf("") }
+    val eligibility by viewModel.eligibility.collectAsState()
+    val loanDocVerification by viewModel.loanDocVerification.collectAsState()
+    val isVerifyingDoc by viewModel.isVerifyingDoc.collectAsState()
+    val docVerificationError by viewModel.docVerificationError.collectAsState()
+
+    // Pre-fill amount from eligibility if available
+    var amount by rememberSaveable {
+        mutableStateOf(eligibility?.maxAmount?.let {
+            it.toDoubleOrNull()?.let { d -> formatAmount(d) } ?: ""
+        } ?: "")
+    }
     var currency by rememberSaveable { mutableStateOf("ZWG") }
     var tenureMonths by rememberSaveable { mutableIntStateOf(12) }
     var purpose by rememberSaveable { mutableStateOf("") }
@@ -35,6 +88,36 @@ fun LoanApplyScreen(
     var step by rememberSaveable { mutableIntStateOf(0) } // 0=form, 1=pin, 2=result
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var tenureExpanded by remember { mutableStateOf(false) }
+
+    // Payslip upload state
+    var payslipBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var showPayslipCamera by rememberSaveable { mutableStateOf(false) }
+    var cameraController by remember { mutableStateOf<CameraController?>(null) }
+    var showCameraRationaleDialog by remember { mutableStateOf(false) }
+    val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Gallery picker launcher for payslip
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
+            if (bytes != null) {
+                payslipBytes = bytes
+                showPayslipCamera = false
+            }
+        }
+    }
+
+    LaunchedEffect(cameraPermission.status) {
+        if (cameraPermission.status is PermissionStatus.Denied &&
+            (cameraPermission.status as PermissionStatus.Denied).shouldShowRationale
+        ) {
+            showCameraRationaleDialog = true
+        }
+    }
 
     LaunchedEffect(uiState) {
         when (val state = uiState) {
@@ -54,6 +137,85 @@ fun LoanApplyScreen(
             message = message,
             onDismiss = { errorMessage = null },
         )
+    }
+
+    if (showCameraRationaleDialog) {
+        AlertDialog(
+            onDismissRequest = { showCameraRationaleDialog = false },
+            title = { Text("Camera Permission Required") },
+            text = { Text("Camera access is needed to capture your payslip.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCameraRationaleDialog = false
+                    cameraPermission.launchPermissionRequest()
+                }) { Text("Grant") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCameraRationaleDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    // Camera fullscreen overlay for payslip capture
+    if (showPayslipCamera && cameraPermission.status.isGranted) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            CameraPreview(
+                modifier = Modifier.fillMaxSize(),
+                cameraConfiguration = {
+                    setCameraLens(CameraLens.BACK)
+                    setFlashMode(FlashMode.OFF)
+                    setImageFormat(ImageFormat.JPEG)
+                    setDirectory(com.kashif.cameraK.enums.Directory.PICTURES)
+                },
+                onCameraControllerReady = { controller ->
+                    cameraController = controller
+                },
+            )
+
+            Text(
+                "Position your payslip clearly in frame",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp),
+            )
+
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                OutlinedButton(onClick = { showPayslipCamera = false }) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        scope.launch {
+                            cameraController?.let { controller ->
+                                when (val result = controller.takePictureToFile()) {
+                                    is ImageCaptureResult.SuccessWithFile -> {
+                                        payslipBytes = java.io.File(result.filePath).readBytes()
+                                        showPayslipCamera = false
+                                    }
+                                    is ImageCaptureResult.Success -> {
+                                        payslipBytes = result.byteArray
+                                        showPayslipCamera = false
+                                    }
+                                    is ImageCaptureResult.Error -> { /* handled silently */ }
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.size(72.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    Text("Capture", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+        return
     }
 
     Scaffold(
@@ -130,6 +292,247 @@ fun LoanApplyScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ── Interest Rate & Monthly Repayment Card ─────────────────
+                    val principal = amount.replace(",", "").toDoubleOrNull() ?: 0.0
+
+                    // Use eligibility rate if available, otherwise fall back to DISPLAY_RATE_PERCENT
+                    val displayRatePercent = eligibility?.let {
+                        (it.estimatedRateMin + it.estimatedRateMax) / 2.0
+                    } ?: DISPLAY_RATE_PERCENT
+                    val annualRate = displayRatePercent / 100.0
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        ),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Loan Estimate",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LoanInfoRow(
+                                "Current Interest Rate",
+                                "${"%.1f".format(displayRatePercent)}% p.a.",
+                            )
+                            if (principal > 0) {
+                                val monthlyPayment = calculateMonthlyPayment(principal, annualRate, tenureMonths)
+                                val totalRepayment = monthlyPayment * tenureMonths
+                                val totalInterest = totalRepayment - principal
+                                LoanInfoRow("Monthly Repayment", "$currency ${formatAmount(monthlyPayment)}")
+                                LoanInfoRow("Total Interest", "$currency ${formatAmount(totalInterest)}")
+                                LoanInfoRow("Total Repayment", "$currency ${formatAmount(totalRepayment)}")
+                            } else {
+                                Text(
+                                    "Enter an amount to see monthly repayment",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            val rateNote = if (eligibility != null) {
+                                "Rate based on your eligibility assessment"
+                            } else {
+                                "Actual rate depends on your credit score (18%–36% p.a.)"
+                            }
+                            Text(
+                                rateNote,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // ── Income Verification (Optional) ─────────────────────────
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Income Verification (Optional)",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Upload your payslip to speed up approval via AI document verification.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Payslip upload buttons
+                    if (payslipBytes == null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    if (cameraPermission.status.isGranted) {
+                                        showPayslipCamera = true
+                                    } else {
+                                        cameraPermission.launchPermissionRequest()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(
+                                    Icons.Filled.CameraAlt,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Take Photo")
+                            }
+                            OutlinedButton(
+                                onClick = { galleryLauncher.launch("image/*") },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Photo,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("From Gallery")
+                            }
+                        }
+                    } else {
+                        // Payslip uploaded — show verify / clear options and verification result
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            ),
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        "Payslip selected (${(payslipBytes!!.size / 1024)} KB)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                    TextButton(onClick = {
+                                        payslipBytes = null
+                                        viewModel.resetDocVerification()
+                                    }) {
+                                        Text("Remove")
+                                    }
+                                }
+
+                                // Verification result
+                                when {
+                                    loanDocVerification != null -> {
+                                        val verification = loanDocVerification!!
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        HorizontalDivider()
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            "Verification Result",
+                                            style = MaterialTheme.typography.labelMedium,
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        LoanInfoRow("Income", verification.extractedIncome)
+                                        LoanInfoRow("Employer", verification.extractedEmployer)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(
+                                                "Name Match",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Filled.CheckCircle,
+                                                contentDescription = if (verification.nameMatch) "Matched" else "No match",
+                                                tint = if (verification.nameMatch)
+                                                    MaterialTheme.colorScheme.primary
+                                                else
+                                                    MaterialTheme.colorScheme.outline,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                        }
+
+                                        // Variance warning
+                                        if (verification.incomeVariancePercent > 10.0) {
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                                ),
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Warning,
+                                                        contentDescription = "Warning",
+                                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                        modifier = Modifier.size(18.dp),
+                                                    )
+                                                    Text(
+                                                        "Income declared differs from payslip by ${"%.0f".format(verification.incomeVariancePercent)}%",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    docVerificationError != null -> {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            "Verification failed: $docVerificationError",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        LoadingButton(
+                                            text = "Retry Verification",
+                                            onClick = {
+                                                viewModel.verifyLoanDocuments(
+                                                    documentBytes = payslipBytes!!,
+                                                    declaredIncome = amount,
+                                                )
+                                            },
+                                            isLoading = isVerifyingDoc,
+                                            enabled = !isVerifyingDoc,
+                                        )
+                                    }
+
+                                    else -> {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        LoadingButton(
+                                            text = "Verify Payslip",
+                                            onClick = {
+                                                viewModel.verifyLoanDocuments(
+                                                    documentBytes = payslipBytes!!,
+                                                    declaredIncome = amount,
+                                                )
+                                            },
+                                            isLoading = isVerifyingDoc,
+                                            enabled = !isVerifyingDoc,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
