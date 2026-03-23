@@ -47,6 +47,7 @@ import com.unibank.app.ui.profile.DeviceTransferScreen
 import com.unibank.app.ui.profile.EditProfileScreen
 import com.unibank.app.ui.profile.NotificationSettingsScreen
 import com.unibank.app.ui.profile.ProfileScreen
+import com.unibank.app.ui.profile.SecuritySettingsScreen
 import com.unibank.app.ui.profile.SettingsScreen
 import com.unibank.app.ui.merchant.MerchantDashboardScreen
 import com.unibank.app.ui.merchant.MerchantRegisterScreen
@@ -468,6 +469,7 @@ private fun MainNavHost(modifier: Modifier) {
                 onSettings = { navController.navigate(Route.Settings) },
                 onNotifications = { navController.navigate(Route.NotificationSettings) },
                 onDeviceTransfer = { navController.navigate(Route.DeviceTransfer) },
+                onSecurityClick = { navController.navigate(Route.SecuritySettings) },
                 onBack = { navController.popBackStack() },
             )
         }
@@ -498,6 +500,15 @@ private fun MainNavHost(modifier: Modifier) {
             DeviceTransferScreen(
                 viewModel = profileViewModel,
                 onComplete = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Security Settings (Sprint 15)
+        composable<Route.SecuritySettings> {
+            val securityViewModel: SecurityViewModel = koinViewModel()
+            SecuritySettingsScreen(
+                viewModel = securityViewModel,
                 onBack = { navController.popBackStack() },
             )
         }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -24,6 +25,7 @@ fun ProfileScreen(
     onSettings: () -> Unit,
     onNotifications: () -> Unit,
     onDeviceTransfer: () -> Unit,
+    onSecurityClick: () -> Unit,
     onBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -126,6 +128,12 @@ fun ProfileScreen(
                         title = "Notifications",
                         subtitle = "Manage notification preferences",
                         onClick = onNotifications,
+                    )
+                    ProfileMenuItem(
+                        icon = Icons.Default.Lock,
+                        title = "Security",
+                        subtitle = "Biometrics, PIN, and session settings",
+                        onClick = onSecurityClick,
                     )
                     ProfileMenuItem(
                         icon = Icons.Default.PhoneAndroid,
