@@ -3,6 +3,7 @@ package com.unibank.app.ui.billpay
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,14 +26,26 @@ fun PayBillScreen(
     providerName: String,
     onSuccess: () -> Unit,
     onBack: () -> Unit,
+    onScanBill: () -> Unit = {},
+    prefilledProvider: String? = null,
+    prefilledAccountNumber: String? = null,
+    prefilledAmount: String? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var billingRef by rememberSaveable { mutableStateOf("") }
-    var amount by rememberSaveable { mutableStateOf("") }
+    var billingRef by rememberSaveable { mutableStateOf(prefilledAccountNumber ?: "") }
+    var amount by rememberSaveable { mutableStateOf(prefilledAmount ?: "") }
     var currency by rememberSaveable { mutableStateOf("ZWG") }
     var pin by rememberSaveable { mutableStateOf("") }
     var step by rememberSaveable { mutableIntStateOf(0) }
+
+    // Apply new pre-fills whenever they arrive (e.g. after returning from BillScanScreen)
+    LaunchedEffect(prefilledAccountNumber) {
+        if (!prefilledAccountNumber.isNullOrBlank()) billingRef = prefilledAccountNumber
+    }
+    LaunchedEffect(prefilledAmount) {
+        if (!prefilledAmount.isNullOrBlank()) amount = prefilledAmount
+    }
 
     LaunchedEffect(uiState) {
         when (val state = uiState) {
@@ -59,6 +72,13 @@ fun PayBillScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    if (step == 0) {
+                        IconButton(onClick = onScanBill) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = "Scan Bill")
+                        }
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -71,6 +91,16 @@ fun PayBillScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (step == 0) {
+                if (!prefilledProvider.isNullOrBlank()) {
+                    SuggestionChip(
+                        onClick = {},
+                        label = { Text("Matched: $prefilledProvider") },
+                        modifier = Modifier
+                            .align(Alignment.Start)
+                            .padding(bottom = 4.dp),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 OutlinedTextField(
                     value = billingRef,
                     onValueChange = { billingRef = it },
