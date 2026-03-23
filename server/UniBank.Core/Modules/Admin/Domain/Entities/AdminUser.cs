@@ -14,16 +14,18 @@ public sealed class AdminUser : AggregateRoot
     public string FullName { get; set; } = default!;
     public AdminRole Role { get; set; }
     public string? TenantId { get; set; }
+    public Guid? BranchId { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginAt { get; set; }
 }
 
 public enum AdminRole
 {
-    SuperAdmin = 0,
-    Operations = 1,
-    Support = 2,
-    Finance = 3,
-    Compliance = 4,
-    TenantAdmin = 5
+    Admin = 0,              // Full access (replaces SuperAdmin)
+    KycOfficer = 1,         // KYC module
+    FraudAnalyst = 2,       // Fraud module
+    CustomerService = 3,    // Disputes + accounts (replaces Support)
+    LoanOfficer = 4,        // Loans module (new)
+    ComplianceOfficer = 5,  // Read-only all + reports (replaces Compliance)
+    BranchManager = 6,      // Branch-scoped all (replaces TenantAdmin)
 }

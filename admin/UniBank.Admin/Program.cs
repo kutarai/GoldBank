@@ -1,7 +1,9 @@
 using Grpc.Core;
 using Grpc.Net.Client;
+using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor.Services;
 using UniBank.Admin.Components;
+using UniBank.Admin.Services;
 using UniBank.Protos.Admin;
 using UniBank.Protos.Reporting;
 
@@ -9,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // MudBlazor
 builder.Services.AddMudServices();
+
+// Authorization + custom auth state provider
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, AdminAuthStateProvider>();
+builder.Services.AddScoped<AdminAuthStateProvider>(sp =>
+    (AdminAuthStateProvider)sp.GetRequiredService<AuthenticationStateProvider>());
 
 // Razor Components
 builder.Services.AddRazorComponents()
