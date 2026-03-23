@@ -18,7 +18,7 @@ namespace UniBank.Migrator.Migrations.UniBankDb
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("bank")
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -38,6 +38,11 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("balance");
+
+                    b.Property<string>("CardPan")
+                        .HasMaxLength(19)
+                        .HasColumnType("character varying(19)")
+                        .HasColumnName("card_pan");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -135,13 +140,18 @@ namespace UniBank.Migrator.Migrations.UniBankDb
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PhoneNumber")
+                    b.HasIndex("CardPan")
                         .IsUnique()
-                        .HasDatabaseName("ix_accounts_phone_unique")
-                        .HasFilter("deleted_at IS NULL");
+                        .HasDatabaseName("ix_accounts_card_pan_unique")
+                        .HasFilter("card_pan IS NOT NULL AND deleted_at IS NULL");
 
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_accounts_tenant_id");
+
+                    b.HasIndex("PhoneNumber", "Currency")
+                        .IsUnique()
+                        .HasDatabaseName("ix_accounts_phone_currency_unique")
+                        .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("accounts", "bank");
                 });
@@ -974,6 +984,152 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("saved_billers", "bank");
+                });
+
+            modelBuilder.Entity("UniBank.Core.Modules.CardTransactions.Domain.Entities.CardTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("AcquiringInstitution")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("acquiring_institution");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("AuthorizationCode")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("authorization_code");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("balance_after");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<decimal>("Fee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("fee");
+
+                    b.Property<Guid?>("MerchantAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("merchant_account_id");
+
+                    b.Property<string>("MerchantId")
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)")
+                        .HasColumnName("merchant_id");
+
+                    b.Property<string>("MerchantName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("merchant_name");
+
+                    b.Property<string>("ProcessingCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)")
+                        .HasColumnName("processing_code");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("ResponseCode")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("response_code");
+
+                    b.Property<string>("RetrievalReference")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("retrieval_reference");
+
+                    b.Property<string>("SourceInstitution")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("source_institution");
+
+                    b.Property<string>("Stan")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("stan");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TerminalId")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("terminal_id");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("transaction_type");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Reference")
+                        .HasDatabaseName("ix_card_transactions_reference");
+
+                    b.HasIndex("RetrievalReference")
+                        .HasDatabaseName("ix_card_transactions_retrieval_ref");
+
+                    b.HasIndex("AccountId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_card_transactions_account_created");
+
+                    b.HasIndex("Stan", "SourceInstitution")
+                        .HasDatabaseName("ix_card_transactions_stan_source");
+
+                    b.HasIndex("TenantId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_card_transactions_tenant_created");
+
+                    b.ToTable("card_transactions", "bank");
                 });
 
             modelBuilder.Entity("UniBank.Core.Modules.FraudDetection.Domain.Entities.FraudAlert", b =>

@@ -63,9 +63,9 @@ public sealed class RevenueReportService
         else
         {
             dataPoints = await transactions
-                .GroupBy(t => t.CreatedAt.Date)
+                .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month, t.CreatedAt.Day })
                 .Select(g => new RevenueDataPointDto(
-                    g.Key.ToString("yyyy-MM-dd"),
+                    $"{g.Key.Year:D4}-{g.Key.Month:D2}-{g.Key.Day:D2}",
                     g.Sum(t => t.Fee),
                     g.Count(),
                     "ZWG"))

@@ -178,6 +178,40 @@ public static class ServiceCollectionExtensions
         // Sprint 8 - Pilot health checks (STORY-076)
         services.AddScoped<Modules.Health.HealthCheckService>();
 
+        // Sprint 11-14 - AI module (EPIC-017)
+        services.Configure<Modules.AI.Infrastructure.Services.OllamaSettings>(
+            configuration.GetSection(Modules.AI.Infrastructure.Services.OllamaSettings.SectionName));
+        services.Configure<Modules.AI.Infrastructure.Services.FaceMatchingSettings>(
+            configuration.GetSection(Modules.AI.Infrastructure.Services.FaceMatchingSettings.SectionName));
+        services.AddHttpClient("Ollama", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(
+                configuration.GetValue("Ollama:TimeoutSeconds", 120));
+        });
+        services.AddScoped<Modules.AI.Infrastructure.Services.OllamaClient>();
+        services.AddSingleton<Modules.AI.Infrastructure.Services.FaceMatchingService>();
+        services.AddScoped<Modules.AI.Infrastructure.Services.DocumentOcrService>();
+        services.AddScoped<Modules.AI.Application.Handlers.VerifyIdentityHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.ExtractDocumentFieldsHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.VerifyProofOfAddressHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.GetModelStatusHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.ChatHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.ExtractChequeFieldsHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.ExtractBillFieldsHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.ExtractReceiptFieldsHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.GetSpendingInsightsHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.CheckLoanEligibilityHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.VerifyLoanDocumentsHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.TriageDisputeHandler>();
+        services.AddScoped<Modules.AI.Application.Handlers.ExplainFraudAlertHandler>();
+
+        // Sprint 9 - Card Transactions module (STORY-077 through STORY-083)
+        services.AddScoped<Modules.CardTransactions.Application.Handlers.ProcessPurchaseHandler>();
+        services.AddScoped<Modules.CardTransactions.Application.Handlers.ProcessDepositHandler>();
+        services.AddScoped<Modules.CardTransactions.Application.Handlers.BalanceEnquiryHandler>();
+        services.AddScoped<Modules.CardTransactions.Application.Handlers.StatementEnquiryHandler>();
+        services.AddScoped<Modules.CardTransactions.Application.Validators.CardTransactionValidator>();
+
         return services;
     }
 }

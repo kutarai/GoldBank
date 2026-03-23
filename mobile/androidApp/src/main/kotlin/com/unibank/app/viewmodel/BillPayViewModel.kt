@@ -67,7 +67,7 @@ class BillPayViewModel(
                         _uiState.value = BillPayUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = BillPayUiState.Error("Payment failed")
+                is Result.Failure -> _uiState.value = BillPayUiState.Error(result.error.message)
             }
         }
     }

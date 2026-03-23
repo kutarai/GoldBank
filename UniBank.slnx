@@ -14,11 +14,7 @@
     <Project Path="server/UniBank.SharedKernel/UniBank.SharedKernel.csproj" />
     <Project Path="server/UniBank.Migrator/UniBank.Migrator.csproj" />
   </Folder>
-  <Folder Name="/switch/">
-    <Project Path="switch/UniBank.Switching/UniBank.Switching.csproj" />
-    <Project Path="switch/UniBank.SwitchMigrator/UniBank.SwitchMigrator.csproj" />
-  </Folder>
-  <Folder Name="/terminal/">
+<Folder Name="/terminal/">
     <Project Path="terminal/UniBank.TerminalManager/UniBank.TerminalManager.csproj" />
     <Project Path="terminal/UniBank.TerminalMigrator/UniBank.TerminalMigrator.csproj" />
   </Folder>

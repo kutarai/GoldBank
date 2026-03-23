@@ -55,22 +55,32 @@ public sealed class DashboardService
             .Where(m => m.Status == "active" && m.IsAgent)
             .CountAsync(cancellationToken);
 
-        // Daily metrics for the period
-        var dailyMetrics = await transactionsQuery
-            .GroupBy(t => t.CreatedAt.Date)
-            .Select(g => new DailyMetricDto(
-                g.Key.ToString("yyyy-MM-dd"),
-                g.Count(),
-                g.Sum(t => t.Amount),
-                0))
-            .OrderBy(d => d.Date)
+        // Daily metrics for the period — use DateOnly for server-side grouping
+        var dailyTxRaw = await transactionsQuery
+            .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month, t.CreatedAt.Day })
+            .Select(g => new
+            {
+                g.Key.Year, g.Key.Month, g.Key.Day,
+                Count = g.Count(),
+                Volume = g.Sum(t => t.Amount)
+            })
+            .OrderBy(d => d.Year).ThenBy(d => d.Month).ThenBy(d => d.Day)
             .ToListAsync(cancellationToken);
+
+        var dailyMetrics = dailyTxRaw
+            .Select(d => new DailyMetricDto(
+                $"{d.Year:D4}-{d.Month:D2}-{d.Day:D2}", d.Count, d.Volume, 0))
+            .ToList();
 
         // Enrich daily metrics with new user counts
         var dailyNewUsers = await _dbContext.Accounts
             .Where(a => a.CreatedAt >= from && a.CreatedAt <= to && a.DeletedAt == null)
-            .GroupBy(a => a.CreatedAt.Date)
-            .Select(g => new { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() })
+            .GroupBy(a => new { a.CreatedAt.Year, a.CreatedAt.Month, a.CreatedAt.Day })
+            .Select(g => new
+            {
+                Date = $"{g.Key.Year:D4}-{g.Key.Month:D2}-{g.Key.Day:D2}",
+                Count = g.Count()
+            })
             .ToListAsync(cancellationToken);
 
         var usersByDate = dailyNewUsers.ToDictionary(u => u.Date, u => u.Count);

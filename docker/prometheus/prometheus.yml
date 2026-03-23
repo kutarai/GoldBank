@@ -12,7 +12,7 @@ scrape_configs:
 
   - job_name: 'unibank-gateway'
     static_configs:
-      - targets: ['gateway:5000']
+      - targets: ['gateway:1112']
     metrics_path: '/metrics'
 
   - job_name: 'unibank-admin'
@@ -20,32 +20,22 @@ scrape_configs:
       - targets: ['admin:5010']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-core'
-    static_configs:
-      - targets: ['core:5020']
-    metrics_path: '/metrics'
-
-  - job_name: 'unibank-switching'
-    static_configs:
-      - targets: ['switching:5030']
-    metrics_path: '/metrics'
-
   - job_name: 'unibank-terminal-manager'
     static_configs:
-      - targets: ['terminal-manager:5040']
+      - targets: ['terminal-manager:5004']
     metrics_path: '/metrics'
 
   - job_name: 'unibank-hsm'
     static_configs:
-      - targets: ['hsm:5050']
-    metrics_path: '/metrics'
-
-  - job_name: 'unibank-reporting'
-    static_configs:
-      - targets: ['reporting:5060']
+      - targets: ['hsm:5005']
     metrics_path: '/metrics'
 
   - job_name: 'unibank-notifications'
     static_configs:
-      - targets: ['notifications:5070']
+      - targets: ['notifications:5007']
+    metrics_path: '/metrics'
+
+  - job_name: 'synergy-switch'
+    static_configs:
+      - targets: ['switch:8080']
     metrics_path: '/metrics'

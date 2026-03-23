@@ -129,6 +129,7 @@ fun RegistrationSelfieScreen(
                             setCameraLens(CameraLens.FRONT)
                             setFlashMode(FlashMode.OFF)
                             setImageFormat(ImageFormat.JPEG)
+                            setDirectory(com.kashif.cameraK.enums.Directory.PICTURES)
                         },
                         onCameraControllerReady = { controller ->
                             cameraController = controller
@@ -146,12 +147,15 @@ fun RegistrationSelfieScreen(
                         onClick = {
                             scope.launch {
                                 cameraController?.let { controller ->
-                                    when (val result = controller.takePicture()) {
+                                    when (val result = controller.takePictureToFile()) {
+                                        is ImageCaptureResult.SuccessWithFile -> {
+                                            capturedBytes = java.io.File(result.filePath).readBytes()
+                                            step = 1
+                                        }
                                         is ImageCaptureResult.Success -> {
                                             capturedBytes = result.byteArray
                                             step = 1
                                         }
-                                        is ImageCaptureResult.SuccessWithFile -> {}
                                         is ImageCaptureResult.Error -> {
                                             errorMessage = result.exception.message ?: "Capture failed"
                                         }

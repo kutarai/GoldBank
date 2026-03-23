@@ -1,7 +1,7 @@
 version: "6.0.0"
 project_name: "UniBank"
 project_level: 4
-current_sprint: 6
+current_sprint: 9
 sprint_plan_path: "docs/sprint-plan-unibank-2026-02-24.md"
 
 sprints:
@@ -465,6 +465,51 @@ sprints:
         status: "completed"
         assigned_to: null
 
+  - sprint_number: 9
+    start_date: "2026-08-11"
+    end_date: "2026-08-31"
+    capacity_points: 144
+    committed_points: 34
+    completed_points: 34
+    status: "completed"
+    goal: "Implement issuer-side card transaction processing for purchases, deposits, balance and statement enquiries routed from the switch"
+    stories:
+      - story_id: "STORY-077"
+        title: "CardTransactions Module Scaffolding & Domain Model"
+        points: 8
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-078"
+        title: "On-Us Purchase Transaction Processing"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-079"
+        title: "Off-Us Purchase Transaction Processing"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-080"
+        title: "On-Us Deposit Transaction Processing"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-081"
+        title: "Off-Us Deposit Transaction Processing"
+        points: 5
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-082"
+        title: "Balance Enquiry Transaction"
+        points: 3
+        status: "completed"
+        assigned_to: null
+      - story_id: "STORY-083"
+        title: "Statement Enquiry Transaction"
+        points: 3
+        status: "completed"
+        assigned_to: null
+
 velocity:
   sprint_1: 62
   sprint_2: 49
@@ -474,7 +519,8 @@ velocity:
   sprint_6: 29
   sprint_7: 58
   sprint_8: 25
-  rolling_average: 45
+  sprint_9: 34
+  rolling_average: 44
 
 team:
   size: 4

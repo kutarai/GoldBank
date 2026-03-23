@@ -17,6 +17,8 @@ using UniBank.Core.Modules.Payments.Grpc;
 using UniBank.Core.Modules.Transfers.Grpc;
 using UniBank.Core.Modules.Loans.Grpc;
 using UniBank.Core.Modules.WhiteLabel.Grpc;
+using UniBank.Core.Modules.CardTransactions.Grpc;
+using UniBank.Core.Modules.AI.Grpc;
 using UniBank.Gateway.Configuration;
 using UniBank.Gateway.Interceptors;
 using UniBank.Gateway.Services;
@@ -207,8 +209,12 @@ try
     app.MapGrpcService<WhiteLabelGrpcService>();
     app.MapGrpcService<LoanGrpcService>();
 
+    // Card transaction processing gRPC service (Sprint 9)
+    app.MapGrpcService<CardTransactionGrpcService>();
+
     // Admin and Reporting gRPC services
     app.MapGrpcService<AdminGrpcService>();
+    app.MapGrpcService<AiGrpcService>();
     app.MapGrpcService<ReportingGrpcService>();
 
     // gRPC Server Reflection (always enabled - clients need service discovery)

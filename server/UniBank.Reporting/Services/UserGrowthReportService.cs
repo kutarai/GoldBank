@@ -71,9 +71,9 @@ public sealed class UserGrowthReportService
         else
         {
             dataPoints = await accounts
-                .GroupBy(a => a.CreatedAt.Date)
+                .GroupBy(a => new { a.CreatedAt.Year, a.CreatedAt.Month, a.CreatedAt.Day })
                 .Select(g => new GrowthDataPointDto(
-                    g.Key.ToString("yyyy-MM-dd"),
+                    $"{g.Key.Year:D4}-{g.Key.Month:D2}-{g.Key.Day:D2}",
                     g.Count(),
                     g.Count(a => a.Status == "active"),
                     0))

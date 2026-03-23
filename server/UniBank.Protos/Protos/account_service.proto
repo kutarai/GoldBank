@@ -29,6 +29,20 @@ service AccountService {
   // Device transfer (STORY-014)
   rpc InitiateDeviceTransfer(InitiateDeviceTransferRequest) returns (InitiateDeviceTransferResponse);
   rpc CompleteDeviceTransfer(CompleteDeviceTransferRequest) returns (CompleteDeviceTransferResponse);
+
+  // Customer disputes (EPIC-018)
+  rpc ListMyDisputes(ListMyDisputesRequest) returns (ListMyDisputesResponse);
+  rpc GetDisputeDetail(GetDisputeDetailRequest) returns (DisputeDetailResponse);
+
+  // Customer fraud alerts (EPIC-018)
+  rpc ListMyFraudAlerts(ListMyFraudAlertsRequest) returns (ListMyFraudAlertsResponse);
+  rpc GetFraudAlertDetail(GetFraudAlertDetailRequest) returns (FraudAlertDetailResponse);
+  rpc ConfirmTransaction(ConfirmTransactionRequest) returns (ConfirmTransactionResponse);
+  rpc ReportFraud(ReportFraudRequest) returns (ReportFraudResponse);
+
+  // Notifications (EPIC-018)
+  rpc ListMyNotifications(ListMyNotificationsRequest) returns (ListMyNotificationsResponse);
+  rpc MarkNotificationRead(MarkNotificationReadRequest) returns (MarkNotificationReadResponse);
 }
 
 // --- Registration Messages ---
@@ -98,6 +112,15 @@ message ProfileResponse {
   int32 kyc_level = 9;
   google.protobuf.Timestamp created_at = 10;
   google.protobuf.Timestamp last_login_at = 11;
+  repeated AccountSummary accounts = 12;
+}
+
+message AccountSummary {
+  string account_id = 1;
+  string currency = 2;
+  unibank.v1.common.Money balance = 3;
+  unibank.v1.common.Money available_balance = 4;
+  string card_pan_last4 = 5;
 }
 
 // --- Balance Messages ---
@@ -240,4 +263,148 @@ message CompleteDeviceTransferResponse {
   string access_token = 2;
   string refresh_token = 3;
   string message = 4;
+}
+
+// --- Customer Dispute Messages (EPIC-018) ---
+message ListMyDisputesRequest {
+  string account_id = 1;
+  string status_filter = 2; // open, investigating, resolved, all
+  unibank.v1.common.PaginationRequest pagination = 3;
+}
+
+message ListMyDisputesResponse {
+  repeated DisputeSummary disputes = 1;
+  int32 total_count = 2;
+}
+
+message DisputeSummary {
+  string dispute_id = 1;
+  string reference = 2;
+  string transaction_id = 3;
+  string dispute_type = 4;
+  string priority = 5;
+  string status = 6;
+  unibank.v1.common.Money amount = 7;
+  string summary = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp resolved_at = 10;
+}
+
+message GetDisputeDetailRequest {
+  string account_id = 1;
+  string dispute_id = 2;
+}
+
+message DisputeDetailResponse {
+  string dispute_id = 1;
+  string reference = 2;
+  string transaction_id = 3;
+  string dispute_type = 4;
+  string priority = 5;
+  string status = 6;
+  string assigned_team = 7;
+  unibank.v1.common.Money amount = 8;
+  string user_description = 9;
+  string ai_summary = 10;
+  string ai_recommended_action = 11;
+  double classification_confidence = 12;
+  string resolution_notes = 13;
+  string expected_resolution = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp resolved_at = 16;
+}
+
+// --- Customer Fraud Alert Messages (EPIC-018) ---
+message ListMyFraudAlertsRequest {
+  string account_id = 1;
+  unibank.v1.common.PaginationRequest pagination = 2;
+}
+
+message ListMyFraudAlertsResponse {
+  repeated FraudAlertSummary alerts = 1;
+  int32 total_count = 2;
+  int32 unread_count = 3;
+}
+
+message FraudAlertSummary {
+  string alert_id = 1;
+  string transaction_id = 2;
+  string transaction_description = 3;
+  unibank.v1.common.Money amount = 4;
+  double risk_score = 5;
+  string risk_level = 6; // high, medium, low
+  bool is_read = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message GetFraudAlertDetailRequest {
+  string account_id = 1;
+  string alert_id = 2;
+}
+
+message FraudAlertDetailResponse {
+  string alert_id = 1;
+  string transaction_id = 2;
+  string transaction_description = 3;
+  unibank.v1.common.Money amount = 4;
+  double risk_score = 5;
+  string risk_level = 6;
+  string ai_explanation = 7;
+  repeated string triggered_rules = 8;
+  string counterparty = 9;
+  string location = 10;
+  google.protobuf.Timestamp transaction_at = 11;
+  google.protobuf.Timestamp alert_at = 12;
+}
+
+message ConfirmTransactionRequest {
+  string account_id = 1;
+  string alert_id = 2;
+}
+
+message ConfirmTransactionResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ReportFraudRequest {
+  string account_id = 1;
+  string alert_id = 2;
+  string description = 3;
+}
+
+message ReportFraudResponse {
+  bool success = 1;
+  string message = 2;
+  string dispute_reference = 3; // auto-created dispute
+}
+
+// --- Notification Messages (EPIC-018) ---
+message ListMyNotificationsRequest {
+  string account_id = 1;
+  unibank.v1.common.PaginationRequest pagination = 2;
+}
+
+message ListMyNotificationsResponse {
+  repeated NotificationItem notifications = 1;
+  int32 unread_count = 2;
+}
+
+message NotificationItem {
+  string notification_id = 1;
+  string title = 2;
+  string body = 3;
+  string type = 4; // fraud_alert, dispute_update, kyc_update
+  string reference_id = 5;
+  bool is_read = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message MarkNotificationReadRequest {
+  string account_id = 1;
+  string notification_id = 2;
+}
+
+message MarkNotificationReadResponse {
+  bool success = 1;
 }

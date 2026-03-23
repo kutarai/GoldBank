@@ -14,8 +14,11 @@ COPY ["Directory.Build.props", "."]
 
 # Copy csproj files for restore
 COPY ["server/UniBank.Gateway/UniBank.Gateway.csproj", "server/UniBank.Gateway/"]
+COPY ["server/UniBank.Core/UniBank.Core.csproj", "server/UniBank.Core/"]
 COPY ["server/UniBank.Protos/UniBank.Protos.csproj", "server/UniBank.Protos/"]
 COPY ["server/UniBank.SharedKernel/UniBank.SharedKernel.csproj", "server/UniBank.SharedKernel/"]
+COPY ["server/UniBank.Reporting/UniBank.Reporting.csproj", "server/UniBank.Reporting/"]
+COPY ["server/UniBank.Notifications/UniBank.Notifications.csproj", "server/UniBank.Notifications/"]
 
 # Restore dependencies
 RUN dotnet restore "server/UniBank.Gateway/UniBank.Gateway.csproj"

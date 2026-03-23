@@ -125,13 +125,30 @@ class AuthViewModel(
         }
     }
 
+    fun uploadRegistrationId(contentType: String, fileBytes: ByteArray) {
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            val accountId = sessionManager.getAccountId() ?: return@launch
+            when (val result = kycClient.uploadDocument(
+                accountId = accountId,
+                documentType = "national_id",
+                fileName = "national_id.jpg",
+                contentType = contentType,
+                fileBytes = fileBytes,
+            )) {
+                is Result.Success -> _uiState.value = AuthUiState.IdUploaded
+                is Result.Failure -> _uiState.value = AuthUiState.Error(result.error.displayMessage())
+            }
+        }
+    }
+
     fun uploadRegistrationSelfie(contentType: String, fileBytes: ByteArray) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             val accountId = sessionManager.getAccountId() ?: return@launch
             when (val result = kycClient.uploadSelfie(accountId, contentType, fileBytes)) {
                 is Result.Success -> {
-                    sessionManager.completeRegistration()
+                    sessionManager.logout()
                     _uiState.value = AuthUiState.RegistrationComplete
                 }
                 is Result.Failure -> _uiState.value = AuthUiState.Error(result.error.displayMessage())
@@ -195,6 +212,7 @@ sealed interface AuthUiState {
     data class OtpVerified(val accountId: String) : AuthUiState
     data class PinCreated(val accountId: String) : AuthUiState
     data object ProfileUpdated : AuthUiState
+    data object IdUploaded : AuthUiState
     data object RegistrationComplete : AuthUiState
     data object Authenticated : AuthUiState
     data class LockedOut(val remainingSeconds: Long) : AuthUiState

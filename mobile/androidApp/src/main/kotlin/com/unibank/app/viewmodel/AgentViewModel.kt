@@ -59,7 +59,7 @@ class AgentViewModel(
                         _uiState.value = AgentUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = AgentUiState.Error("Cash-in failed")
+                is Result.Failure -> _uiState.value = AgentUiState.Error(result.error.message)
             }
         }
     }
@@ -76,7 +76,7 @@ class AgentViewModel(
                         _uiState.value = AgentUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = AgentUiState.Error("Cash-out failed")
+                is Result.Failure -> _uiState.value = AgentUiState.Error(result.error.message)
             }
         }
     }

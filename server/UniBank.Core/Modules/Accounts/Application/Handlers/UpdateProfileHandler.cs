@@ -30,25 +30,39 @@ public sealed class UpdateProfileHandler
             return Result.Failure<ProfileResult>(
                 new Error("Account.NotFound", "Account not found."));
 
-        if (!string.IsNullOrEmpty(command.FirstName))
-            account.FirstName = command.FirstName;
+        // Update personal info on ALL accounts for this phone (person-centric)
+        var allAccounts = await _dbContext.Accounts
+            .Where(a => a.PhoneNumber == account.PhoneNumber && a.DeletedAt == null)
+            .ToListAsync(cancellationToken);
 
-        if (!string.IsNullOrEmpty(command.LastName))
-            account.LastName = command.LastName;
+        var now = DateTime.UtcNow;
+        foreach (var acct in allAccounts)
+        {
+            if (!string.IsNullOrEmpty(command.FirstName))
+                acct.FirstName = command.FirstName;
+            if (!string.IsNullOrEmpty(command.LastName))
+                acct.LastName = command.LastName;
+            if (!string.IsNullOrEmpty(command.Email))
+                acct.Email = command.Email;
+            if (!string.IsNullOrEmpty(command.DateOfBirth))
+                acct.DateOfBirth = command.DateOfBirth;
+            if (!string.IsNullOrEmpty(command.NationalId))
+                acct.NationalId = command.NationalId;
+            acct.UpdatedAt = now;
+        }
 
-        if (!string.IsNullOrEmpty(command.Email))
-            account.Email = command.Email;
-
-        if (!string.IsNullOrEmpty(command.DateOfBirth))
-            account.DateOfBirth = command.DateOfBirth;
-
-        if (!string.IsNullOrEmpty(command.NationalId))
-            account.NationalId = command.NationalId;
-
-        account.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Profile updated for account {AccountId}", command.AccountId);
+        _logger.LogInformation("Profile updated for phone {Phone} ({Count} accounts)", account.PhoneNumber, allAccounts.Count);
+
+        // Build account summaries
+        var accountSummaries = allAccounts.Select(a => new AccountSummaryResult(
+            AccountId: a.Id.ToString(),
+            Currency: a.Currency,
+            Balance: a.Balance,
+            AvailableBalance: a.AvailableBalance,
+            CardPanLast4: a.CardPan is not null && a.CardPan.Length >= 4 ? a.CardPan[^4..] : null
+        )).ToList();
 
         return Result.Success(new ProfileResult(
             AccountId: account.Id.ToString(),
@@ -61,6 +75,7 @@ public sealed class UpdateProfileHandler
             Status: account.Status,
             KycLevel: account.KycLevel,
             CreatedAt: account.CreatedAt,
-            LastLoginAt: account.LastLoginAt));
+            LastLoginAt: account.LastLoginAt,
+            Accounts: accountSummaries));
     }
 }

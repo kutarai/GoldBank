@@ -44,7 +44,7 @@ class TransferViewModel(
                         _uiState.value = TransferUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = TransferUiState.Error("Transfer failed")
+                is Result.Failure -> _uiState.value = TransferUiState.Error(result.error.message)
             }
         }
     }
@@ -80,7 +80,7 @@ class TransferViewModel(
                         _uiState.value = TransferUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = TransferUiState.Error("Transfer failed")
+                is Result.Failure -> _uiState.value = TransferUiState.Error(result.error.message)
             }
         }
     }

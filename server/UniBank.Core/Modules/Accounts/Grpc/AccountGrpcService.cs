@@ -324,7 +324,7 @@ public sealed class AccountGrpcService : AccountService.AccountServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, result.Error.Message));
 
         var p = result.Value;
-        return new ProfileResponse
+        var response = new ProfileResponse
         {
             AccountId = p.AccountId,
             PhoneNumber = p.PhoneNumber,
@@ -340,6 +340,20 @@ public sealed class AccountGrpcService : AccountService.AccountServiceBase
                 ? Timestamp.FromDateTime(DateTime.SpecifyKind(p.LastLoginAt.Value, DateTimeKind.Utc))
                 : null
         };
+
+        foreach (var acct in p.Accounts)
+        {
+            response.Accounts.Add(new Protos.Accounts.AccountSummary
+            {
+                AccountId = acct.AccountId,
+                Currency = acct.Currency,
+                Balance = new Protos.Common.Money { Amount = acct.Balance.ToString("F2"), Currency = acct.Currency },
+                AvailableBalance = new Protos.Common.Money { Amount = acct.AvailableBalance.ToString("F2"), Currency = acct.Currency },
+                CardPanLast4 = acct.CardPanLast4 ?? string.Empty,
+            });
+        }
+
+        return response;
     }
 
     public override async Task<ProfileResponse> UpdateProfile(
@@ -359,7 +373,7 @@ public sealed class AccountGrpcService : AccountService.AccountServiceBase
             throw new RpcException(new Status(StatusCode.NotFound, result.Error.Message));
 
         var p = result.Value;
-        return new ProfileResponse
+        var updateResponse = new ProfileResponse
         {
             AccountId = p.AccountId,
             PhoneNumber = p.PhoneNumber,
@@ -375,6 +389,20 @@ public sealed class AccountGrpcService : AccountService.AccountServiceBase
                 ? Timestamp.FromDateTime(DateTime.SpecifyKind(p.LastLoginAt.Value, DateTimeKind.Utc))
                 : null
         };
+
+        foreach (var acct in p.Accounts)
+        {
+            updateResponse.Accounts.Add(new Protos.Accounts.AccountSummary
+            {
+                AccountId = acct.AccountId,
+                Currency = acct.Currency,
+                Balance = new Protos.Common.Money { Amount = acct.Balance.ToString("F2"), Currency = acct.Currency },
+                AvailableBalance = new Protos.Common.Money { Amount = acct.AvailableBalance.ToString("F2"), Currency = acct.Currency },
+                CardPanLast4 = acct.CardPanLast4 ?? string.Empty,
+            });
+        }
+
+        return updateResponse;
     }
 
     // ── Balance (STORY-016) ──────────────────────────────────────────

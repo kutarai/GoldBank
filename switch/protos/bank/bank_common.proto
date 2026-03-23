@@ -1,0 +1,10 @@
+syntax = "proto3";
+package unibank.v1.common;
+option csharp_namespace = "SynergySwitch.BankProtos.Common";
+
+import "google/protobuf/timestamp.proto";
+
+message Money {
+  string amount = 1;
+  string currency = 2;
+}

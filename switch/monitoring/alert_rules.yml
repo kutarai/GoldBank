@@ -1,0 +1,66 @@
+groups:
+  - name: gateway_connectivity
+    rules:
+      # Fires when a gateway goes down (connectivity gauge = 0 for > 30s)
+      - alert: GatewayDown
+        expr: switch_gateway_connectivity_state == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Gateway {{ $labels.gateway_name }} is DOWN"
+          description: "Gateway {{ $labels.gateway_name }} ({{ $labels.protocol }}) has been unreachable for over 30 seconds."
+
+      # Fires when a gateway is in connecting/transient state for > 2 minutes
+      - alert: GatewayUnstable
+        expr: switch_gateway_connectivity_state > 0 and switch_gateway_connectivity_state < 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gateway {{ $labels.gateway_name }} is unstable"
+          description: "Gateway {{ $labels.gateway_name }} ({{ $labels.protocol }}) has been in a connecting/unstable state for over 2 minutes."
+
+      # Fires when connection drops are detected (> 3 drops in 5 minutes)
+      - alert: GatewayConnectionDrops
+        expr: rate(switch_gateway_connection_drops_detected_total[5m]) > 0.01
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Connection drops on gateway {{ $labels.gateway_name }}"
+          description: "Gateway {{ $labels.gateway_name }} ({{ $labels.protocol }}) is experiencing connection drops ({{ $value | humanize }}/sec)."
+
+      # Fires when no gateways are connected at all
+      - alert: AllGatewaysDown
+        expr: sum(switch_gateway_connectivity_state) == 0 and count(switch_gateway_connectivity_state) > 0
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "ALL bank gateways are DOWN"
+          description: "No bank gateways are reachable. All card transactions will fail."
+
+  - name: transaction_health
+    rules:
+      # Fires when error rate exceeds 10% over 5 minutes
+      - alert: HighTransactionErrorRate
+        expr: >
+          rate(switch_transactions_total{response_code="TechnicalError"}[5m])
+          / rate(switch_transactions_total[5m]) > 0.10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High transaction error rate ({{ $value | humanizePercentage }})"
+          description: "More than 10% of transactions are failing with technical errors."
+
+      # Fires when transaction latency p95 exceeds 10 seconds
+      - alert: HighTransactionLatency
+        expr: histogram_quantile(0.95, rate(switch_transaction_duration_seconds_bucket[5m])) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High transaction latency (p95 = {{ $value | humanizeDuration }})"
+          description: "95th percentile transaction latency exceeds 10 seconds."

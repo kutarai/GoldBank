@@ -30,15 +30,6 @@ public sealed class TokenizeCardHandler
     public async Task<Result<TokenizeCardResult>> HandleAsync(
         Commands.TokenizeCardCommand command, CancellationToken cancellationToken = default)
     {
-        // Validate PAN format (basic check: 13-19 digits)
-        if (string.IsNullOrWhiteSpace(command.CardPan) || command.CardPan.Length < 13 || command.CardPan.Length > 19)
-            return Result.Failure<TokenizeCardResult>(
-                new Error("Token.InvalidPan", "Card PAN must be between 13 and 19 digits."));
-
-        if (!command.CardPan.All(char.IsDigit))
-            return Result.Failure<TokenizeCardResult>(
-                new Error("Token.InvalidPan", "Card PAN must contain only digits."));
-
         // Verify account exists and is active
         var account = await _dbContext.Accounts
             .FirstOrDefaultAsync(
@@ -52,6 +43,17 @@ public sealed class TokenizeCardHandler
         if (account.Status != "active")
             return Result.Failure<TokenizeCardResult>(
                 new Error("Account.Inactive", "Account is not active. Current status: " + account.Status));
+
+        // Use the account's virtual card PAN if client didn't provide one
+        var cardPan = !string.IsNullOrWhiteSpace(command.CardPan) ? command.CardPan : account.CardPan;
+
+        if (string.IsNullOrWhiteSpace(cardPan) || cardPan.Length < 13 || cardPan.Length > 19)
+            return Result.Failure<TokenizeCardResult>(
+                new Error("Token.InvalidPan", "No valid card PAN available for this account."));
+
+        if (!cardPan.All(char.IsDigit))
+            return Result.Failure<TokenizeCardResult>(
+                new Error("Token.InvalidPan", "Card PAN must contain only digits."));
 
         // Check for existing active token for this account + device combination
         var existingToken = await _dbContext.Set<PaymentToken>()
@@ -70,9 +72,9 @@ public sealed class TokenizeCardHandler
         }
 
         // Generate format-preserving token: same length as PAN, starts with prefix
-        var token = GenerateFormatPreservingToken(command.CardPan.Length);
+        var token = GenerateFormatPreservingToken(cardPan.Length);
         var tokenReference = GenerateTokenReference();
-        var cardPanLast4 = command.CardPan[^4..];
+        var cardPanLast4 = cardPan[^4..];
 
         var paymentToken = new PaymentToken
         {

@@ -12,6 +12,15 @@ data class Profile(
     val kycLevel: Int,
     val createdAt: String,
     val lastLoginAt: String,
+    val accounts: List<AccountSummary> = emptyList(),
+)
+
+data class AccountSummary(
+    val accountId: String,
+    val currency: String,
+    val balance: Money,
+    val availableBalance: Money,
+    val cardPanLast4: String,
 )
 
 data class DeviceTransferInitResult(

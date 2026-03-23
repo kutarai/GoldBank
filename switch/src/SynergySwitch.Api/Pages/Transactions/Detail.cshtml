@@ -1,0 +1,53 @@
+@page "{id:int}"
+@model SynergySwitch.Api.Pages.Transactions.DetailModel
+@{
+    ViewData["Title"] = $"Transaction {Model.Transaction!.ExchangeId}";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-page="/Transactions/Index">Transactions</a></li>
+        <li class="breadcrumb-item active">@Model.Transaction.ExchangeId[..8]...</li>
+    </ol>
+</nav>
+
+<h4>Transaction Detail</h4>
+
+<div class="row">
+    <div class="col-md-6">
+        <table class="table table-bordered">
+            <tr><th>Exchange ID</th><td><code>@Model.Transaction.ExchangeId</code></td></tr>
+            <tr><th>Transaction Ref</th><td>@(Model.Transaction.TransactionReference ?? "-")</td></tr>
+            <tr><th>Request Time (UTC)</th><td>@Model.Transaction.RequestTimestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")</td></tr>
+            <tr><th>Response Time (UTC)</th><td>@Model.Transaction.ResponseTimestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")</td></tr>
+            <tr><th>Processing Time</th><td>@Model.Transaction.ResponseTimeMs.ToString("F1") ms</td></tr>
+            <tr><th>Terminal ID</th><td>@Model.Transaction.TerminalId</td></tr>
+            <tr><th>Merchant ID</th><td>@Model.Transaction.MerchantId</td></tr>
+            <tr><th>PAN (last 4)</th><td>****@Model.Transaction.PanLastFour</td></tr>
+            <tr>
+                <th>Amount</th>
+                <td class="table-amount">
+                    @((Model.Transaction.Amount / 100m).ToString("N2")) @Model.Transaction.Currency
+                </td>
+            </tr>
+            <tr><th>Card Entry</th><td>@Model.Transaction.CardEntryMode</td></tr>
+            <tr>
+                <th>Response</th>
+                <td>
+                    @{
+                        var badgeClass = Model.Transaction.ResponseCode switch
+                        {
+                            "Approved" => "badge-approved",
+                            "Declined" => "badge-declined",
+                            _ => "badge-error"
+                        };
+                    }
+                    <span class="badge @badgeClass">@Model.Transaction.ResponseCode</span>
+                </td>
+            </tr>
+            <tr><th>Auth Code</th><td>@(Model.Transaction.AuthorisationCode ?? "-")</td></tr>
+        </table>
+    </div>
+</div>
+
+<a asp-page="/Transactions/Index" class="btn btn-secondary btn-sm">Back to list</a>

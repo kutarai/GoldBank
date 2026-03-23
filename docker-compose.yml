@@ -2,14 +2,14 @@ name: unibank
 
 networks:
   frontend:
-    driver: bridge
-    name: unibank-frontend
+    external: true
+    name: synergy-net
   backend:
-    driver: bridge
-    name: unibank-backend
+    external: true
+    name: synergy-net
   monitoring:
-    driver: bridge
-    name: unibank-monitoring
+    external: true
+    name: synergy-net
 
 volumes:
   postgres-data:
@@ -20,6 +20,8 @@ volumes:
     name: unibank-elasticsearch-data
   grafana-data:
     name: unibank-grafana-data
+  ollama-data:
+    name: unibank-ollama-data
   prometheus-data:
     name: unibank-prometheus-data
 
@@ -36,7 +38,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
     networks:
       - backend
@@ -79,10 +81,10 @@ services:
     container_name: unibank-gateway
     profiles: ["core"]
     ports:
-      - "${GATEWAY_PORT:-5000}:5000"
+      - "${GATEWAY_GRPC_PORT:-5000}:1111"
+      - "${GATEWAY_HTTP_PORT:-5001}:1112"
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_URLS: http://+:5000
       ConnectionStrings__DefaultConnection: "Host=postgres;Database=${POSTGRES_DB:-unibank};Username=${POSTGRES_USER:-unibank};Password=${POSTGRES_PASSWORD:-unibank_dev_password}"
       Redis__ConnectionString: redis:6379
       Jwt__SecretKey: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars!!}
@@ -97,35 +99,15 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      test: ["CMD-SHELL", "dotnet --info > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 15s
     deploy:
       resources:
         limits:
           memory: 512M
-
-  switching:
-    build:
-      context: .
-      dockerfile: switch/UniBank.Switching/Dockerfile
-    container_name: unibank-switching
-    profiles: ["core"]
-    ports:
-      - "${SWITCHING_PORT:-5003}:5003"
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-    networks:
-      - backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          memory: 256M
 
   terminal-manager:
     build:
@@ -183,6 +165,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:5010
+      GrpcGateway__Url: http://gateway:1111
     networks:
       - frontend
       - backend
@@ -214,15 +197,68 @@ services:
         limits:
           memory: 256M
 
+  switch:
+    build:
+      context: ./switch
+      dockerfile: Containerfile
+    container_name: unibank-switch
+    profiles: ["core"]
+    ports:
+      - "${SWITCH_GRPC_PORT:-3333}:3333"
+      - "${SWITCH_WEB_PORT:-8080}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__SwitchDb: "Host=postgres;Port=5432;Database=synergy_switch;Username=${POSTGRES_USER:-unibank};Password=${POSTGRES_PASSWORD:-unibank_dev_password}"
+      BankConnection__Host: gateway
+      BankConnection__Port: "1111"
+      BankConnection__OfflineMode: "false"
+      Kestrel__Endpoints__Grpc__Url: http://0.0.0.0:3333
+      Kestrel__Endpoints__Web__Url: http://0.0.0.0:8080
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ─── AI / KYC Inference ───
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: unibank-ollama
+    profiles: ["core"]
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   # ─── Monitoring ───
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: unibank-prometheus
     profiles: ["monitoring"]
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9190}:9090"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
       - prometheus-data:/prometheus
     networks:
       - monitoring
@@ -237,12 +273,13 @@ services:
     container_name: unibank-grafana
     profiles: ["monitoring"]
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3100}:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - monitoring
       - frontend

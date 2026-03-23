@@ -29,6 +29,21 @@ public sealed class GetProfileHandler
             return Result.Failure<ProfileResult>(
                 new Error("Account.NotFound", "Account not found."));
 
+        // Load all accounts for this phone number (ZWG + USD)
+        var allAccounts = await _dbContext.Accounts
+            .Where(a => a.PhoneNumber == account.PhoneNumber && a.DeletedAt == null)
+            .OrderBy(a => a.Currency)
+            .ToListAsync(cancellationToken);
+
+        var accountSummaries = allAccounts.Select(a => new AccountSummaryResult(
+            AccountId: a.Id.ToString(),
+            Currency: a.Currency,
+            Balance: a.Balance,
+            AvailableBalance: a.AvailableBalance,
+            CardPanLast4: a.CardPan is not null && a.CardPan.Length >= 4
+                ? a.CardPan[^4..] : null
+        )).ToList();
+
         return Result.Success(new ProfileResult(
             AccountId: account.Id.ToString(),
             PhoneNumber: account.PhoneNumber,
@@ -40,7 +55,8 @@ public sealed class GetProfileHandler
             Status: account.Status,
             KycLevel: account.KycLevel,
             CreatedAt: account.CreatedAt,
-            LastLoginAt: account.LastLoginAt));
+            LastLoginAt: account.LastLoginAt,
+            Accounts: accountSummaries));
     }
 }
 
@@ -55,4 +71,12 @@ public sealed record ProfileResult(
     string Status,
     int KycLevel,
     DateTime CreatedAt,
-    DateTime? LastLoginAt);
+    DateTime? LastLoginAt,
+    List<AccountSummaryResult> Accounts);
+
+public sealed record AccountSummaryResult(
+    string AccountId,
+    string Currency,
+    decimal Balance,
+    decimal AvailableBalance,
+    string? CardPanLast4);

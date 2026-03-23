@@ -22,7 +22,7 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "GRPC_HOST", "\"10.0.2.2\"")
-            buildConfigField("int", "GRPC_PORT", "1111")
+            buildConfigField("int", "GRPC_PORT", "5100")
             buildConfigField("boolean", "GRPC_USE_TLS", "false")
             buildConfigField("String", "DEFAULT_TENANT_ID", "\"default\"")
         }

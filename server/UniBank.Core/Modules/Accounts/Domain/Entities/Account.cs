@@ -20,6 +20,7 @@ public class Account : AggregateRoot
     public decimal Balance { get; set; }
     public decimal AvailableBalance { get; set; }
     public string Currency { get; set; } = "ZWG";
+    public string? CardPan { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? Email { get; set; }

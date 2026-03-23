@@ -3,25 +3,25 @@
 **Date:** 2026-02-24
 **Scrum Master:** wmapundu
 **Project Level:** 4
-**Total Stories:** 88
+**Total Stories:** 83
 **Total Points:** 396
-**Planned Sprints:** 8 (3 weeks each)
+**Planned Sprints:** 9 (3 weeks each)
 **Sprint Capacity:** 144 effective points/sprint (4 senior devs x 15 days x 6 hrs / 2 hrs per point x 80% buffer)
-**Target Completion:** August 2026
+**Target Completion:** September 2026
 
 ---
 
 ## Executive Summary
 
-UniBank's implementation is planned across 8 three-week sprints, totaling 24 weeks. The plan follows a foundation-first approach: infrastructure and user onboarding in Sprints 1-2, core payment capabilities in Sprints 3-4, external integrations in Sprints 5-6, and admin/white-label/hardening in Sprints 7-8. The 88 stories total 396 story points, well within the team's 1,152-point total capacity (144 effective points x 8 sprints), providing buffer for unknowns and technical debt.
+UniBank's implementation is planned across 9 three-week sprints, totaling 27 weeks. The plan follows a foundation-first approach: infrastructure and user onboarding in Sprints 1-2, core payment capabilities in Sprints 3-4, external integrations in Sprints 5-6, admin/white-label/hardening in Sprints 7-8, and issuer-side card transaction processing in Sprint 9. The 83 stories total 396 story points, well within the team's 1,296-point total capacity (144 effective points x 9 sprints), providing buffer for unknowns and technical debt.
 
 **Key Metrics:**
-- Total Stories: 88
+- Total Stories: 83
 - Total Points: 396
-- Sprints: 8 (3 weeks each)
+- Sprints: 9 (3 weeks each)
 - Team Capacity: 144 effective points per sprint
-- Target Completion: August 2026
-- Buffer: ~66% capacity remaining for unknowns, bugs, and refinement
+- Target Completion: September 2026
+- Buffer: ~69% capacity remaining for unknowns, bugs, and refinement
 
 ---
 
@@ -2039,6 +2039,28 @@ So that we can launch with a real customer
 
 ---
 
+### Sprint 9 (Weeks 25-27): Card Transaction Processing
+
+**Goal:** Implement issuer-side card transaction processing in Core Banking to handle purchase, deposit, balance enquiry, and statement enquiry transactions routed from the switch
+
+**Stories:**
+
+| Story | Title | Points | Epic |
+|-------|-------|--------|------|
+| STORY-077 | CardTransactions Module Scaffolding & Domain Model | 8 | EPIC-015 |
+| STORY-078 | On-Us Purchase Transaction Processing | 5 | EPIC-015 |
+| STORY-079 | Off-Us Purchase Transaction Processing | 5 | EPIC-015 |
+| STORY-080 | On-Us Deposit Transaction Processing | 5 | EPIC-015 |
+| STORY-081 | Off-Us Deposit Transaction Processing | 5 | EPIC-015 |
+| STORY-082 | Balance Enquiry Transaction | 3 | EPIC-015 |
+| STORY-083 | Statement Enquiry Transaction | 3 | EPIC-015 |
+
+**Total:** 34 points / 144 capacity (24% utilization)
+
+**Notes:** This sprint adds issuer-side card transaction processing as a new module under UniBank.Core. The switch (built in Sprint 5) already handles ISO 20022 message parsing and routing — this module provides the core banking logic: account validation, fund movement, and response generation. All 6 transaction types share common validation and the module follows the established modular monolith pattern.
+
+---
+
 ## Epic Traceability
 
 | Epic ID | Epic Name | Stories | Total Points | Sprint(s) |
@@ -2059,7 +2081,9 @@ So that we can launch with a real customer
 | EPIC-013 | White-Label Configuration | 068-071 | 18 | 6, 8 |
 | EPIC-014 | Security & Authentication | 018-020, 072 | 16 | 2, 8 |
 | Cross-cutting | Notifications, Testing, Launch | 073-076 | 20 | 1, 8 |
-| **TOTAL** | **15 Epics** | **76 stories** | **358 points** | **8 sprints** |
+| EPIC-015 | Card Transaction Processing | 077-083 | 34 | 9 |
+| EPIC-016 | SynergySwitch Payment Switch Integration | 084-092 | 47 | 10 |
+| **TOTAL** | **17 Epics** | **92 stories** | **443 points** | **10 sprints** |
 
 ---
 
@@ -2131,8 +2155,14 @@ So that we can launch with a real customer
 | FR-062 | Device Binding | STORY-014 | 2 |
 | FR-063 | Fraud Detection | STORY-072 | 8 |
 | FR-064 | ISO 20022 Formatting | STORY-041 | 5 |
+| FR-065 | On-Us Card Purchase | STORY-078 | 9 |
+| FR-066 | Off-Us Card Purchase | STORY-079 | 9 |
+| FR-067 | On-Us Card Deposit | STORY-080 | 9 |
+| FR-068 | Off-Us Card Deposit | STORY-081 | 9 |
+| FR-069 | Card Balance Enquiry | STORY-082 | 9 |
+| FR-070 | Card Statement Enquiry | STORY-083 | 9 |
 
-**Coverage: 64/64 FRs (100%)**
+**Coverage: 70/70 FRs (100%)**
 
 ---
 
@@ -2187,9 +2217,20 @@ For a story to be considered complete:
 
 ## Next Steps
 
-**Immediate:** Begin Sprint 1
+**Immediate:** Begin Sprint 9 — Card Transaction Processing
 
-Run `/create-story STORY-001` to create a detailed story document, or run `/dev-story STORY-001` to start implementing immediately.
+Sprints 1-8 are complete (76 stories, 362 points delivered). Sprint 9 focuses on EPIC-015: Card Transaction Processing.
+
+Run `/dev-story STORY-077` to start with the module scaffolding, or `/create-story STORY-077` to review the story details first.
+
+**Recommended story execution order:**
+1. STORY-077 — Module scaffolding (foundation, must be first)
+2. STORY-078 — On-us purchase (enables shared handler pattern)
+3. STORY-079 — Off-us purchase (builds on shared handler, creates SuspenseAccountResolver)
+4. STORY-080 — On-us deposit (independent of purchases, can parallel with 079)
+5. STORY-081 — Off-us deposit (reuses SuspenseAccountResolver from 079)
+6. STORY-082 — Balance enquiry (independent after 077)
+7. STORY-083 — Statement enquiry (independent after 077)
 
 **Sprint cadence:**
 - Sprint length: 3 weeks
@@ -2198,11 +2239,11 @@ Run `/create-story STORY-001` to create a detailed story document, or run `/dev-
 - Sprint review: Friday Week 3
 - Sprint retrospective: Friday Week 3
 
-**Developer allocation suggestion:**
-- **Dev 1:** Core Banking (Accounts, Payments, Transfers)
-- **Dev 2:** Switching Server + HSM Interface
-- **Dev 3:** Terminal Manager + Merchant Management + Agent Banking
-- **Dev 4:** Admin Portal + Reporting + White-Label Config
+**Developer allocation suggestion (Sprint 9):**
+- **Dev 1:** STORY-077 (scaffolding) → STORY-078 (on-us purchase) → STORY-079 (off-us purchase)
+- **Dev 2:** After 077 completes: STORY-080 (on-us deposit) → STORY-081 (off-us deposit)
+- **Dev 3:** After 077 completes: STORY-082 (balance enquiry) → STORY-083 (statement enquiry)
+- **Dev 4:** Code review, integration testing, support
 
 ---
 

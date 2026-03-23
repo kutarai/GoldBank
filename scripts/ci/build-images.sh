@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UniBank - Build Docker Images
-# Builds all service Docker images with proper tagging (commit SHA + latest).
+# UniBank - Build Container Images (Podman)
+# Builds all service container images with proper tagging (commit SHA + latest).
 #
 # Usage:
 #   ./scripts/ci/build-images.sh [--registry REGISTRY] [--tag TAG] [--push]
@@ -21,9 +21,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Default settings
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-localhost:5000}"
+DOCKER_REGISTRY="${CONTAINER_REGISTRY:-${DOCKER_REGISTRY:-localhost:5000}}"
 IMAGE_PREFIX="${IMAGE_PREFIX:-unibank}"
-DOCKER_TAG="${DOCKER_TAG:-$(git -C "${PROJECT_ROOT}" rev-parse --short HEAD 2>/dev/null || echo 'latest')}"
+DOCKER_TAG="${CONTAINER_TAG:-${DOCKER_TAG:-$(git -C "${PROJECT_ROOT}" rev-parse --short HEAD 2>/dev/null || echo 'latest')}}"
 PUSH_IMAGES=false
 PARALLEL_BUILD=false
 SINGLE_SERVICE=""
@@ -38,7 +38,6 @@ NC='\033[0m'
 # Service definitions: name -> Dockerfile path
 declare -A SERVICES=(
     ["gateway"]="server/UniBank.Gateway/Dockerfile"
-    ["switching"]="switch/UniBank.Switching/Dockerfile"
     ["terminal-manager"]="terminal/UniBank.TerminalManager/Dockerfile"
     ["hsm"]="hsm/UniBank.HSM/Dockerfile"
     ["admin"]="admin/UniBank.Admin/Dockerfile"
@@ -107,7 +106,7 @@ build_service() {
     log_info "  Dockerfile: ${dockerfile}"
     log_info "  Image:      ${full_image}:${DOCKER_TAG}"
 
-    docker build \
+    podman build \
         -t "${full_image}:${DOCKER_TAG}" \
         -t "${full_image}:latest" \
         -f "${dockerfile}" \
@@ -125,8 +124,8 @@ build_service() {
 
     if [ "${PUSH_IMAGES}" = true ]; then
         log_info "Pushing ${service_name}..."
-        docker push "${full_image}:${DOCKER_TAG}"
-        docker push "${full_image}:latest"
+        podman push "${full_image}:${DOCKER_TAG}"
+        podman push "${full_image}:latest"
         log_success "Pushed ${service_name}"
     fi
 }
@@ -137,7 +136,7 @@ cd "${PROJECT_ROOT}"
 
 echo ""
 log_info "=============================================="
-log_info "UniBank Docker Image Builder"
+log_info "UniBank Container Image Builder (Podman)"
 log_info "=============================================="
 log_info "Registry:  ${DOCKER_REGISTRY}"
 log_info "Prefix:    ${IMAGE_PREFIX}"

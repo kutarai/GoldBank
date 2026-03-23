@@ -14,6 +14,9 @@
     <!-- STORY-009: BCrypt for future PIN hashing, JWT for temporary token generation -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.*" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.*" />
+    <!-- STORY-093/094: AI module - ONNX Runtime for ArcFace face matching, ImageSharp for image processing -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.*" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.*" />
   </ItemGroup>
 
   <ItemGroup>

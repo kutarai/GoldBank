@@ -152,11 +152,6 @@ pipeline {
                         sh "docker build -t ${DOCKER_REGISTRY}/unibank/gateway:${DOCKER_TAG} -f server/UniBank.Gateway/Dockerfile ."
                     }
                 }
-                stage('Build Switching') {
-                    steps {
-                        sh "docker build -t ${DOCKER_REGISTRY}/unibank/switching:${DOCKER_TAG} -f switch/UniBank.Switching/Dockerfile ."
-                    }
-                }
                 stage('Build Terminal Manager') {
                     steps {
                         sh "docker build -t ${DOCKER_REGISTRY}/unibank/terminal-manager:${DOCKER_TAG} -f terminal/UniBank.TerminalManager/Dockerfile ."

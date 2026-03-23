@@ -58,14 +58,24 @@ public sealed class ActivateAccountOnKycHandler
                 new Error("KYC.Incomplete", "KYC verification is not complete."));
         }
 
-        // Activate the account
-        account.Status = "active";
-        account.KycLevel = 2;
-        account.UpdatedAt = DateTime.UtcNow;
+        // Activate ALL accounts for this phone number (ZWG + USD)
+        var allAccounts = await _dbContext.Accounts
+            .Where(a => a.PhoneNumber == account.PhoneNumber && a.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        foreach (var acct in allAccounts)
+        {
+            acct.Status = "active";
+            acct.KycLevel = 2;
+            acct.UpdatedAt = now;
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Account {AccountId} activated after KYC approval", accountId);
+        _logger.LogInformation(
+            "All accounts for phone {Phone} activated after KYC approval ({Count} accounts)",
+            account.PhoneNumber, allAccounts.Count);
 
         return Result.Success();
     }

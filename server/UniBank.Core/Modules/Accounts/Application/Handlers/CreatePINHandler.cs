@@ -62,7 +62,7 @@ public sealed class CreatePINHandler
                 validationResult.Error.Message));
         }
 
-        // 2. Load the account
+        // 2. Load the primary account
         var account = await _dbContext.Accounts
             .FirstOrDefaultAsync(a => a.Id == command.AccountId, cancellationToken);
 
@@ -81,9 +81,19 @@ public sealed class CreatePINHandler
                 "PIN has already been set for this account"));
         }
 
-        // 4. Hash the PIN with bcrypt (cost factor 12)
-        account.PinHash = _pinHasher.HashPin(command.Pin);
-        account.UpdatedAt = DateTime.UtcNow;
+        // 4. Hash the PIN with bcrypt (cost factor 12) and set on ALL accounts for this phone
+        var pinHash = _pinHasher.HashPin(command.Pin);
+        var now = DateTime.UtcNow;
+
+        var allAccounts = await _dbContext.Accounts
+            .Where(a => a.PhoneNumber == account.PhoneNumber && a.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var acct in allAccounts)
+        {
+            acct.PinHash = pinHash;
+            acct.UpdatedAt = now;
+        }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 

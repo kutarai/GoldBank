@@ -1,0 +1,15 @@
+mobile/
+.gradle/
+**/bin/
+**/obj/
+**/.git/
+**/node_modules/
+**/*.user
+**/*.suo
+.vs/
+.idea/
+*.md
+docs/
+tests/
+bmad/
+.claude/

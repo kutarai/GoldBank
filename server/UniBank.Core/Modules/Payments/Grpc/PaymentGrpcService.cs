@@ -58,8 +58,7 @@ public sealed class PaymentGrpcService : PaymentService.PaymentServiceBase
         if (string.IsNullOrWhiteSpace(request.AccountId) || !Guid.TryParse(request.AccountId, out var accountId))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Valid account_id is required."));
 
-        if (string.IsNullOrWhiteSpace(request.CardPan))
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "card_pan is required."));
+        // card_pan is optional — handler falls back to account's virtual card PAN
 
         if (string.IsNullOrWhiteSpace(request.DeviceId))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "device_id is required."));

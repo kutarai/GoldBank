@@ -65,7 +65,8 @@ BEGIN
             monthly_limit DECIMAL(18,2) NOT NULL DEFAULT 5000.00,
             balance DECIMAL(18,2) NOT NULL DEFAULT 0.00,
             available_balance DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-            currency VARCHAR(3) NOT NULL DEFAULT ''ZAR'',
+            currency VARCHAR(3) NOT NULL DEFAULT ''ZWG'',
+            card_pan VARCHAR(19),
             device_id VARCHAR(255),
             fcm_token TEXT,
             last_login_at TIMESTAMPTZ,
@@ -93,7 +94,7 @@ BEGIN
             currency VARCHAR(3) NOT NULL DEFAULT ''ZAR'',
             status VARCHAR(20) NOT NULL DEFAULT ''pending''
                 CHECK (status IN (''pending'', ''processing'', ''completed'', ''failed'', ''reversed'')),
-            reference VARCHAR(50) NOT NULL UNIQUE,
+            reference VARCHAR(50) NOT NULL,
             counterparty_account_id UUID,
             counterparty_phone VARCHAR(20),
             counterparty_name VARCHAR(200),
@@ -110,6 +111,11 @@ BEGIN
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             PRIMARY KEY (id, created_at)
         ) PARTITION BY RANGE (created_at)', p_schema_name);
+
+    -- Create unique index on reference including partition key
+    EXECUTE FORMAT('
+        CREATE UNIQUE INDEX %I ON %I.transactions (reference, created_at)',
+        'ix_transactions_reference_created', p_schema_name);
 
     -- kyc_documents
     EXECUTE FORMAT('
@@ -275,6 +281,36 @@ BEGIN
             UNIQUE(batch_date, partner_code)
         )', p_schema_name);
 
+    -- card_transactions (Sprint 9 - EPIC-015)
+    EXECUTE FORMAT('
+        CREATE TABLE %I.card_transactions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            account_id UUID NOT NULL,
+            merchant_account_id UUID,
+            merchant_id VARCHAR(15),
+            merchant_name VARCHAR(200),
+            transaction_type VARCHAR(30) NOT NULL,
+            amount DECIMAL(18,2) NOT NULL,
+            fee DECIMAL(18,2) NOT NULL DEFAULT 0,
+            currency VARCHAR(3) NOT NULL DEFAULT ''ZWG'',
+            status VARCHAR(20) NOT NULL DEFAULT ''pending'',
+            response_code VARCHAR(4),
+            authorization_code VARCHAR(12),
+            reference VARCHAR(50),
+            retrieval_reference VARCHAR(12),
+            stan VARCHAR(12),
+            terminal_id VARCHAR(16),
+            processing_code VARCHAR(6),
+            source_institution VARCHAR(20),
+            acquiring_institution VARCHAR(20),
+            balance_after DECIMAL(18,2) NOT NULL DEFAULT 0,
+            tenant_id VARCHAR(50) NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ,
+            completed_at TIMESTAMPTZ,
+            deleted_at TIMESTAMPTZ
+        )', p_schema_name);
+
     -- Create indexes
     EXECUTE FORMAT('CREATE INDEX idx_%s_accounts_phone ON %I.accounts (phone)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
     EXECUTE FORMAT('CREATE INDEX idx_%s_accounts_status ON %I.accounts (status)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
@@ -288,6 +324,11 @@ BEGIN
     EXECUTE FORMAT('CREATE INDEX idx_%s_terminals_serial ON %I.terminals (serial_number)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
     EXECUTE FORMAT('CREATE INDEX idx_%s_notifications_account ON %I.notifications (account_id, created_at DESC)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
     EXECUTE FORMAT('CREATE INDEX idx_%s_notifications_status ON %I.notifications (status) WHERE status = ''pending''', replace(p_schema_name, 'tenant_', ''), p_schema_name);
+    EXECUTE FORMAT('CREATE INDEX idx_%s_card_txn_tenant_time ON %I.card_transactions (tenant_id, created_at DESC)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
+    EXECUTE FORMAT('CREATE INDEX idx_%s_card_txn_account_time ON %I.card_transactions (account_id, created_at DESC)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
+    EXECUTE FORMAT('CREATE INDEX idx_%s_card_txn_reference ON %I.card_transactions (reference)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
+    EXECUTE FORMAT('CREATE INDEX idx_%s_card_txn_retrieval_ref ON %I.card_transactions (retrieval_reference)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
+    EXECUTE FORMAT('CREATE INDEX idx_%s_card_txn_stan_source ON %I.card_transactions (stan, source_institution)', replace(p_schema_name, 'tenant_', ''), p_schema_name);
 
     -- Create initial transaction partitions (current month + 3 ahead)
     PERFORM public.create_monthly_partitions(p_schema_name, 'transactions', 3);

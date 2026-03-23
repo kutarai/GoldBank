@@ -51,6 +51,14 @@ fun ProfileInfoScreen(
         )
     }
 
+    // Display format for user (DD/MM/YYYY), server gets YYYY-MM-DD from dateOfBirth
+    val displayDate = remember(dateOfBirth) {
+        if (dateOfBirth.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
+            val parts = dateOfBirth.split("-")
+            "${parts[2]}/${parts[1]}/${parts[0]}"
+        } else dateOfBirth
+    }
+
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -142,7 +150,7 @@ fun ProfileInfoScreen(
 
             Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
                 OutlinedTextField(
-                    value = dateOfBirth.ifEmpty { "Select date" },
+                    value = displayDate.ifEmpty { "Select date" },
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Date of Birth") },

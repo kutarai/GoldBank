@@ -164,13 +164,6 @@ docker-build-gateway:
   rules:
     - if: $CI_COMMIT_BRANCH
 
-docker-build-switching:
-  <<: *docker-build-template
-  script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/switching:${DOCKER_TAG} -f switch/UniBank.Switching/Dockerfile .
-  rules:
-    - if: $CI_COMMIT_BRANCH
-
 docker-build-terminal-manager:
   <<: *docker-build-template
   script:
@@ -222,14 +215,6 @@ docker-push-gateway:
     - docker push ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG}
     - docker push ${DOCKER_IMAGE_PREFIX}/gateway:latest
 
-docker-push-switching:
-  <<: *docker-push-template
-  needs: ["docker-build-switching"]
-  script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/switching:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/switching:latest -f switch/UniBank.Switching/Dockerfile .
-    - docker push ${DOCKER_IMAGE_PREFIX}/switching:${DOCKER_TAG}
-    - docker push ${DOCKER_IMAGE_PREFIX}/switching:latest
-
 docker-push-terminal-manager:
   <<: *docker-push-template
   needs: ["docker-build-terminal-manager"]
@@ -272,7 +257,6 @@ deploy-staging:
     - docker:27-dind
   needs:
     - docker-push-gateway
-    - docker-push-switching
     - docker-push-terminal-manager
     - docker-push-hsm
     - docker-push-admin

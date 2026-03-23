@@ -1,0 +1,137 @@
+@page
+@model SynergySwitch.Api.Pages.Transactions.IndexModel
+@{
+    ViewData["Title"] = "Transactions";
+}
+
+<h4 class="mb-3">Transaction Log</h4>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <input type="date" class="form-control form-control-sm" name="FromDate"
+               value="@Model.FromDate?.ToString("yyyy-MM-dd")" placeholder="From" />
+    </div>
+    <div class="col-auto">
+        <input type="date" class="form-control form-control-sm" name="ToDate"
+               value="@Model.ToDate?.ToString("yyyy-MM-dd")" placeholder="To" />
+    </div>
+    <div class="col-auto">
+        <input type="text" class="form-control form-control-sm" name="TerminalId"
+               value="@Model.TerminalId" placeholder="Terminal ID" />
+    </div>
+    <div class="col-auto">
+        <input type="text" class="form-control form-control-sm" name="MerchantId"
+               value="@Model.MerchantId" placeholder="Merchant ID" />
+    </div>
+    <div class="col-auto">
+        <select class="form-select form-select-sm" name="ResponseCode">
+            <option value="">All Responses</option>
+            <option value="Approved" selected="@(Model.ResponseCode == "Approved")">Approved</option>
+            <option value="Declined" selected="@(Model.ResponseCode == "Declined")">Declined</option>
+            <option value="TechnicalError" selected="@(Model.ResponseCode == "TechnicalError")">Technical Error</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <input type="text" class="form-control form-control-sm" name="PanLastFour"
+               value="@Model.PanLastFour" placeholder="Last 4" maxlength="4" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+        <a asp-page="/Transactions/Index" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
+<p class="text-muted">
+    @Model.Result.TotalCount transactions found. Page @Model.Result.Page of @Model.Result.TotalPages.
+</p>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Timestamp (UTC)</th>
+                <th>Terminal</th>
+                <th>PAN</th>
+                <th class="text-end">Amount</th>
+                <th>Entry</th>
+                <th>Response</th>
+                <th>Auth Code</th>
+                <th class="text-end">Time (ms)</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Result.Items.Count == 0)
+            {
+                <tr><td colspan="9" class="text-muted text-center">No transactions found</td></tr>
+            }
+            @foreach (var txn in Model.Result.Items)
+            {
+                var badgeClass = txn.ResponseCode switch
+                {
+                    "Approved" => "badge-approved",
+                    "Declined" => "badge-declined",
+                    _ => "badge-error"
+                };
+                <tr>
+                    <td>@txn.RequestTimestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@txn.TerminalId</td>
+                    <td>****@txn.PanLastFour</td>
+                    <td class="table-amount">@((txn.Amount / 100m).ToString("N2")) @txn.Currency</td>
+                    <td>@txn.CardEntryMode</td>
+                    <td><span class="badge @badgeClass">@txn.ResponseCode</span></td>
+                    <td>@(txn.AuthorisationCode ?? "-")</td>
+                    <td class="text-end">@txn.ResponseTimeMs.ToString("F0")</td>
+                    <td>
+                        <a asp-page="/Transactions/Detail" asp-route-id="@txn.Id"
+                           class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<nav>
+    <ul class="pagination pagination-sm">
+        @if (Model.Result.Page > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-page="/Transactions/Index"
+                   asp-route-Page="@(Model.Result.Page - 1)"
+                   asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                   asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                   asp-route-TerminalId="@Model.TerminalId"
+                   asp-route-MerchantId="@Model.MerchantId"
+                   asp-route-ResponseCode="@Model.ResponseCode"
+                   asp-route-PanLastFour="@Model.PanLastFour">Prev</a>
+            </li>
+        }
+        @for (int i = Math.Max(1, Model.Result.Page - 4); i <= Math.Min(Model.Result.TotalPages, Model.Result.Page + 5); i++)
+        {
+            <li class="page-item @(i == Model.Result.Page ? "active" : "")">
+                <a class="page-link" asp-page="/Transactions/Index"
+                   asp-route-Page="@i"
+                   asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                   asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                   asp-route-TerminalId="@Model.TerminalId"
+                   asp-route-MerchantId="@Model.MerchantId"
+                   asp-route-ResponseCode="@Model.ResponseCode"
+                   asp-route-PanLastFour="@Model.PanLastFour">@i</a>
+            </li>
+        }
+        @if (Model.Result.Page < Model.Result.TotalPages)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-page="/Transactions/Index"
+                   asp-route-Page="@(Model.Result.Page + 1)"
+                   asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                   asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                   asp-route-TerminalId="@Model.TerminalId"
+                   asp-route-MerchantId="@Model.MerchantId"
+                   asp-route-ResponseCode="@Model.ResponseCode"
+                   asp-route-PanLastFour="@Model.PanLastFour">Next</a>
+            </li>
+        }
+    </ul>
+</nav>

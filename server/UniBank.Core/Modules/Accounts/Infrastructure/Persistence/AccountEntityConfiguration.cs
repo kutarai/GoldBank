@@ -55,6 +55,10 @@ public sealed class AccountEntityConfiguration : IEntityTypeConfiguration<Accoun
             .HasMaxLength(3)
             .HasColumnName("currency");
 
+        builder.Property(a => a.CardPan)
+            .HasMaxLength(19)
+            .HasColumnName("card_pan");
+
         builder.Property(a => a.TenantId)
             .IsRequired()
             .HasColumnName("tenant_id");
@@ -99,11 +103,16 @@ public sealed class AccountEntityConfiguration : IEntityTypeConfiguration<Accoun
         builder.Property(a => a.LastLoginAt)
             .HasColumnName("last_login_at");
 
-        // Unique constraint on phone number to prevent duplicates (final guard against race conditions)
-        builder.HasIndex(a => a.PhoneNumber)
+        // Unique constraint: one account per phone+currency combination
+        builder.HasIndex(a => new { a.PhoneNumber, a.Currency })
             .IsUnique()
             .HasFilter("deleted_at IS NULL")
-            .HasDatabaseName("ix_accounts_phone_unique");
+            .HasDatabaseName("ix_accounts_phone_currency_unique");
+
+        builder.HasIndex(a => a.CardPan)
+            .IsUnique()
+            .HasFilter("card_pan IS NOT NULL AND deleted_at IS NULL")
+            .HasDatabaseName("ix_accounts_card_pan_unique");
 
         builder.HasIndex(a => a.TenantId)
             .HasDatabaseName("ix_accounts_tenant_id");

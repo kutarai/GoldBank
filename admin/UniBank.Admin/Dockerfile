@@ -4,7 +4,7 @@
 # ============================================
 
 # --- Build Stage ---
-FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.201 AS build
 WORKDIR /src
 
 # Copy solution and build configuration

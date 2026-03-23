@@ -3,7 +3,9 @@ package com.unibank.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unibank.shared.data.local.SessionManager
+import com.unibank.shared.data.remote.grpc.AccountGrpcClient
 import com.unibank.shared.data.remote.grpc.PaymentGrpcClient
+import com.unibank.shared.domain.model.AccountSummary
 import com.unibank.shared.domain.model.PaymentResult
 import com.unibank.shared.domain.model.QrCode
 import com.unibank.shared.domain.util.Result
@@ -14,8 +16,22 @@ import kotlinx.coroutines.launch
 
 class PaymentViewModel(
     private val paymentClient: PaymentGrpcClient,
+    private val accountClient: AccountGrpcClient,
     private val sessionManager: SessionManager,
 ) : ViewModel() {
+
+    private val _accounts = MutableStateFlow<List<AccountSummary>>(emptyList())
+    val accounts: StateFlow<List<AccountSummary>> = _accounts.asStateFlow()
+
+    fun loadAccounts() {
+        viewModelScope.launch {
+            val accountId = sessionManager.getAccountId() ?: return@launch
+            when (val result = accountClient.getProfile(accountId)) {
+                is Result.Success -> _accounts.value = result.data.accounts
+                is Result.Failure -> { /* accounts list empty — fallback to single account */ }
+            }
+        }
+    }
 
     private val _uiState = MutableStateFlow<PaymentUiState>(PaymentUiState.Idle)
     val uiState: StateFlow<PaymentUiState> = _uiState.asStateFlow()
@@ -33,7 +49,7 @@ class PaymentViewModel(
                 ttlSeconds = 300,
             )) {
                 is Result.Success -> _uiState.value = PaymentUiState.QrGenerated(result.data)
-                is Result.Failure -> _uiState.value = PaymentUiState.Error("Failed to generate QR code")
+                is Result.Failure -> _uiState.value = PaymentUiState.Error(result.error.message)
             }
         }
     }
@@ -50,15 +66,18 @@ class PaymentViewModel(
                         _uiState.value = PaymentUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = PaymentUiState.Error("Payment failed")
+                is Result.Failure -> _uiState.value = PaymentUiState.Error(result.error.message)
             }
         }
     }
 
     fun tokenizeCard() {
+        tokenizeForAccount(sessionManager.getAccountId() ?: return)
+    }
+
+    fun tokenizeForAccount(accountId: String) {
         _uiState.value = PaymentUiState.Loading
         viewModelScope.launch {
-            val accountId = sessionManager.getAccountId() ?: return@launch
             when (val result = paymentClient.tokenizeCard(accountId, "", "android-${android.os.Build.SERIAL}")) {
                 is Result.Success -> {
                     if (result.data.success) {
@@ -68,10 +87,11 @@ class PaymentViewModel(
                         _uiState.value = PaymentUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = PaymentUiState.Error("Tokenization failed")
+                is Result.Failure -> _uiState.value = PaymentUiState.Error(result.error.message)
             }
         }
     }
+
 
     fun confirmNfcPayment(transactionId: String, pin: String) {
         _uiState.value = PaymentUiState.Loading
@@ -84,7 +104,7 @@ class PaymentViewModel(
                         _uiState.value = PaymentUiState.Error(result.data.message)
                     }
                 }
-                is Result.Failure -> _uiState.value = PaymentUiState.Error("Payment confirmation failed")
+                is Result.Failure -> _uiState.value = PaymentUiState.Error(result.error.message)
             }
         }
     }

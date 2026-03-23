@@ -54,37 +54,49 @@ public sealed class VerifyOtpHandler
 
         var phone = phoneResult.Value;
 
-        // Create account in tenant database
-        var account = new Account
-        {
-            PhoneNumber = phone.Value,
-            PhoneCountryCode = phone.CountryCode,
-            Status = "pending_kyc",
-            KycLevel = 0,
-            DailyLimit = 1000.00m,
-            MonthlyLimit = 5000.00m,
-            Balance = 0.00m,
-            AvailableBalance = 0.00m,
-            Currency = "ZWG",
-            TenantId = command.TenantId,
-            DeviceId = command.DeviceId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
+        // Create dual-currency accounts (ZWG + USD) with virtual card PANs
+        var now = DateTime.UtcNow;
+        var currencies = new[] { "ZWG", "USD" };
+        var accounts = new List<Account>();
 
-        _dbContext.Set<Account>().Add(account);
+        foreach (var currency in currencies)
+        {
+            var account = new Account
+            {
+                PhoneNumber = phone.Value,
+                PhoneCountryCode = phone.CountryCode,
+                Status = "pending_kyc",
+                KycLevel = 0,
+                DailyLimit = 1000.00m,
+                MonthlyLimit = 5000.00m,
+                Balance = 0.00m,
+                AvailableBalance = 0.00m,
+                Currency = currency,
+                CardPan = VirtualCardGenerator.GeneratePan(),
+                TenantId = command.TenantId,
+                DeviceId = command.DeviceId,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            _dbContext.Set<Account>().Add(account);
+            accounts.Add(account);
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Account {AccountId} created for phone {MaskedPhone} in tenant {TenantId}",
-            account.Id, phone.ToMasked(), command.TenantId);
+        // Primary account is ZWG (first created)
+        var primaryAccount = accounts[0];
 
-        // Publish domain events
+        _logger.LogInformation(
+            "Dual accounts created for phone {MaskedPhone}: ZWG={ZwgId}, USD={UsdId}, tenant {TenantId}",
+            phone.ToMasked(), accounts[0].Id, accounts[1].Id, command.TenantId);
+
+        // Publish domain events for each account
         var correlationId = Guid.NewGuid().ToString();
 
         await _messageBus.PublishAsync(new UserRegistered(
-            UserId: account.Id,
-            PhoneNumber: account.PhoneNumber,
+            UserId: primaryAccount.Id,
+            PhoneNumber: primaryAccount.PhoneNumber,
             FirstName: string.Empty,
             LastName: string.Empty,
             Email: null)
@@ -93,22 +105,25 @@ public sealed class VerifyOtpHandler
             CorrelationId = correlationId,
         }, cancellationToken);
 
-        await _messageBus.PublishAsync(new AccountCreated(
-            AccountId: account.Id,
-            UserId: account.Id,
-            PhoneNumber: account.PhoneNumber,
-            AccountType: "personal",
-            Currency: account.Currency)
+        foreach (var account in accounts)
         {
-            TenantId = command.TenantId,
-            CorrelationId = correlationId,
-        }, cancellationToken);
+            await _messageBus.PublishAsync(new AccountCreated(
+                AccountId: account.Id,
+                UserId: primaryAccount.Id,
+                PhoneNumber: account.PhoneNumber,
+                AccountType: "personal",
+                Currency: account.Currency)
+            {
+                TenantId = command.TenantId,
+                CorrelationId = correlationId,
+            }, cancellationToken);
+        }
 
-        // Generate temporary JWT token with pin_creation scope
-        var temporaryToken = _jwtTokenService.GenerateTemporaryToken(account);
+        // Generate temporary JWT token with pin_creation scope (uses primary ZWG account)
+        var temporaryToken = _jwtTokenService.GenerateTemporaryToken(primaryAccount);
 
         return Result.Success(new VerifyOtpResult(
-            AccountId: account.Id.ToString(),
+            AccountId: primaryAccount.Id.ToString(),
             TemporaryToken: temporaryToken));
     }
 }

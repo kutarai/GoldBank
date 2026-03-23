@@ -1,5 +1,6 @@
 package com.unibank.app.ui.profile
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,7 +24,17 @@ fun EditProfileScreen(
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
     var initialized by remember { mutableStateOf(false) }
+
+    // Display DD/MM/YYYY to user, keep YYYY-MM-DD for server
+    val displayDate = remember(dateOfBirth) {
+        if (dateOfBirth.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
+            val parts = dateOfBirth.split("-")
+            "${parts[2]}/${parts[1]}/${parts[0]}"
+        } else dateOfBirth
+    }
 
     LaunchedEffect(Unit) {
         if (!initialized) viewModel.loadProfile()
@@ -85,13 +96,48 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
-            OutlinedTextField(
-                value = dateOfBirth,
-                onValueChange = { dateOfBirth = it },
-                label = { Text("Date of Birth (YYYY-MM-DD)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val cal = java.util.Calendar.getInstance().apply { timeInMillis = millis }
+                                dateOfBirth = "%04d-%02d-%02d".format(
+                                    cal.get(java.util.Calendar.YEAR),
+                                    cal.get(java.util.Calendar.MONTH) + 1,
+                                    cal.get(java.util.Calendar.DAY_OF_MONTH),
+                                )
+                            }
+                            showDatePicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                    },
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+            Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
+                OutlinedTextField(
+                    value = displayDate.ifEmpty { "Select date" },
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Date of Birth") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = if (dateOfBirth.isNotEmpty())
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+            }
 
             if (uiState is ProfileUiState.Error) {
                 Text(

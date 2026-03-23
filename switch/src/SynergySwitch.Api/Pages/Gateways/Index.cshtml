@@ -1,0 +1,291 @@
+@page
+@model SynergySwitch.Api.Pages.Gateways.IndexModel
+@{
+    ViewData["Title"] = "Gateways";
+}
+
+<h4 class="mb-3">Bank Gateways</h4>
+
+@* ── Gateway List ── *@
+@if (Model.Gateways.Count == 0)
+{
+    <div class="alert alert-info">No gateways configured. Add one below.</div>
+}
+else
+{
+    @foreach (var gw in Model.Gateways)
+    {
+        var pool = Model.PoolStatuses.FirstOrDefault(p => p.GatewayId == gw.Id);
+        var statusClass = !gw.IsEnabled ? "border-secondary" : gw.OfflineMode ? "border-info" : pool?.ActiveConnections > 0 ? "border-success" : "border-danger";
+        var badgeClass = !gw.IsEnabled ? "bg-secondary" : gw.OfflineMode ? "bg-info" : pool?.ActiveConnections > 0 ? "bg-success" : "bg-danger";
+        var statusText = !gw.IsEnabled ? "Disabled" : gw.OfflineMode ? "Offline Mode" : pool?.ActiveConnections > 0 ? "Connected" : "Disconnected";
+
+        <div class="card mb-3 @statusClass" style="border-width: 2px;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@gw.Name</strong>
+                    <span class="badge @badgeClass ms-2">@statusText</span>
+                    <span class="badge @(gw.Protocol == SynergySwitch.Data.Entities.GatewayProtocol.Iso20022Grpc ? "bg-purple" : "bg-dark") ms-2" style="@(gw.Protocol == SynergySwitch.Data.Entities.GatewayProtocol.Iso20022Grpc ? "background-color:#7B1FA2 !important;" : "")">@(gw.Protocol == SynergySwitch.Data.Entities.GatewayProtocol.Iso20022Grpc ? "ISO 20022" : "ISO 8583")</span>
+                    <small class="text-muted ms-2">@gw.Host:@gw.Port</small>
+                    <small class="text-muted ms-2">Priority: @gw.Priority</small>
+                </div>
+                <div>
+                    @if (pool != null)
+                    {
+                        <small class="text-muted me-3">
+                            Pool: <strong>@pool.ActiveConnections/@pool.PoolSize</strong>
+                            @if (pool.PendingRequests > 0)
+                            {
+                                <span class="text-info ms-1">| In-flight: @pool.PendingRequests</span>
+                            }
+                            @if (pool.TotalDrops > 0)
+                            {
+                                <span class="text-warning ms-1">| Drops: @pool.TotalDrops</span>
+                            }
+                        </small>
+                    }
+                    <a href="?editId=@gw.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                    @if (gw.IsEnabled)
+                    {
+                        <form method="post" asp-page-handler="Toggle" class="d-inline">
+                            <input type="hidden" name="gatewayId" value="@gw.Id" />
+                            <input type="hidden" name="enable" value="false" />
+                            <button type="submit" class="btn btn-sm btn-outline-warning">Disable</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Toggle" class="d-inline">
+                            <input type="hidden" name="gatewayId" value="@gw.Id" />
+                            <input type="hidden" name="enable" value="true" />
+                            <button type="submit" class="btn btn-sm btn-outline-success">Enable</button>
+                        </form>
+                    }
+                    <form method="post" asp-page-handler="DeleteGateway" class="d-inline ms-1"
+                          onsubmit="return confirm('Delete gateway @gw.Name?');">
+                        <input type="hidden" name="gatewayId" value="@gw.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (Model.EditingGatewayId == gw.Id)
+                {
+                    @* ── Inline Edit Form ── *@
+                    <form method="post" asp-page-handler="EditGateway">
+                        <input type="hidden" asp-for="EditId" />
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm">Name</label>
+                                <input asp-for="EditName" class="form-control form-control-sm" required />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm">Host</label>
+                                <input asp-for="EditHost" class="form-control form-control-sm" required />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">Port</label>
+                                <input asp-for="EditPort" type="number" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">Priority</label>
+                                <input asp-for="EditPriority" type="number" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">Pool Size</label>
+                                <input asp-for="EditPoolSize" type="number" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm">Acquiring ID</label>
+                                <input asp-for="EditAcquiringId" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">Network ID</label>
+                                <input asp-for="EditNetworkId" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">Timeout (s)</label>
+                                <input asp-for="EditTimeoutSeconds" type="number" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm">Description</label>
+                                <input asp-for="EditDescription" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input asp-for="EditSendLengthHeader" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label form-label-sm">Length Header</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm">Protocol</label>
+                                <select asp-for="EditProtocol" class="form-select form-select-sm">
+                                    <option value="Iso8583">ISO 8583 (TCP)</option>
+                                    <option value="Iso20022Grpc">ISO 20022 (gRPC)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input asp-for="EditOfflineMode" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label form-label-sm">Offline Mode</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary">Save Changes</button>
+                            <a href="?" class="btn btn-sm btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                    <hr />
+                }
+                else
+                {
+                    @if (!string.IsNullOrEmpty(gw.Description))
+                    {
+                        <p class="text-muted mb-2">@gw.Description</p>
+                    }
+                    <div class="row mb-2">
+                        <div class="col-auto"><small class="text-muted">Acquiring ID:</small> <strong>@gw.AcquiringInstitutionId</strong></div>
+                        <div class="col-auto"><small class="text-muted">Network:</small> <strong>@gw.NetworkId</strong></div>
+                        <div class="col-auto"><small class="text-muted">Pool:</small> <strong>@gw.PoolSize</strong></div>
+                        <div class="col-auto"><small class="text-muted">Timeout:</small> <strong>@(gw.TimeoutSeconds)s</strong></div>
+                        <div class="col-auto"><small class="text-muted">Length Hdr:</small> <strong>@(gw.SendLengthHeader ? "Yes" : "No")</strong></div>
+                        @if (gw.OfflineMode)
+                        {
+                            <div class="col-auto"><span class="badge bg-info">Offline Mode</span></div>
+                        }
+                    </div>
+                }
+
+                @* ── BIN Routes ── *@
+                <h6>BIN Routes</h6>
+                @if (gw.BinRoutes.Count == 0)
+                {
+                    <small class="text-muted">No BIN routes (accepts all cards as fallback)</small>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        @foreach (var bin in gw.BinRoutes.OrderBy(b => b.BinPrefix))
+                        {
+                            <span class="badge bg-primary d-flex align-items-center">
+                                @bin.BinPrefix
+                                @if (!string.IsNullOrEmpty(bin.Description))
+                                {
+                                    <small class="ms-1 opacity-75">(@bin.Description)</small>
+                                }
+                                <form method="post" asp-page-handler="RemoveBin" class="d-inline ms-1">
+                                    <input type="hidden" name="binRouteId" value="@bin.Id" />
+                                    <button type="submit" class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"
+                                            aria-label="Remove"></button>
+                                </form>
+                            </span>
+                        }
+                    </div>
+                }
+
+                @* ── Add BIN form ── *@
+                <form method="post" asp-page-handler="AddBin" class="row g-2 align-items-end mt-1">
+                    <input type="hidden" name="gatewayId" value="@gw.Id" />
+                    <div class="col-auto">
+                        <input type="text" name="NewBinPrefix" class="form-control form-control-sm"
+                               placeholder="BIN prefix (e.g. 4, 52, 411234)" required />
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" name="NewBinDescription" class="form-control form-control-sm"
+                               placeholder="Description (optional)" />
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Add BIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+}
+
+@* ── Add Gateway Form ── *@
+<div class="card mt-4">
+    <div class="card-header"><strong>Add New Gateway</strong></div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="AddGateway">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Name</label>
+                    <input asp-for="NewName" class="form-control" placeholder="e.g. ZB-PRIMARY" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Host</label>
+                    <input asp-for="NewHost" class="form-control" placeholder="192.168.3.46" required />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Port</label>
+                    <input asp-for="NewPort" type="number" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Priority</label>
+                    <input asp-for="NewPriority" type="number" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Pool Size</label>
+                    <input asp-for="NewPoolSize" type="number" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Acquiring ID</label>
+                    <input asp-for="NewAcquiringId" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Network ID</label>
+                    <input asp-for="NewNetworkId" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Timeout (s)</label>
+                    <input asp-for="NewTimeoutSeconds" type="number" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Description</label>
+                    <input asp-for="NewDescription" class="form-control" placeholder="Optional" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Protocol</label>
+                    <select asp-for="NewProtocol" class="form-select">
+                        <option value="Iso8583">ISO 8583 (TCP)</option>
+                        <option value="Iso20022Grpc">ISO 20022 (gRPC)</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Add Gateway</button>
+        </form>
+    </div>
+</div>
+
+@* ── Audit Log ── *@
+<h5 class="mt-4">Recent Gateway Changes</h5>
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Time (UTC)</th>
+                <th>Action</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.AuditLog.Count == 0)
+            {
+                <tr><td colspan="3" class="text-muted text-center">No audit log entries</td></tr>
+            }
+            @foreach (var log in Model.AuditLog)
+            {
+                var rowClass = log.Action.Contains("DELETED") || log.Action.Contains("DISABLED") ? "table-warning"
+                    : log.Action.Contains("CREATED") || log.Action.Contains("ENABLED") ? "table-success"
+                    : "";
+                <tr class="@rowClass">
+                    <td>@log.Timestamp.ToString("dd MMM HH:mm:ss")</td>
+                    <td><code>@log.Action</code></td>
+                    <td>@log.Details</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
