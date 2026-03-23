@@ -3,8 +3,10 @@ package com.unibank.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unibank.shared.data.local.SessionManager
+import com.unibank.shared.data.remote.grpc.AiGrpcClient
 import com.unibank.shared.data.remote.grpc.KycGrpcClient
 import com.unibank.shared.domain.model.KycStatus
+import com.unibank.shared.domain.model.KycVerificationResult
 import com.unibank.shared.domain.model.SelfieUploadResult
 import com.unibank.shared.domain.model.UploadResult
 import com.unibank.shared.domain.util.Result
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 sealed interface KycUiState {
     data object Idle : KycUiState
@@ -22,9 +25,17 @@ sealed interface KycUiState {
     data class Error(val message: String) : KycUiState
 }
 
+data class KycVerificationUiState(
+    val verificationResult: KycVerificationResult? = null,
+    val proofOfAddressResult: KycVerificationResult? = null,
+    val isVerifying: Boolean = false,
+    val verificationError: String? = null,
+)
+
 class KycViewModel(
     private val kycClient: KycGrpcClient,
     private val sessionManager: SessionManager,
+    private val aiClient: AiGrpcClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<KycUiState>(KycUiState.Idle)
@@ -32,6 +43,12 @@ class KycViewModel(
 
     private val _kycStatus = MutableStateFlow<KycStatus?>(null)
     val kycStatus: StateFlow<KycStatus?> = _kycStatus.asStateFlow()
+
+    private val _verificationUiState = MutableStateFlow(KycVerificationUiState())
+    val verificationUiState: StateFlow<KycVerificationUiState> = _verificationUiState.asStateFlow()
+
+    private var capturedSelfieBytes: ByteArray? = null
+    private var capturedIdDocumentBytes: ByteArray? = null
 
     fun loadKycStatus() {
         viewModelScope.launch {
@@ -81,6 +98,63 @@ class KycViewModel(
 
     fun resetState() {
         _uiState.value = KycUiState.Idle
+    }
+
+    fun setSelfieBytes(bytes: ByteArray) { capturedSelfieBytes = bytes }
+    fun setIdDocumentBytes(bytes: ByteArray) { capturedIdDocumentBytes = bytes }
+
+    fun verifyIdentity() {
+        val selfie = capturedSelfieBytes ?: return
+        val idDoc = capturedIdDocumentBytes ?: return
+        viewModelScope.launch {
+            _verificationUiState.value = _verificationUiState.value.copy(isVerifying = true, verificationError = null)
+            try {
+                val result = withTimeout(120_000L) {
+                    aiClient.verifyIdentity(sessionManager.getAccountId() ?: "", selfie, idDoc)
+                }
+                when (result) {
+                    is Result.Success -> _verificationUiState.value = _verificationUiState.value.copy(
+                        verificationResult = result.data,
+                        isVerifying = false,
+                    )
+                    is Result.Failure -> _verificationUiState.value = _verificationUiState.value.copy(
+                        verificationError = "Verification service unavailable. Your documents have been saved — we'll verify shortly.",
+                        isVerifying = false,
+                    )
+                }
+            } catch (e: Exception) {
+                _verificationUiState.value = _verificationUiState.value.copy(
+                    verificationError = "Verification service unavailable. Your documents have been saved — we'll verify shortly.",
+                    isVerifying = false,
+                )
+            }
+        }
+    }
+
+    fun verifyProofOfAddress(documentBytes: ByteArray) {
+        viewModelScope.launch {
+            _verificationUiState.value = _verificationUiState.value.copy(isVerifying = true, verificationError = null)
+            try {
+                val result = withTimeout(120_000L) {
+                    aiClient.verifyProofOfAddress(sessionManager.getAccountId() ?: "", documentBytes)
+                }
+                when (result) {
+                    is Result.Success -> _verificationUiState.value = _verificationUiState.value.copy(
+                        proofOfAddressResult = result.data,
+                        isVerifying = false,
+                    )
+                    is Result.Failure -> _verificationUiState.value = _verificationUiState.value.copy(
+                        verificationError = "Verification failed. Please try again.",
+                        isVerifying = false,
+                    )
+                }
+            } catch (e: Exception) {
+                _verificationUiState.value = _verificationUiState.value.copy(
+                    verificationError = "Verification failed. Please try again.",
+                    isVerifying = false,
+                )
+            }
+        }
     }
 
     private fun com.unibank.shared.domain.util.AppError.message(): String = when (this) {
