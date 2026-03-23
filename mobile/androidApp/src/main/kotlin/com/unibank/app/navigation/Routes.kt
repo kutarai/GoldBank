@@ -11,6 +11,7 @@ sealed interface Route {
     @Serializable data object Login : Route
     @Serializable data object DeviceTransfer : Route
     @Serializable data class RegistrationProfile(val accountId: String) : Route
+    @Serializable data class RegistrationIdUpload(val accountId: String) : Route
     @Serializable data class RegistrationSelfie(val accountId: String) : Route
 
     // Main sub-graph (behind auth)
@@ -78,4 +79,12 @@ sealed interface Route {
     @Serializable data object EditProfile : Route
     @Serializable data object Settings : Route
     @Serializable data object NotificationSettings : Route
+
+    // Security
+    @Serializable data object BiometricPrompt : Route
+    @Serializable data object SessionLock : Route
+    @Serializable data object SecuritySettings : Route
+
+    // Chat
+    @Serializable data object Chat : Route
 }

@@ -1,5 +1,6 @@
 package com.unibank.app.navigation
 
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,20 +8,27 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.unibank.app.ui.auth.BiometricPromptScreen
 import com.unibank.app.ui.auth.CreatePinScreen
 import com.unibank.app.ui.auth.LoginScreen
 import com.unibank.app.ui.auth.OtpScreen
 import com.unibank.app.ui.auth.ProfileInfoScreen
 import com.unibank.app.ui.auth.RegisterScreen
+import com.unibank.app.ui.auth.RegistrationIdUploadScreen
 import com.unibank.app.ui.auth.RegistrationSelfieScreen
+import com.unibank.app.ui.auth.SessionLockScreen
+import com.unibank.app.viewmodel.SecurityState
+import com.unibank.app.viewmodel.SecurityViewModel
 import com.unibank.app.ui.agent.CashInScreen
 import com.unibank.app.ui.agent.CashOutScreen
 import com.unibank.app.ui.billpay.PayBillScreen
@@ -72,7 +80,47 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
             AuthNavHost(modifier = modifier, startAtLogin = true)
         }
         is SessionState.Authenticated -> {
-            MainNavHost(modifier = modifier)
+            val securityViewModel: SecurityViewModel = koinViewModel()
+            val securityState by securityViewModel.uiState.collectAsState()
+            val biometricManager = BiometricManager.from(LocalContext.current)
+            val biometricAvailable = biometricManager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG
+            ) == BiometricManager.BIOMETRIC_SUCCESS
+
+            LaunchedEffect(biometricAvailable) {
+                securityViewModel.checkLockState(biometricAvailable)
+            }
+
+            when (securityState.securityState) {
+                SecurityState.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                SecurityState.BiometricRequired -> {
+                    BiometricPromptScreen(
+                        viewModel = securityViewModel,
+                        onFallbackToPin = {
+                            // Force to PIN by failing biometric 3 times
+                            repeat(3) { securityViewModel.onBiometricFailed() }
+                        },
+                    )
+                }
+                SecurityState.PinRequired -> {
+                    SessionLockScreen(
+                        viewModel = securityViewModel,
+                        onVerifyPin = { pin ->
+                            securityViewModel.onPinVerified()
+                        },
+                        onBiometricRetry = if (biometricAvailable && securityState.biometricEnabled) {
+                            { securityViewModel.checkLockState(true) }
+                        } else null,
+                    )
+                }
+                SecurityState.Unlocked -> {
+                    MainNavHost(modifier = modifier)
+                }
+            }
         }
     }
 }
@@ -128,18 +176,32 @@ private fun AuthNavHost(modifier: Modifier, startAtLogin: Boolean) {
             ProfileInfoScreen(
                 viewModel = authViewModel,
                 onProfileUpdated = {
-                    navController.navigate(Route.RegistrationSelfie(route.accountId)) {
+                    navController.navigate(Route.RegistrationIdUpload(route.accountId)) {
                         popUpTo(Route.RegistrationProfile(route.accountId)) { inclusive = true }
                     }
                 },
+            )
+        }
+        composable<Route.RegistrationIdUpload> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.RegistrationIdUpload>()
+            RegistrationIdUploadScreen(
+                viewModel = authViewModel,
+                onSuccess = {
+                    navController.navigate(Route.RegistrationSelfie(route.accountId)) {
+                        popUpTo(Route.RegistrationIdUpload(route.accountId)) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable<Route.RegistrationSelfie> {
             RegistrationSelfieScreen(
                 viewModel = authViewModel,
                 onComplete = {
-                    // SessionManager.completeRegistration() transitions to Authenticated,
-                    // causing recomposition at the AppNavGraph level
+                    // After selfie, session is cleared — navigate to login
+                    navController.navigate(Route.Login) {
+                        popUpTo(Route.Register) { inclusive = true }
+                    }
                 },
                 onBack = { navController.popBackStack() },
             )
