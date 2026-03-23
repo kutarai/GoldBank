@@ -64,6 +64,12 @@ sealed interface Route {
     @Serializable data object KycDashboard : Route
     @Serializable data class DocumentUpload(val documentType: String) : Route
     @Serializable data object Selfie : Route
+    @Serializable data class KycVerificationResult(val accountId: String) : Route
+    @Serializable data object ProofOfAddress : Route
+
+    // Document Scanning
+    @Serializable data object ChequeScan : Route
+    @Serializable data object BillScan : Route
 
     // Merchant
     @Serializable data object MerchantGraph : Route
