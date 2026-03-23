@@ -52,7 +52,12 @@ import com.unibank.app.ui.home.TransactionDetailScreen
 import com.unibank.app.ui.home.TransactionListScreen
 import com.unibank.app.ui.kyc.DocumentUploadScreen
 import com.unibank.app.ui.kyc.KycDashboardScreen
+import com.unibank.app.ui.kyc.KycVerificationResultScreen
+import com.unibank.app.ui.kyc.ProofOfAddressScreen
 import com.unibank.app.ui.kyc.SelfieScreen
+import com.unibank.app.ui.scan.BillScanScreen
+import com.unibank.app.ui.scan.ChequeScanScreen
+import com.unibank.app.viewmodel.DocumentScanViewModel
 import com.unibank.app.ui.merchant.MerchantCommissionScreen
 import com.unibank.app.ui.profile.DeviceTransferScreen
 import com.unibank.app.ui.profile.EditProfileScreen
@@ -268,6 +273,7 @@ private fun MainNavHost(modifier: Modifier) {
                         "cash_in" -> navController.navigate(Route.CashIn)
                         "cash_out" -> navController.navigate(Route.CashOut)
                         "loan" -> navController.navigate(Route.LoanList)
+                        "cheque_deposit" -> navController.navigate(Route.ChequeScan)
                     }
                 },
                 onProfileClick = { navController.navigate(Route.Profile) },
@@ -332,12 +338,20 @@ private fun MainNavHost(modifier: Modifier) {
         composable<Route.PayBill> { backStackEntry ->
             val billPayViewModel: BillPayViewModel = koinViewModel()
             val route = backStackEntry.toRoute<Route.PayBill>()
+            val savedStateHandle = backStackEntry.savedStateHandle
+            val prefilledProvider by savedStateHandle.getStateFlow<String?>("prefilledProvider", null).collectAsState()
+            val prefilledAccountNumber by savedStateHandle.getStateFlow<String?>("prefilledAccountNumber", null).collectAsState()
+            val prefilledAmount by savedStateHandle.getStateFlow<String?>("prefilledAmount", null).collectAsState()
             PayBillScreen(
                 viewModel = billPayViewModel,
                 providerId = route.providerId,
                 providerName = route.providerName,
                 onSuccess = { navController.popBackStack() },
                 onBack = { navController.popBackStack() },
+                onScanBill = { navController.navigate(Route.BillScan) },
+                prefilledProvider = prefilledProvider,
+                prefilledAccountNumber = prefilledAccountNumber,
+                prefilledAmount = prefilledAmount,
             )
         }
 
@@ -415,6 +429,9 @@ private fun MainNavHost(modifier: Modifier) {
                 viewModel = kycViewModel,
                 onSuccess = { navController.popBackStack() },
                 onBack = { navController.popBackStack() },
+                onVerificationComplete = { accountId ->
+                    navController.navigate(Route.KycVerificationResult(accountId))
+                },
             )
         }
 
@@ -523,6 +540,53 @@ private fun MainNavHost(modifier: Modifier) {
             val securityViewModel: SecurityViewModel = koinViewModel()
             SecuritySettingsScreen(
                 viewModel = securityViewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // KYC result + proof of address (Sprint 16)
+        composable<Route.KycVerificationResult> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.KycVerificationResult>()
+            val kycViewModel: KycViewModel = koinViewModel()
+            KycVerificationResultScreen(
+                viewModel = kycViewModel,
+                accountId = route.accountId,
+                onHome = { navController.navigate(Route.Home) { popUpTo(Route.Home) { inclusive = true } } },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.ProofOfAddress> {
+            val kycViewModel: KycViewModel = koinViewModel()
+            ProofOfAddressScreen(
+                viewModel = kycViewModel,
+                onSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Document scanning (Sprint 16)
+        composable<Route.ChequeScan> {
+            val docScanViewModel: DocumentScanViewModel = koinViewModel()
+            ChequeScanScreen(
+                viewModel = docScanViewModel,
+                onDepositComplete = { navController.navigate(Route.Home) { popUpTo(Route.Home) { inclusive = true } } },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.BillScan> {
+            val docScanViewModel: DocumentScanViewModel = koinViewModel()
+            BillScanScreen(
+                viewModel = docScanViewModel,
+                onFieldsExtracted = { billFields ->
+                    navController.previousBackStackEntry?.savedStateHandle?.apply {
+                        set("prefilledProvider", billFields.provider)
+                        set("prefilledAccountNumber", billFields.accountNumber)
+                        set("prefilledAmount", billFields.amount)
+                    }
+                    navController.popBackStack()
+                },
                 onBack = { navController.popBackStack() },
             )
         }
