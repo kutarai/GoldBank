@@ -109,3 +109,67 @@ data class ModelStatus(
     val isAvailable: Boolean,
     val inferenceTimeMs: Long,
 )
+
+// --- Dispute Models (Sprint 17) ---
+data class DisputeSummary(
+    val disputeId: String,
+    val reference: String,
+    val transactionId: String,
+    val disputeType: String,
+    val priority: String,
+    val status: String,
+    val amount: String,
+    val currency: String,
+    val summary: String,
+    val createdAt: Long,
+    val resolvedAt: Long?,
+)
+
+data class DisputeDetail(
+    val disputeId: String,
+    val reference: String,
+    val transactionId: String,
+    val disputeType: String,
+    val priority: String,
+    val status: String,
+    val assignedTeam: String,
+    val amount: String,
+    val currency: String,
+    val userDescription: String,
+    val aiSummary: String,
+    val aiRecommendedAction: String,
+    val classificationConfidence: Double,
+    val resolutionNotes: String?,
+    val expectedResolution: String,
+    val createdAt: Long,
+    val resolvedAt: Long?,
+)
+
+// --- Fraud Alert Models (Sprint 17) ---
+data class FraudAlertSummary(
+    val alertId: String,
+    val transactionId: String,
+    val transactionDescription: String,
+    val amount: String,
+    val currency: String,
+    val riskScore: Double,
+    val riskLevel: String,
+    val isRead: Boolean,
+    val createdAt: Long,
+)
+
+data class FraudAlertDetail(
+    val alertId: String,
+    val transactionId: String,
+    val transactionDescription: String,
+    val amount: String,
+    val currency: String,
+    val riskScore: Double,
+    val riskLevel: String,
+    val aiExplanation: String,
+    val triggeredRules: List<String>,
+    val counterparty: String,
+    val location: String,
+    val transactionAt: Long,
+    val alertAt: Long,
+)
