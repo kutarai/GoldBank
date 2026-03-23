@@ -2,6 +2,7 @@ package com.unibank.shared.di
 
 import com.unibank.shared.data.local.PreferencesManager
 import com.unibank.shared.data.local.SecureStorage
+import com.unibank.shared.data.local.SecurityPreferences
 import com.unibank.shared.data.local.SessionManager
 import com.unibank.shared.data.remote.GrpcChannelFactory
 import com.unibank.shared.data.remote.grpc.AccountGrpcClient
@@ -29,6 +30,7 @@ fun androidDataModule(
 ) = module {
     // Local storage
     single { SecureStorage(get()) }
+    single { SecurityPreferences(get()) }
     single { SessionManager(get(), defaultTenantId) }
     single { PreferencesManager(get()) }
 
