@@ -1,41 +1,119 @@
-<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
-        Dashboard
-    </MudNavLink>
-    <MudNavLink Href="/customers" Icon="@Icons.Material.Filled.People">
-        Customers
-    </MudNavLink>
-    <MudNavLink Href="/merchants" Icon="@Icons.Material.Filled.Store">
-        Merchants
-    </MudNavLink>
-    <MudNavLink Href="/transactions" Icon="@Icons.Material.Filled.Receipt">
-        Transactions
-    </MudNavLink>
-    <MudNavLink Href="/kyc" Icon="@Icons.Material.Filled.VerifiedUser">
-        KYC Review
-    </MudNavLink>
-    <MudNavLink Href="/disputes" Icon="@Icons.Material.Filled.Gavel">
-        Disputes
-    </MudNavLink>
-    <MudNavLink Href="/fraud" Icon="@Icons.Material.Filled.Shield">
-        Fraud Alerts
-    </MudNavLink>
-    <MudNavLink Href="/config" Icon="@Icons.Material.Filled.Settings">
-        System Config
-    </MudNavLink>
+@inject AdminAuthStateProvider AuthProvider
+@inject NavigationManager Nav
 
-    <MudNavGroup Title="Reports" Icon="@Icons.Material.Filled.BarChart" Expanded="false">
-        <MudNavLink Href="/reports/users" Icon="@Icons.Material.Filled.TrendingUp">
-            User Growth
-        </MudNavLink>
-        <MudNavLink Href="/reports/merchants" Icon="@Icons.Material.Filled.Storefront">
-            Merchant Performance
-        </MudNavLink>
-        <MudNavLink Href="/reports/revenue" Icon="@Icons.Material.Filled.AttachMoney">
-            Revenue
-        </MudNavLink>
-        <MudNavLink Href="/reports/recon" Icon="@Icons.Material.Filled.CompareArrows">
-            Reconciliation
-        </MudNavLink>
-    </MudNavGroup>
-</MudNavMenu>
+<AuthorizeView>
+    <Authorized>
+        <MudNavMenu>
+
+            @* Dashboard — all authenticated roles *@
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
+
+            @* Customers — Admin, CustomerService, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.CustomerAccess" Context="customersAuth">
+                <Authorized>
+                    <MudNavLink Href="/customers" Icon="@Icons.Material.Filled.People">
+                        Customers
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* KYC Review — Admin, KycOfficer, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.KycAccess" Context="kycAuth">
+                <Authorized>
+                    <MudNavLink Href="/kyc" Icon="@Icons.Material.Filled.VerifiedUser">
+                        KYC Review
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* Disputes — Admin, CustomerService, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.DisputeAccess" Context="disputeAuth">
+                <Authorized>
+                    <MudNavLink Href="/disputes" Icon="@Icons.Material.Filled.Gavel">
+                        Disputes
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* Fraud Alerts — Admin, FraudAnalyst, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.FraudAccess" Context="fraudAuth">
+                <Authorized>
+                    <MudNavLink Href="/fraud" Icon="@Icons.Material.Filled.Shield">
+                        Fraud Alerts
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* Transactions — all authenticated roles *@
+            <MudNavLink Href="/transactions" Icon="@Icons.Material.Filled.Receipt">
+                Transactions
+            </MudNavLink>
+
+            @* Users — Admin, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.UserManagement" Context="usersAuth">
+                <Authorized>
+                    <MudNavLink Href="/users" Icon="@Icons.Material.Filled.ManageAccounts">
+                        Users
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* Branches — Admin, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.UserManagement" Context="branchesAuth">
+                <Authorized>
+                    <MudNavLink Href="/branches" Icon="@Icons.Material.Filled.AccountBalance">
+                        Branches
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* System Config — Admin only *@
+            <AuthorizeView Roles="@AdminRoles.ConfigAccess" Context="configAuth">
+                <Authorized>
+                    <MudNavLink Href="/config" Icon="@Icons.Material.Filled.Settings">
+                        System Config
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
+            @* Reports — Admin, ComplianceOfficer, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.ReportAccess" Context="reportsAuth">
+                <Authorized>
+                    <MudNavGroup Title="Reports" Icon="@Icons.Material.Filled.BarChart" Expanded="false">
+                        <MudNavLink Href="/reports/users" Icon="@Icons.Material.Filled.TrendingUp">
+                            User Growth
+                        </MudNavLink>
+                        <MudNavLink Href="/reports/merchants" Icon="@Icons.Material.Filled.Storefront">
+                            Merchant Performance
+                        </MudNavLink>
+                        <MudNavLink Href="/reports/revenue" Icon="@Icons.Material.Filled.AttachMoney">
+                            Revenue
+                        </MudNavLink>
+                        <MudNavLink Href="/reports/recon" Icon="@Icons.Material.Filled.CompareArrows">
+                            Reconciliation
+                        </MudNavLink>
+                    </MudNavGroup>
+                </Authorized>
+            </AuthorizeView>
+
+            @* Logout *@
+            <MudDivider Class="my-2" />
+            <MudNavLink Icon="@Icons.Material.Filled.Logout"
+                        IconColor="Color.Error"
+                        OnClick="LogoutAsync">
+                Logout
+            </MudNavLink>
+
+        </MudNavMenu>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await AuthProvider.LogoutAsync();
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+}
