@@ -93,4 +93,13 @@ sealed interface Route {
 
     // Chat
     @Serializable data object Chat : Route
+
+    // Disputes
+    @Serializable data class DisputeWizard(val transactionId: String) : Route
+    @Serializable data object DisputeList : Route
+    @Serializable data class DisputeDetail(val disputeId: String) : Route
+
+    // Fraud Alerts
+    @Serializable data object FraudAlertList : Route
+    @Serializable data class FraudAlertDetail(val alertId: String) : Route
 }

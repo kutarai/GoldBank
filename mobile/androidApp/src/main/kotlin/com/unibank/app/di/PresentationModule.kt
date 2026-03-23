@@ -5,7 +5,9 @@ import com.unibank.app.viewmodel.AuthViewModel
 import com.unibank.app.viewmodel.BillPayViewModel
 import com.unibank.app.viewmodel.BrandingViewModel
 import com.unibank.app.viewmodel.ChatViewModel
+import com.unibank.app.viewmodel.DisputeViewModel
 import com.unibank.app.viewmodel.DocumentScanViewModel
+import com.unibank.app.viewmodel.FraudAlertViewModel
 import com.unibank.app.viewmodel.HomeViewModel
 import com.unibank.app.viewmodel.KycViewModel
 import com.unibank.app.viewmodel.LoanViewModel
@@ -32,4 +34,6 @@ val presentationModule = module {
     viewModel { SecurityViewModel(get(), get()) }
     viewModel { ChatViewModel(get(), get()) }
     viewModel { DocumentScanViewModel(get(), get()) }
+    viewModel { DisputeViewModel(get(), get(), get()) }
+    viewModel { FraudAlertViewModel(get(), get()) }
 }
