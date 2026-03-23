@@ -3,8 +3,11 @@ package com.unibank.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unibank.shared.data.local.SessionManager
+import com.unibank.shared.data.remote.grpc.AiGrpcClient
+import com.unibank.shared.domain.model.AccountSummary
 import com.unibank.shared.domain.model.Balance
 import com.unibank.shared.domain.model.Profile
+import com.unibank.shared.domain.model.SpendingInsight
 import com.unibank.shared.domain.model.Transaction
 import com.unibank.shared.domain.usecase.account.GetBalanceUseCase
 import com.unibank.shared.domain.usecase.account.GetProfileUseCase
@@ -23,21 +26,50 @@ class HomeViewModel(
     private val getTransactionsUseCase: GetTransactionsUseCase,
     private val logoutUseCase: LogoutUseCase,
     private val sessionManager: SessionManager,
+    private val aiClient: AiGrpcClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private val accountId: String
+    private val primaryAccountId: String
         get() = sessionManager.getAccountId() ?: ""
+
+    private val accountId: String
+        get() = _uiState.value.selectedAccountId ?: primaryAccountId
 
     init {
         loadDashboard()
     }
 
     fun loadDashboard() {
-        loadBalance()
         loadProfile()
+        loadBalance()
+        loadRecentTransactions()
+        loadSpendingInsights()
+    }
+
+    fun loadSpendingInsights() {
+        val accountId = sessionManager.getAccountId() ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isInsightsLoading = true)
+            when (val result = aiClient.getSpendingInsights(accountId)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        spendingInsights = result.data.insights,
+                        isInsightsLoading = false,
+                    )
+                }
+                is Result.Failure -> {
+                    _uiState.value = _uiState.value.copy(isInsightsLoading = false)
+                }
+            }
+        }
+    }
+
+    fun selectAccount(account: AccountSummary) {
+        _uiState.value = _uiState.value.copy(selectedAccountId = account.accountId)
+        loadBalance()
         loadRecentTransactions()
     }
 
@@ -111,4 +143,11 @@ data class HomeUiState(
     val isTransactionsLoading: Boolean = false,
     val balanceError: String? = null,
     val transactionsError: String? = null,
-)
+    val selectedAccountId: String? = null,
+    val spendingInsights: List<SpendingInsight> = emptyList(),
+    val isInsightsLoading: Boolean = false,
+) {
+    val accounts: List<AccountSummary> get() = profile?.accounts ?: emptyList()
+    val selectedAccount: AccountSummary? get() =
+        accounts.firstOrNull { it.accountId == selectedAccountId } ?: accounts.firstOrNull()
+}
