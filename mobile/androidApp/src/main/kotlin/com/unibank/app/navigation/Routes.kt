@@ -76,6 +76,7 @@ sealed interface Route {
     // Document Scanning
     @Serializable data object ChequeScan : Route
     @Serializable data object BillScan : Route
+    @Serializable data object ReceiptScan : Route
 
     // Merchant
     @Serializable data object MerchantGraph : Route

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ fun HomeScreen(
     onViewAllTransactions: () -> Unit,
     onQuickAction: (String) -> Unit,
     onProfileClick: () -> Unit,
+    onNotificationsClick: () -> Unit = {},
     onLogout: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -68,6 +70,9 @@ fun HomeScreen(
                 }
             },
             actions = {
+                IconButton(onClick = onNotificationsClick) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                }
                 IconButton(onClick = onProfileClick) {
                     Icon(Icons.Default.Person, contentDescription = "Profile")
                 }

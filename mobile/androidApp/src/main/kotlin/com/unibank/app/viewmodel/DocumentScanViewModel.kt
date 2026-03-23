@@ -6,6 +6,7 @@ import com.unibank.shared.data.local.SessionManager
 import com.unibank.shared.data.remote.grpc.AiGrpcClient
 import com.unibank.shared.domain.model.BillFields
 import com.unibank.shared.domain.model.ChequeFields
+import com.unibank.shared.domain.model.ReceiptFields
 import com.unibank.shared.domain.util.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ data class DocumentScanUiState(
     val isLoading: Boolean = false,
     val chequeFields: ChequeFields? = null,
     val billFields: BillFields? = null,
+    val receiptFields: ReceiptFields? = null,
     val depositSubmitted: Boolean = false,
     val error: String? = null,
 )
@@ -76,6 +78,33 @@ class DocumentScanViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "Could not read bill. Please enter details manually.",
+                    isLoading = false,
+                )
+            }
+        }
+    }
+
+    fun extractReceiptFields(receiptImage: ByteArray, transactionId: String = "") {
+        val accountId = sessionManager.getAccountId() ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null, receiptFields = null)
+            try {
+                val result = withTimeout(60_000L) {
+                    aiClient.extractReceiptFields(accountId, transactionId, receiptImage)
+                }
+                when (result) {
+                    is Result.Success -> _uiState.value = _uiState.value.copy(
+                        receiptFields = result.data,
+                        isLoading = false,
+                    )
+                    is Result.Failure -> _uiState.value = _uiState.value.copy(
+                        error = "Could not read receipt. Please enter details manually.",
+                        isLoading = false,
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Could not read receipt. Please enter details manually.",
                     isLoading = false,
                 )
             }

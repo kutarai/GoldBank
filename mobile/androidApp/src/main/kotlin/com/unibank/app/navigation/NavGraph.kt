@@ -60,8 +60,10 @@ import com.unibank.app.ui.dispute.DisputeListScreen
 import com.unibank.app.ui.dispute.DisputeWizardScreen
 import com.unibank.app.ui.fraud.FraudAlertDetailScreen
 import com.unibank.app.ui.fraud.FraudAlertListScreen
+import com.unibank.app.ui.notification.NotificationScreen
 import com.unibank.app.ui.scan.BillScanScreen
 import com.unibank.app.ui.scan.ChequeScanScreen
+import com.unibank.app.ui.scan.ReceiptScanScreen
 import com.unibank.app.viewmodel.DisputeViewModel
 import com.unibank.app.viewmodel.DocumentScanViewModel
 import com.unibank.app.viewmodel.FraudAlertViewModel
@@ -284,6 +286,7 @@ private fun MainNavHost(modifier: Modifier) {
                     }
                 },
                 onProfileClick = { navController.navigate(Route.Profile) },
+                onNotificationsClick = { navController.navigate(Route.Notifications) },
                 onLogout = { homeViewModel.logout() },
             )
         }
@@ -596,6 +599,25 @@ private fun MainNavHost(modifier: Modifier) {
                     }
                     navController.popBackStack()
                 },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.ReceiptScan> {
+            val docScanViewModel: DocumentScanViewModel = koinViewModel()
+            ReceiptScanScreen(
+                viewModel = docScanViewModel,
+                onFieldsExtracted = { _ ->
+                    navController.popBackStack()
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Notifications (Sprint 18)
+        composable<Route.Notifications> {
+            NotificationScreen(
+                onNotificationClick = { _, _ -> },
                 onBack = { navController.popBackStack() },
             )
         }
