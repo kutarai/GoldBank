@@ -69,6 +69,15 @@
                 </Authorized>
             </AuthorizeView>
 
+            @* Loan Review — Admin, LoanOfficer, BranchManager *@
+            <AuthorizeView Roles="@AdminRoles.LoanAccess" Context="loanAuth">
+                <Authorized>
+                    <MudNavLink Href="/loans" Icon="@Icons.Material.Filled.AccountBalanceWallet">
+                        Loan Review
+                    </MudNavLink>
+                </Authorized>
+            </AuthorizeView>
+
             @* System Config — Admin only *@
             <AuthorizeView Roles="@AdminRoles.ConfigAccess" Context="configAuth">
                 <Authorized>
@@ -95,6 +104,9 @@
                             Reconciliation
                         </MudNavLink>
                     </MudNavGroup>
+                    <MudNavLink Href="/audit" Icon="@Icons.Material.Filled.ManageSearch">
+                        Audit Trail
+                    </MudNavLink>
                 </Authorized>
             </AuthorizeView>
 

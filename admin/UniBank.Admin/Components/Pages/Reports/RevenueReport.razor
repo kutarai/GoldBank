@@ -1,5 +1,7 @@
 @page "/reports/revenue"
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.ReportAccess)]
 @inject ReportingService.ReportingServiceClient ReportingClient
 @inject ISnackbar Snackbar
 

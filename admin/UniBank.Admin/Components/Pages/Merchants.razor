@@ -1,5 +1,7 @@
 @page "/merchants"
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.CustomerAccess)]
 @inject AdminService.AdminServiceClient AdminClient
 @inject ISnackbar Snackbar
 
