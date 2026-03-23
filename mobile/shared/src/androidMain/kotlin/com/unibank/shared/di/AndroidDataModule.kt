@@ -6,6 +6,7 @@ import com.unibank.shared.data.local.SecurityPreferences
 import com.unibank.shared.data.local.SessionManager
 import com.unibank.shared.data.remote.GrpcChannelFactory
 import com.unibank.shared.data.remote.grpc.AccountGrpcClient
+import com.unibank.shared.data.remote.grpc.AiGrpcClient
 import com.unibank.shared.data.remote.grpc.AgentGrpcClient
 import com.unibank.shared.data.remote.grpc.BillPayGrpcClient
 import com.unibank.shared.data.remote.grpc.PaymentGrpcClient
@@ -63,6 +64,7 @@ fun androidDataModule(
     single { KycGrpcClient(get()) }
     single { LoanGrpcClient(get()) }
     single { MerchantGrpcClient(get()) }
+    single { AiGrpcClient(get()) }
 
     // Repositories
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
