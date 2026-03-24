@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISmsGateway, MockSmsGateway>();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<PinHashingService>();
+        services.AddScoped<Modules.Accounts.Infrastructure.Services.VirtualCardGenerator>();
         services.AddScoped<RegisterHandler>();
         services.AddScoped<VerifyOtpHandler>();
 
@@ -211,6 +212,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Modules.CardTransactions.Application.Handlers.BalanceEnquiryHandler>();
         services.AddScoped<Modules.CardTransactions.Application.Handlers.StatementEnquiryHandler>();
         services.AddScoped<Modules.CardTransactions.Application.Validators.CardTransactionValidator>();
+
+        // Sprint 22 - Asset Custody module (EPIC-020, STORY-137)
+        // AssetGrpcService depends only on UniBankDbContext, ITenantProvider, and ILogger —
+        // all of which are already registered above. No additional handler registrations needed
+        // for this story; handlers for OCR (STORY-138) and valuation workflow (STORY-143) follow.
 
         return services;
     }

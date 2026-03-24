@@ -19,6 +19,7 @@ using UniBank.Core.Modules.Loans.Grpc;
 using UniBank.Core.Modules.WhiteLabel.Grpc;
 using UniBank.Core.Modules.CardTransactions.Grpc;
 using UniBank.Core.Modules.AI.Grpc;
+using UniBank.Core.Modules.AssetCustody.Grpc;
 using UniBank.Gateway.Configuration;
 using UniBank.Gateway.Interceptors;
 using UniBank.Gateway.Services;
@@ -216,6 +217,9 @@ try
     app.MapGrpcService<AdminGrpcService>();
     app.MapGrpcService<AiGrpcService>();
     app.MapGrpcService<ReportingGrpcService>();
+
+    // Sprint 22 - Asset Custody gRPC service (EPIC-020, STORY-137)
+    app.MapGrpcService<AssetGrpcService>();
 
     // gRPC Server Reflection (always enabled - clients need service discovery)
     app.MapGrpcReflectionService();

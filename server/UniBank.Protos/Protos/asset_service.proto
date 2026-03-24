@@ -1,0 +1,290 @@
+syntax = "proto3";
+package unibank.v1.assets;
+option csharp_namespace = "UniBank.Protos.Assets";
+
+import "Protos/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Asset Custody service — physical asset registration, valuation, daily prices,
+// deposit house management, and release workflow.  EPIC-020 / STORY-137.
+service AssetService {
+  // -------------------------------------------------------------------------
+  // Customer-facing RPCs
+  // -------------------------------------------------------------------------
+
+  // Register a new physical asset via receipt details
+  rpc RegisterAsset(RegisterAssetRequest) returns (AssetResponse);
+
+  // List all assets belonging to the authenticated customer
+  rpc ListMyAssets(ListMyAssetsRequest) returns (ListMyAssetsResponse);
+
+  // Get full detail for a single asset (includes valuations history)
+  rpc GetAssetDetail(GetAssetDetailRequest) returns (AssetDetailResponse);
+
+  // Customer requests withdrawal of an asset from a deposit house
+  rpc RequestAssetRelease(RequestAssetReleaseRequest) returns (unibank.v1.common.StatusResponse);
+
+  // -------------------------------------------------------------------------
+  // Price / portfolio RPCs
+  // -------------------------------------------------------------------------
+
+  // Get daily spot prices for precious metals
+  rpc GetDailyPrices(GetDailyPricesRequest) returns (DailyPricesResponse);
+
+  // Calculate total portfolio value for a customer
+  rpc GetPortfolioValue(GetPortfolioValueRequest) returns (PortfolioValueResponse);
+
+  // -------------------------------------------------------------------------
+  // Admin RPCs
+  // -------------------------------------------------------------------------
+
+  // List all registered deposit houses (admin)
+  rpc ListDepositHouses(ListDepositHousesRequest) returns (ListDepositHousesResponse);
+
+  // Create a new trusted deposit house (admin)
+  rpc CreateDepositHouse(CreateDepositHouseRequest) returns (DepositHouseResponse);
+
+  // Update an existing deposit house (admin — name, address, trust status, etc.)
+  rpc UpdateDepositHouse(UpdateDepositHouseRequest) returns (DepositHouseResponse);
+
+  // Valuer submits a new periodic valuation for an asset
+  rpc SubmitValuation(SubmitValuationRequest) returns (ValuationResponse);
+
+  // Admin triggers/records a certificate verification result
+  rpc VerifyCertificate(VerifyCertificateRequest) returns (VerifyCertificateResponse);
+
+  // Admin approves a customer-initiated asset release request
+  rpc ApproveAssetRelease(ApproveAssetReleaseRequest) returns (unibank.v1.common.StatusResponse);
+}
+
+// =============================================================================
+// Customer-facing messages
+// =============================================================================
+
+message RegisterAssetRequest {
+  string account_id          = 1;
+  string deposit_house_id    = 2;
+  string receipt_number      = 3;
+  string asset_type          = 4;  // "GoldCoin", "GoldBar", "Silver", "Platinum", "PreciousStone", "Other"
+  string description         = 5;
+  string quantity            = 6;  // decimal as string
+  string unit                = 7;  // "coins", "bars", "grams", "oz", "carats"
+  string weight_grams        = 8;  // decimal as string, optional for non-metals
+  string purity              = 9;  // decimal as string, e.g. "0.999" — optional
+  string receipt_image_path  = 10;
+  google.protobuf.Timestamp receipt_date = 11;
+}
+
+// Summary view of an asset (used in list and register responses)
+message AssetResponse {
+  string id                        = 1;
+  string account_id                = 2;
+  string receipt_number            = 3;
+  string asset_type                = 4;
+  string description               = 5;
+  string quantity                  = 6;
+  string unit                      = 7;
+  string weight_grams              = 8;
+  string purity                    = 9;
+  unibank.v1.common.Money current_value = 10;
+  string verification_status       = 11;
+  string status                    = 12;
+  string deposit_house_id          = 13;
+  string deposit_house_name        = 14;
+  google.protobuf.Timestamp receipt_date = 15;
+  google.protobuf.Timestamp created_at   = 16;
+}
+
+message ListMyAssetsRequest {
+  string account_id    = 1;
+  string status_filter = 2;  // empty = all; "active", "pending_verification", "released", "suspended"
+}
+
+message ListMyAssetsResponse {
+  repeated AssetResponse assets = 1;
+}
+
+message GetAssetDetailRequest {
+  string asset_id   = 1;
+  string account_id = 2;  // must match owning account (or be an admin call)
+}
+
+message AssetDetailResponse {
+  string id                        = 1;
+  string account_id                = 2;
+  string receipt_number            = 3;
+  string asset_type                = 4;
+  string description               = 5;
+  string quantity                  = 6;
+  string unit                      = 7;
+  string weight_grams              = 8;
+  string purity                    = 9;
+  unibank.v1.common.Money current_value    = 10;
+  string verification_status              = 11;
+  string status                           = 12;
+  google.protobuf.Timestamp receipt_date  = 13;
+  google.protobuf.Timestamp created_at    = 14;
+  google.protobuf.Timestamp last_valuation_date     = 15;
+  google.protobuf.Timestamp last_verification_date  = 16;
+  repeated ValuationEntry valuations                = 17;
+  DepositHouseInfo deposit_house                    = 18;
+}
+
+message ValuationEntry {
+  string id                          = 1;
+  unibank.v1.common.Money amount     = 2;
+  string valuer_name                 = 3;
+  string valuer_license              = 4;
+  string notes                       = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message DepositHouseInfo {
+  string id              = 1;
+  string name            = 2;
+  string address         = 3;
+  string city            = 4;
+  string contact_phone   = 5;
+  string contact_email   = 6;
+  string license_number  = 7;
+  string trust_status    = 8;
+  bool   is_active       = 9;
+}
+
+message RequestAssetReleaseRequest {
+  string asset_id   = 1;
+  string account_id = 2;
+  string reason     = 3;
+}
+
+// =============================================================================
+// Price / portfolio messages
+// =============================================================================
+
+message GetDailyPricesRequest {
+  string asset_type = 1;  // optional filter: "gold", "silver", "platinum"; empty = all
+  string date       = 2;  // optional ISO date filter "YYYY-MM-DD"; empty = today
+}
+
+message DailyPriceEntry {
+  string asset_type          = 1;  // "gold", "silver", "platinum"
+  string price_per_gram_usd  = 2;  // decimal as string
+  string price_per_oz_usd    = 3;  // decimal as string
+  string date                = 4;  // ISO date "YYYY-MM-DD"
+  string source              = 5;  // "api" or "manual"
+}
+
+message DailyPricesResponse {
+  repeated DailyPriceEntry prices = 1;
+}
+
+message GetPortfolioValueRequest {
+  string account_id = 1;
+}
+
+message AssetTypeSummary {
+  string asset_type                   = 1;
+  int32  count                        = 2;
+  unibank.v1.common.Money total_value = 3;
+}
+
+message PortfolioValueResponse {
+  unibank.v1.common.Money total_value_zwg         = 1;
+  unibank.v1.common.Money total_value_usd         = 2;
+  repeated AssetTypeSummary assets_by_type        = 3;
+  int32 total_asset_count                         = 4;
+  google.protobuf.Timestamp calculated_at         = 5;
+}
+
+// =============================================================================
+// Admin messages — Deposit Houses
+// =============================================================================
+
+message ListDepositHousesRequest {
+  bool   include_inactive = 1;  // default false — only active houses
+  string trust_status_filter = 2;  // empty = all; "Verified", "Probationary", "Suspended"
+}
+
+message DepositHouseResponse {
+  string id              = 1;
+  string name            = 2;
+  string address         = 3;
+  string city            = 4;
+  string contact_phone   = 5;
+  string contact_email   = 6;
+  string license_number  = 7;
+  string api_endpoint    = 8;
+  string trust_status    = 9;
+  bool   is_active       = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message ListDepositHousesResponse {
+  repeated DepositHouseResponse deposit_houses = 1;
+}
+
+message CreateDepositHouseRequest {
+  string name            = 1;
+  string address         = 2;
+  string city            = 3;
+  string contact_phone   = 4;
+  string contact_email   = 5;
+  string license_number  = 6;
+  string api_endpoint    = 7;  // optional
+  string trust_status    = 8;  // "Verified", "Probationary", "Suspended"
+}
+
+message UpdateDepositHouseRequest {
+  string deposit_house_id = 1;
+  string name             = 2;
+  string address          = 3;
+  string city             = 4;
+  string contact_phone    = 5;
+  string contact_email    = 6;
+  string license_number   = 7;
+  string api_endpoint     = 8;
+  string trust_status     = 9;
+  bool   is_active        = 10;
+}
+
+// =============================================================================
+// Admin messages — Valuations & Certificates
+// =============================================================================
+
+message SubmitValuationRequest {
+  string asset_id          = 1;
+  string valuation_amount  = 2;  // decimal as string
+  string currency          = 3;  // "ZWG" or "USD"
+  string valuer_name       = 4;
+  string valuer_license    = 5;
+  string report_image_path = 6;  // optional
+  string notes             = 7;
+}
+
+message ValuationResponse {
+  bool   success       = 1;
+  string message       = 2;
+  string valuation_id  = 3;
+  string asset_id      = 4;
+  unibank.v1.common.Money new_value = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message VerifyCertificateRequest {
+  string asset_id           = 1;
+  string verification_status = 2;  // "Verified", "Failed", "Expired"
+  string notes              = 3;
+}
+
+message VerifyCertificateResponse {
+  bool   success             = 1;
+  string message             = 2;
+  string asset_id            = 3;
+  string verification_status = 4;
+  google.protobuf.Timestamp verified_at = 5;
+}
+
+message ApproveAssetReleaseRequest {
+  string asset_id     = 1;
+  string admin_notes  = 2;
+}
