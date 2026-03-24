@@ -30,6 +30,7 @@ internal sealed class Program
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
 
         var context = GetArg(args, "--context");
+        var seed = args.Contains("--seed", StringComparer.OrdinalIgnoreCase);
 
         switch (context)
         {
@@ -39,12 +40,14 @@ internal sealed class Program
 
             case "UniBankDb":
                 await MigrateUniBankAsync(connectionString);
+                if (seed) await RunSeedAsync(connectionString);
                 break;
 
             case null:
                 // No --context specified: apply all migrations (PublicDb first, then UniBankDb)
                 await MigratePublicAsync(connectionString);
                 await MigrateUniBankAsync(connectionString);
+                if (seed) await RunSeedAsync(connectionString);
                 break;
 
             default:
@@ -53,6 +56,22 @@ internal sealed class Program
         }
 
         return 0;
+    }
+
+    private static async Task RunSeedAsync(string connectionString)
+    {
+        Console.WriteLine("Running DemoSeeder...");
+
+        var options = new DbContextOptionsBuilder<UniBankDbContext>()
+            .UseNpgsql(connectionString, npgsql =>
+            {
+                npgsql.MigrationsAssembly("UniBank.Migrator");
+                npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "bank");
+            })
+            .Options;
+
+        await using var db = new UniBankDbContext(options, "bank");
+        await DemoSeeder.SeedAsync(db);
     }
 
     private static async Task MigratePublicAsync(string connectionString)

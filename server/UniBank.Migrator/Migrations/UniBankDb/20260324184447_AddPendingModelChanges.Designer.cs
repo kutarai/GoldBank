@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniBank.Core.Common.Persistence;
@@ -11,9 +12,11 @@ using UniBank.Core.Common.Persistence;
 namespace UniBank.Migrator.Migrations.UniBankDb
 {
     [DbContext(typeof(UniBankDbContext))]
-    partial class UniBankDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260324184447_AddPendingModelChanges")]
+    partial class AddPendingModelChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
