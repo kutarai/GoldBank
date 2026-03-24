@@ -25,6 +25,8 @@ using UniBank.Core.Modules.WhiteLabel.Domain.Entities;
 using UniBank.Core.Modules.WhiteLabel.Infrastructure.Persistence;
 using UniBank.Core.Modules.AI.Domain.Entities;
 using UniBank.Core.Modules.AI.Infrastructure.Persistence;
+using UniBank.Core.Modules.AssetCustody.Domain.Entities;
+using UniBank.Core.Modules.AssetCustody.Infrastructure.Persistence;
 using UniBank.SharedKernel.Domain;
 using UniBank.SharedKernel.MultiTenancy;
 
@@ -94,6 +96,12 @@ public class UniBankDbContext : DbContext
     public DbSet<TenantFeeConfig> TenantFeeConfigs => Set<TenantFeeConfig>();
     public DbSet<TenantTransactionLimit> TenantTransactionLimits => Set<TenantTransactionLimit>();
 
+    // Sprint 22 - Asset Custody module (EPIC-020, STORY-136)
+    public DbSet<Asset> Assets => Set<Asset>();
+    public DbSet<DepositHouse> DepositHouses => Set<DepositHouse>();
+    public DbSet<AssetValuation> AssetValuations => Set<AssetValuation>();
+    public DbSet<DailyPrice> DailyPrices => Set<DailyPrice>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(_tenantSchema);
@@ -160,6 +168,12 @@ public class UniBankDbContext : DbContext
         modelBuilder.ApplyConfiguration(new TenantBrandingEntityConfiguration());
         modelBuilder.ApplyConfiguration(new TenantFeeConfigEntityConfiguration());
         modelBuilder.ApplyConfiguration(new TenantTransactionLimitEntityConfiguration());
+
+        // Sprint 22 - Asset Custody module (EPIC-020, STORY-136)
+        modelBuilder.ApplyConfiguration(new AssetEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DepositHouseEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new AssetValuationEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DailyPriceEntityConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
