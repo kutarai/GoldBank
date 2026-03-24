@@ -6,6 +6,7 @@ import {
   Dashboard, People, VerifiedUser, Gavel, Shield, Receipt, ManageAccounts,
   AccountBalance, AccountBalanceWallet, Settings, BarChart, TrendingUp,
   Storefront, AttachMoney, CompareArrows, ManageSearch, Logout, ExpandLess, ExpandMore,
+  Warehouse,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -20,6 +21,9 @@ const navItems = [
   { label: 'Transactions', icon: <Receipt />, path: '/transactions' },
   { label: 'Users', icon: <ManageAccounts />, path: '/users', access: Access.UserManagement },
   { label: 'Branches', icon: <AccountBalance />, path: '/branches', access: Access.UserManagement },
+  { label: 'Deposit Houses', icon: <Warehouse />, path: '/deposit-houses', access: Access.ConfigAccess },
+  { label: 'Merchants', icon: <Storefront />, path: '/merchants', access: Access.CustomerAccess },
+  { label: 'Tariffs', icon: <AttachMoney />, path: '/tariffs', access: Access.ConfigAccess },
   { label: 'Loan Review', icon: <AccountBalanceWallet />, path: '/loans', access: Access.LoanAccess },
   { label: 'System Config', icon: <Settings />, path: '/config', access: Access.ConfigAccess },
 ];

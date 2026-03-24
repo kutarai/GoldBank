@@ -2,13 +2,50 @@ import { useState, useEffect } from 'react';
 import {
   Box, Typography, TextField, MenuItem, Button, Chip, IconButton, Menu, MenuItem as MItem,
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, Divider, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper, TablePagination,
+  TableContainer, TableHead, TableRow, Paper, TablePagination, Tabs, Tab,
 } from '@mui/material';
 import { MoreVert, Search } from '@mui/icons-material';
 import { generateCustomers, generateTransactions } from '../services/api';
 import { useSnackbar } from '../services/snackbar';
 
 const STATUS_COLORS = { Active: 'success', Suspended: 'warning', Frozen: 'info', Closed: 'error' };
+
+const ASSET_STATUS_COLORS = { 'In Custody': 'success', 'Pending Verification': 'warning', 'Released': 'default', 'Disputed': 'error' };
+
+const STUB_ASSETS = [
+  {
+    id: 'AST001',
+    type: 'Gold Coin',
+    description: 'Krugerrand Gold Coins (1 oz)',
+    quantity: 5,
+    depositHouse: 'Fidelity Gold Refinery',
+    status: 'In Custody',
+    currentValue: 9500,
+    lastVerified: '2026-03-10',
+  },
+  {
+    id: 'AST002',
+    type: 'Gold Coin',
+    description: 'Mosi-oa-Tunya Gold Coins (1 oz)',
+    quantity: 10,
+    depositHouse: 'ZB Bank Vault Services',
+    status: 'In Custody',
+    currentValue: 18200,
+    lastVerified: '2026-03-15',
+  },
+  {
+    id: 'AST003',
+    type: 'Silver Bar',
+    description: 'LBMA Silver Bar (100 oz)',
+    quantity: 2,
+    depositHouse: 'Stanbic Precious Metals',
+    status: 'Pending Verification',
+    currentValue: 4800,
+    lastVerified: '2026-02-28',
+  },
+];
+
+const TOTAL_PORTFOLIO_VALUE = STUB_ASSETS.reduce((sum, a) => sum + a.currentValue, 0);
 
 export default function Customers() {
   const notify = useSnackbar();
@@ -18,6 +55,7 @@ export default function Customers() {
   const [data, setData] = useState({ items: [], total: 0 });
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [detailTab, setDetailTab] = useState(0);
   const [actionOpen, setActionOpen] = useState(false);
   const [action, setAction] = useState('');
   const [reason, setReason] = useState('');
@@ -40,7 +78,12 @@ export default function Customers() {
     setSelected(menuCustomer);
     setAction(act);
     closeMenu();
-    if (act === 'View') { setDetailOpen(true); } else { setActionOpen(true); }
+    if (act === 'View') {
+      setDetailTab(0);
+      setDetailOpen(true);
+    } else {
+      setActionOpen(true);
+    }
   };
 
   const recentTxns = generateTransactions().slice(0, 5);
@@ -95,52 +138,129 @@ export default function Customers() {
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Customer Details: {selected?.name}</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ px: 0, pb: 0 }}>
+          <Tabs
+            value={detailTab}
+            onChange={(_, v) => setDetailTab(v)}
+            sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}
+          >
+            <Tab label="Profile" />
+            <Tab label="Transactions" />
+            <Tab label="Assets" />
+          </Tabs>
+
           {selected && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">Account ID</Typography>
-                <Typography>{selected.id}</Typography>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Phone</Typography>
-                <Typography>{selected.phone}</Typography>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Email</Typography>
-                <Typography>{selected.email}</Typography>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>National ID</Typography>
-                <Typography>{selected.nationalId}</Typography>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-                <Chip label={selected.status} color={STATUS_COLORS[selected.status]} size="small" />
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>KYC Level</Typography>
-                <Typography>Level {selected.kycLevel}</Typography>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Balance (ZWG)</Typography>
-                <Typography variant="h6">{selected.balanceZwg.toLocaleString()}</Typography>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Balance (USD)</Typography>
-                <Typography variant="h6">${selected.balanceUsd.toLocaleString()}</Typography>
-              </Grid>
-              <Grid size={12}>
-                <Divider sx={{ my: 1 }} />
-                <Typography variant="subtitle1" gutterBottom>Recent Transactions</Typography>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow><TableCell>ID</TableCell><TableCell>Type</TableCell><TableCell align="right">Amount</TableCell><TableCell>Status</TableCell><TableCell>Date</TableCell></TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentTxns.map((t) => (
-                      <TableRow key={t.id}>
-                        <TableCell>{t.id}</TableCell><TableCell>{t.type}</TableCell>
-                        <TableCell align="right">{t.amount.toLocaleString()}</TableCell>
-                        <TableCell><Chip label={t.status} size="small" /></TableCell>
-                        <TableCell>{t.date}</TableCell>
+            <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+              {/* Tab 0: Profile */}
+              {detailTab === 0 && (
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary">Account ID</Typography>
+                    <Typography>{selected.id}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Phone</Typography>
+                    <Typography>{selected.phone}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Email</Typography>
+                    <Typography>{selected.email}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>National ID</Typography>
+                    <Typography>{selected.nationalId}</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                    <Chip label={selected.status} color={STATUS_COLORS[selected.status]} size="small" />
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>KYC Level</Typography>
+                    <Typography>Level {selected.kycLevel}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Balance (ZWG)</Typography>
+                    <Typography variant="h6">{selected.balanceZwg.toLocaleString()}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Balance (USD)</Typography>
+                    <Typography variant="h6">${selected.balanceUsd.toLocaleString()}</Typography>
+                  </Grid>
+                </Grid>
+              )}
+
+              {/* Tab 1: Transactions */}
+              {detailTab === 1 && (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>Recent Transactions</Typography>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>ID</TableCell><TableCell>Type</TableCell>
+                        <TableCell align="right">Amount</TableCell><TableCell>Status</TableCell><TableCell>Date</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Grid>
-            </Grid>
+                    </TableHead>
+                    <TableBody>
+                      {recentTxns.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell>{t.id}</TableCell><TableCell>{t.type}</TableCell>
+                          <TableCell align="right">{t.amount.toLocaleString()}</TableCell>
+                          <TableCell><Chip label={t.status} size="small" /></TableCell>
+                          <TableCell>{t.date}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              )}
+
+              {/* Tab 2: Assets */}
+              {detailTab === 2 && (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle1">Assets in Trust</Typography>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="caption" color="text.secondary">Total Portfolio Value</Typography>
+                      <Typography variant="h6" color="success.main">
+                        ${TOTAL_PORTFOLIO_VALUE.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Asset Type</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell align="right">Qty</TableCell>
+                        <TableCell>Deposit House</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align="right">Current Value</TableCell>
+                        <TableCell>Last Verified</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {STUB_ASSETS.map((a) => (
+                        <TableRow key={a.id}>
+                          <TableCell>
+                            <Chip label={a.type} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell>{a.description}</TableCell>
+                          <TableCell align="right">{a.quantity}</TableCell>
+                          <TableCell>{a.depositHouse}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={a.status}
+                              color={ASSET_STATUS_COLORS[a.status]}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" fontWeight="medium">
+                              ${a.currentValue.toLocaleString()}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{a.lastVerified}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              )}
+            </Box>
           )}
         </DialogContent>
-        <DialogActions><Button onClick={() => setDetailOpen(false)}>Close</Button></DialogActions>
+        <DialogActions>
+          <Button onClick={() => setDetailOpen(false)}>Close</Button>
+        </DialogActions>
       </Dialog>
 
       {/* Action Confirm Dialog */}

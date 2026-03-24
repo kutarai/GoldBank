@@ -15,9 +15,11 @@ import FraudAlerts from './pages/FraudAlerts';
 import Transactions from './pages/Transactions';
 import UserManagement from './pages/UserManagement';
 import BranchManagement from './pages/BranchManagement';
+import DepositHouses from './pages/DepositHouses';
 import LoanReview from './pages/LoanReview';
 import SystemConfig from './pages/SystemConfig';
 import Merchants from './pages/Merchants';
+import Tariffs from './pages/Tariffs';
 import AuditTrail from './pages/AuditTrail';
 import UserGrowthReport from './pages/reports/UserGrowthReport';
 import MerchantReport from './pages/reports/MerchantReport';
@@ -45,9 +47,11 @@ export default function App() {
               <Route path="transactions" element={<Transactions />} />
               <Route path="users" element={<ProtectedRoute roles={Access.UserManagement}><UserManagement /></ProtectedRoute>} />
               <Route path="branches" element={<ProtectedRoute roles={Access.UserManagement}><BranchManagement /></ProtectedRoute>} />
+              <Route path="deposit-houses" element={<ProtectedRoute roles={Access.ConfigAccess}><DepositHouses /></ProtectedRoute>} />
               <Route path="loans" element={<ProtectedRoute roles={Access.LoanAccess}><LoanReview /></ProtectedRoute>} />
               <Route path="config" element={<ProtectedRoute roles={Access.ConfigAccess}><SystemConfig /></ProtectedRoute>} />
               <Route path="merchants" element={<ProtectedRoute roles={Access.CustomerAccess}><Merchants /></ProtectedRoute>} />
+              <Route path="tariffs" element={<ProtectedRoute roles={Access.ConfigAccess}><Tariffs /></ProtectedRoute>} />
               <Route path="audit" element={<ProtectedRoute roles={Access.ReportAccess}><AuditTrail /></ProtectedRoute>} />
               <Route path="reports/users" element={<ProtectedRoute roles={Access.ReportAccess}><UserGrowthReport /></ProtectedRoute>} />
               <Route path="reports/merchants" element={<ProtectedRoute roles={Access.ReportAccess}><MerchantReport /></ProtectedRoute>} />
