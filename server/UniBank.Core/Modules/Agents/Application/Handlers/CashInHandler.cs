@@ -12,25 +12,26 @@ using UniBank.SharedKernel.Results;
 namespace UniBank.Core.Modules.Agents.Application.Handlers;
 
 /// <summary>
-/// Handles cash-in at a merchant agent (STORY-032).
+/// Handles cash-in at a merchant agent (STORY-032, EPIC-020).
 /// The agent receives physical cash and credits the customer's mobile money account.
 /// Float is debited from the agent and credited to the customer.
+/// Customer pays a service fee + IMTT tax. Agent earns commission.
 /// </summary>
 public sealed class CashInHandler
 {
     private readonly UniBankDbContext _dbContext;
-    private readonly CommissionEngine _commissionEngine;
+    private readonly TariffEngine _tariffEngine;
     private readonly IMessageBus _messageBus;
     private readonly ILogger<CashInHandler> _logger;
 
     public CashInHandler(
         UniBankDbContext dbContext,
-        CommissionEngine commissionEngine,
+        TariffEngine tariffEngine,
         IMessageBus messageBus,
         ILogger<CashInHandler> logger)
     {
         _dbContext = dbContext;
-        _commissionEngine = commissionEngine;
+        _tariffEngine = tariffEngine;
         _messageBus = messageBus;
         _logger = logger;
     }
@@ -104,19 +105,20 @@ public sealed class CashInHandler
                 new Error("Agent.InsufficientFloat",
                     $"Insufficient float balance. Available: {agentFloat.FloatBalance:F2}, Required: {command.Amount:F2}"));
 
-        // Calculate commission
-        var (commissionRate, commissionAmount) = _commissionEngine.CalculateCommission("cash_in", command.Amount);
+        // Calculate tariff: customer fee, agent commission, and tax
+        var tariff = _tariffEngine.Calculate("cash_in", command.Amount);
 
         var now = DateTime.UtcNow;
         var reference = $"CI-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
 
-        // Debit agent float
+        // Debit agent float (the deposit amount only — agent funds the customer)
         agentFloat.FloatBalance -= command.Amount;
         agentFloat.UpdatedAt = now;
 
-        // Credit customer account
-        customerAccount.Balance += command.Amount;
-        customerAccount.AvailableBalance += command.Amount;
+        // Credit customer account with deposit amount minus customer fee and tax
+        var customerNetCredit = command.Amount - tariff.CustomerFee - tariff.Tax;
+        customerAccount.Balance += customerNetCredit;
+        customerAccount.AvailableBalance += customerNetCredit;
         customerAccount.UpdatedAt = now;
 
         // Create agent debit transaction
@@ -126,6 +128,7 @@ public sealed class CashInHandler
             Type = "cash_in",
             Amount = -command.Amount,
             Fee = 0m,
+            Tax = 0m,
             Status = "completed",
             Reference = reference,
             Description = $"Cash-in to {command.CustomerPhone}",
@@ -137,13 +140,14 @@ public sealed class CashInHandler
             CompletedAt = now
         };
 
-        // Create customer credit transaction
+        // Create customer credit transaction (net of fees and tax)
         var customerTransaction = new Transaction
         {
             AccountId = customerAccount.Id,
             Type = "cash_in",
-            Amount = command.Amount,
-            Fee = 0m,
+            Amount = customerNetCredit,
+            Fee = tariff.CustomerFee,
+            Tax = tariff.Tax,
             Status = "completed",
             Reference = reference,
             Description = $"Cash-in from agent {merchant.BusinessName}",
@@ -154,15 +158,15 @@ public sealed class CashInHandler
             CompletedAt = now
         };
 
-        // Record commission
+        // Record agent commission
         var commission = new AgentCommission
         {
             MerchantId = command.AgentMerchantId,
             TransactionId = customerTransaction.Id,
             TransactionType = "cash_in",
             TransactionAmount = command.Amount,
-            CommissionRate = commissionRate,
-            CommissionAmount = commissionAmount,
+            CommissionRate = tariff.AgentCommissionRate,
+            CommissionAmount = tariff.AgentCommission,
             Currency = command.Currency,
             TenantId = command.TenantId
         };
@@ -184,14 +188,17 @@ public sealed class CashInHandler
             ReferenceNumber: reference), cancellationToken);
 
         _logger.LogInformation(
-            "Cash-in completed: ref {Reference}, amount {Amount} {Currency}, agent {AgentId}, customer {CustomerPhone}",
-            reference, command.Amount, command.Currency, command.AgentMerchantId, command.CustomerPhone);
+            "Cash-in completed: ref {Reference}, amount {Amount} {Currency}, fee {Fee}, tax {Tax}, commission {Commission}, agent {AgentId}, customer {CustomerPhone}",
+            reference, command.Amount, command.Currency, tariff.CustomerFee, tariff.Tax, tariff.AgentCommission,
+            command.AgentMerchantId, command.CustomerPhone);
 
         return Result.Success(new CashOperationResult(
             TransactionId: customerTransaction.Id,
             Reference: reference,
             Amount: command.Amount,
-            Commission: commissionAmount,
+            CustomerFee: tariff.CustomerFee,
+            Tax: tariff.Tax,
+            Commission: tariff.AgentCommission,
             NewFloatBalance: agentFloat.FloatBalance,
             Currency: command.Currency,
             CompletedAt: now));

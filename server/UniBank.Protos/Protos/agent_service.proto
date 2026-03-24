@@ -38,6 +38,8 @@ message CashOperationResponse {
   unibank.v1.common.Money commission = 6;
   unibank.v1.common.Money new_float_balance = 7;
   google.protobuf.Timestamp completed_at = 8;
+  unibank.v1.common.Money customer_fee = 9;
+  unibank.v1.common.Money tax = 10;
 }
 
 message FloatBalanceRequest {

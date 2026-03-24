@@ -9,6 +9,8 @@ public sealed record PaymentResult(
     string Reference,
     decimal Amount,
     decimal Fee,
+    decimal Tax,
+    decimal MerchantCommission,
     decimal NewBalance,
     string Currency,
     string Status,

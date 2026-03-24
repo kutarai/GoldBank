@@ -90,7 +90,7 @@ public sealed class ConfirmPaymentHandler
             return Result.Failure<PaymentResult>(authResult.Error);
 
         // Re-check balance (may have changed since initial request)
-        var totalDebit = payment.Amount + payment.Fee;
+        var totalDebit = payment.Amount + payment.Fee + payment.Tax;
         if (payerAccount.AvailableBalance < totalDebit)
         {
             payment.Status = "failed";
@@ -133,9 +133,10 @@ public sealed class ConfirmPaymentHandler
         payerAccount.AvailableBalance -= totalDebit;
         payerAccount.UpdatedAt = now;
 
-        // Credit merchant
-        merchantAccount.Balance += payment.Amount;
-        merchantAccount.AvailableBalance += payment.Amount;
+        // Credit merchant (amount minus merchant commission)
+        var merchantCredit = payment.Amount - payment.MerchantCommission;
+        merchantAccount.Balance += merchantCredit;
+        merchantAccount.AvailableBalance += merchantCredit;
         merchantAccount.UpdatedAt = now;
 
         // Update payment status
@@ -150,6 +151,7 @@ public sealed class ConfirmPaymentHandler
             Type = "nfc_payment",
             Amount = -totalDebit,
             Fee = payment.Fee,
+            Tax = payment.Tax,
             Status = "completed",
             Reference = payment.Reference,
             Description = $"NFC payment to {merchantName}",
@@ -164,11 +166,12 @@ public sealed class ConfirmPaymentHandler
         {
             AccountId = merchantAccount.Id,
             Type = "nfc_receipt",
-            Amount = payment.Amount,
-            Fee = 0,
+            Amount = merchantCredit,
+            Fee = payment.MerchantCommission,
+            Tax = 0m,
             Status = "completed",
             Reference = payment.Reference,
-            Description = "NFC payment received",
+            Description = $"NFC payment received (commission {payment.MerchantCommission:F2} {payment.Currency})",
             CounterpartyName = payerAccount.FirstName is not null
                 ? $"{payerAccount.FirstName} {payerAccount.LastName}".Trim()
                 : payerAccount.PhoneNumber,
@@ -202,6 +205,8 @@ public sealed class ConfirmPaymentHandler
             Reference: payment.Reference,
             Amount: payment.Amount,
             Fee: payment.Fee,
+            Tax: payment.Tax,
+            MerchantCommission: payment.MerchantCommission,
             NewBalance: payerAccount.AvailableBalance,
             Currency: payment.Currency,
             Status: "completed",

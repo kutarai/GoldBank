@@ -12,25 +12,26 @@ using UniBank.SharedKernel.Results;
 namespace UniBank.Core.Modules.Agents.Application.Handlers;
 
 /// <summary>
-/// Handles cash-out at a merchant agent (STORY-033).
+/// Handles cash-out at a merchant agent (STORY-033, EPIC-020).
 /// The customer withdraws cash from their mobile money account via the agent.
-/// The customer's account is debited and the agent's float is credited.
+/// Customer is debited amount + fee + tax. Agent float is credited with the withdrawal amount.
+/// Agent earns commission (paid by bank).
 /// </summary>
 public sealed class CashOutHandler
 {
     private readonly UniBankDbContext _dbContext;
-    private readonly CommissionEngine _commissionEngine;
+    private readonly TariffEngine _tariffEngine;
     private readonly IMessageBus _messageBus;
     private readonly ILogger<CashOutHandler> _logger;
 
     public CashOutHandler(
         UniBankDbContext dbContext,
-        CommissionEngine commissionEngine,
+        TariffEngine tariffEngine,
         IMessageBus messageBus,
         ILogger<CashOutHandler> logger)
     {
         _dbContext = dbContext;
-        _commissionEngine = commissionEngine;
+        _tariffEngine = tariffEngine;
         _messageBus = messageBus;
         _logger = logger;
     }
@@ -98,11 +99,14 @@ public sealed class CashOutHandler
             return Result.Failure<CashOperationResult>(
                 new Error("Customer.InvalidPin", "Invalid customer PIN."));
 
-        // Check customer balance
-        if (customerAccount.AvailableBalance < command.Amount)
+        // Calculate tariff: customer fee, agent commission, and tax
+        var tariff = _tariffEngine.Calculate("cash_out", command.Amount);
+
+        // Check customer balance (amount + fee + tax)
+        if (customerAccount.AvailableBalance < tariff.TotalCustomerDebit)
             return Result.Failure<CashOperationResult>(
                 new Error("Customer.InsufficientFunds",
-                    $"Insufficient balance. Available: {customerAccount.AvailableBalance:F2}, Required: {command.Amount:F2}"));
+                    $"Insufficient balance. Available: {customerAccount.AvailableBalance:F2}, Required: {tariff.TotalCustomerDebit:F2} (amount {command.Amount:F2} + fee {tariff.CustomerFee:F2} + tax {tariff.Tax:F2})"));
 
         // Load agent float
         var agentFloat = await _dbContext.AgentFloats
@@ -114,18 +118,15 @@ public sealed class CashOutHandler
             return Result.Failure<CashOperationResult>(
                 new Error("Agent.NoFloat", "Agent float account not found."));
 
-        // Calculate commission
-        var (commissionRate, commissionAmount) = _commissionEngine.CalculateCommission("cash_out", command.Amount);
-
         var now = DateTime.UtcNow;
         var reference = $"CO-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
 
-        // Debit customer account
-        customerAccount.Balance -= command.Amount;
-        customerAccount.AvailableBalance -= command.Amount;
+        // Debit customer account (amount + fee + tax)
+        customerAccount.Balance -= tariff.TotalCustomerDebit;
+        customerAccount.AvailableBalance -= tariff.TotalCustomerDebit;
         customerAccount.UpdatedAt = now;
 
-        // Credit agent float
+        // Credit agent float (withdrawal amount only)
         agentFloat.FloatBalance += command.Amount;
         agentFloat.UpdatedAt = now;
 
@@ -134,8 +135,9 @@ public sealed class CashOutHandler
         {
             AccountId = customerAccount.Id,
             Type = "cash_out",
-            Amount = -command.Amount,
-            Fee = 0m,
+            Amount = -tariff.TotalCustomerDebit,
+            Fee = tariff.CustomerFee,
+            Tax = tariff.Tax,
             Status = "completed",
             Reference = reference,
             Description = $"Cash-out at agent {merchant.BusinessName}",
@@ -153,6 +155,7 @@ public sealed class CashOutHandler
             Type = "cash_out",
             Amount = command.Amount,
             Fee = 0m,
+            Tax = 0m,
             Status = "completed",
             Reference = reference,
             Description = $"Cash-out from {customerAccount.PhoneNumber}",
@@ -164,15 +167,15 @@ public sealed class CashOutHandler
             CompletedAt = now
         };
 
-        // Record commission
+        // Record agent commission
         var commission = new AgentCommission
         {
             MerchantId = command.AgentMerchantId,
             TransactionId = customerTransaction.Id,
             TransactionType = "cash_out",
             TransactionAmount = command.Amount,
-            CommissionRate = commissionRate,
-            CommissionAmount = commissionAmount,
+            CommissionRate = tariff.AgentCommissionRate,
+            CommissionAmount = tariff.AgentCommission,
             Currency = command.Currency,
             TenantId = command.TenantId
         };
@@ -194,14 +197,17 @@ public sealed class CashOutHandler
             ReferenceNumber: reference), cancellationToken);
 
         _logger.LogInformation(
-            "Cash-out completed: ref {Reference}, amount {Amount} {Currency}, agent {AgentId}, customer {CustomerId}",
-            reference, command.Amount, command.Currency, command.AgentMerchantId, command.CustomerAccountId);
+            "Cash-out completed: ref {Reference}, amount {Amount} {Currency}, fee {Fee}, tax {Tax}, commission {Commission}, agent {AgentId}, customer {CustomerId}",
+            reference, command.Amount, command.Currency, tariff.CustomerFee, tariff.Tax, tariff.AgentCommission,
+            command.AgentMerchantId, command.CustomerAccountId);
 
         return Result.Success(new CashOperationResult(
             TransactionId: customerTransaction.Id,
             Reference: reference,
             Amount: command.Amount,
-            Commission: commissionAmount,
+            CustomerFee: tariff.CustomerFee,
+            Tax: tariff.Tax,
+            Commission: tariff.AgentCommission,
             NewFloatBalance: agentFloat.FloatBalance,
             Currency: command.Currency,
             CompletedAt: now));

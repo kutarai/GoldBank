@@ -7,6 +7,8 @@ public sealed record CashOperationResult(
     Guid TransactionId,
     string Reference,
     decimal Amount,
+    decimal CustomerFee,
+    decimal Tax,
     decimal Commission,
     decimal NewFloatBalance,
     string Currency,

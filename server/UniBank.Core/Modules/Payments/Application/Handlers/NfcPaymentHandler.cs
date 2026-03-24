@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using UniBank.Core.Common.Persistence;
 using UniBank.Core.Modules.Accounts.Domain.Entities;
 using UniBank.Core.Modules.Accounts.Infrastructure.Services;
+using UniBank.Core.Modules.Agents.Infrastructure.Services;
 using UniBank.Core.Modules.Payments.Domain.Entities;
 using UniBank.SharedKernel.Events;
 using UniBank.SharedKernel.Messaging;
@@ -11,25 +12,26 @@ using UniBank.SharedKernel.Results;
 namespace UniBank.Core.Modules.Payments.Application.Handlers;
 
 /// <summary>
-/// Handles NFC contactless payment processing at a POS terminal (STORY-023).
-/// Verifies account status, checks balance, determines if high-value PIN is required,
-/// debits payer, credits merchant, creates transaction records, and publishes events.
+/// Handles NFC contactless payment processing at a POS terminal (STORY-023, EPIC-020).
+/// Customer pays amount + fee + tax. Merchant receives amount minus discount rate commission.
 /// </summary>
 public sealed class NfcPaymentHandler
 {
-    private const decimal NfcFeePercentage = 0.005m; // 0.5% fee for NFC payments
     private readonly UniBankDbContext _dbContext;
+    private readonly TariffEngine _tariffEngine;
     private readonly TransactionAuthorizationService _authService;
     private readonly IMessageBus _messageBus;
     private readonly ILogger<NfcPaymentHandler> _logger;
 
     public NfcPaymentHandler(
         UniBankDbContext dbContext,
+        TariffEngine tariffEngine,
         TransactionAuthorizationService authService,
         IMessageBus messageBus,
         ILogger<NfcPaymentHandler> logger)
     {
         _dbContext = dbContext;
+        _tariffEngine = tariffEngine;
         _authService = authService;
         _messageBus = messageBus;
         _logger = logger;
@@ -76,15 +78,16 @@ public sealed class NfcPaymentHandler
             return Result.Failure<PaymentResult>(
                 new Error("Merchant.AccountNotFound", "Merchant account not found."));
 
-        // Calculate fee
-        var fee = Math.Round(command.Amount * NfcFeePercentage, 2);
-        var totalDebit = command.Amount + fee;
+        // Calculate tariff: customer fee, merchant commission, and tax
+        var tariff = _tariffEngine.Calculate("pos_nfc", command.Amount);
+        var fee = tariff.CustomerFee;
+        var totalDebit = tariff.TotalCustomerDebit;
 
-        // Check balance
+        // Check balance (amount + customer fee + tax)
         if (payerAccount.AvailableBalance < totalDebit)
             return Result.Failure<PaymentResult>(
                 new Error("Payment.InsufficientFunds",
-                    $"Insufficient balance. Required: {totalDebit:F2}, Available: {payerAccount.AvailableBalance:F2}"));
+                    $"Insufficient balance. Required: {totalDebit:F2} (amount {command.Amount:F2} + fee {fee:F2} + tax {tariff.Tax:F2}), Available: {payerAccount.AvailableBalance:F2}"));
 
         // Check if high-value transaction requires PIN authorization
         var requiresAuth = await _authService.RequiresAuthorizationAsync(
@@ -121,6 +124,8 @@ public sealed class NfcPaymentHandler
                 Reference: reference,
                 Amount: command.Amount,
                 Fee: fee,
+                Tax: tariff.Tax,
+                MerchantCommission: tariff.MerchantDiscount,
                 NewBalance: payerAccount.AvailableBalance,
                 Currency: command.Currency,
                 Status: "pending_pin",
@@ -144,7 +149,7 @@ public sealed class NfcPaymentHandler
 
         // Process payment: debit payer, credit merchant
         return await ExecutePaymentAsync(
-            payerAccount, merchantAccount, command.Amount, fee,
+            payerAccount, merchantAccount, command.Amount, fee, tariff.Tax, tariff.MerchantDiscount,
             command.Currency, "nfc", command.NfcData, null,
             command.TerminalId, command.TenantId, merchant.BusinessName,
             cancellationToken);
@@ -155,6 +160,8 @@ public sealed class NfcPaymentHandler
         Account merchantAccount,
         decimal amount,
         decimal fee,
+        decimal tax,
+        decimal merchantCommission,
         string currency,
         string type,
         string? nfcData,
@@ -166,16 +173,17 @@ public sealed class NfcPaymentHandler
     {
         var reference = GenerateReference();
         var now = DateTime.UtcNow;
-        var totalDebit = amount + fee;
+        var totalDebit = amount + fee + tax;
+        var merchantCredit = amount - merchantCommission;
 
-        // Debit payer
+        // Debit payer (amount + fee + tax)
         payerAccount.Balance -= totalDebit;
         payerAccount.AvailableBalance -= totalDebit;
         payerAccount.UpdatedAt = now;
 
-        // Credit merchant (merchant receives amount minus fee)
-        merchantAccount.Balance += amount;
-        merchantAccount.AvailableBalance += amount;
+        // Credit merchant (amount minus merchant discount rate commission)
+        merchantAccount.Balance += merchantCredit;
+        merchantAccount.AvailableBalance += merchantCredit;
         merchantAccount.UpdatedAt = now;
 
         // Create payment record
@@ -185,6 +193,8 @@ public sealed class NfcPaymentHandler
             MerchantAccountId = merchantAccount.Id,
             Amount = amount,
             Fee = fee,
+            Tax = tax,
+            MerchantCommission = merchantCommission,
             Currency = currency,
             Type = type,
             Status = "completed",
@@ -198,13 +208,14 @@ public sealed class NfcPaymentHandler
 
         _dbContext.Set<Payment>().Add(payment);
 
-        // Create transaction records for both parties
+        // Create payer debit transaction (amount + fee + tax)
         var payerTransaction = new Transaction
         {
             AccountId = payerAccount.Id,
             Type = $"{type}_payment",
             Amount = -totalDebit,
             Fee = fee,
+            Tax = tax,
             Status = "completed",
             Reference = reference,
             Description = $"{type.ToUpperInvariant()} payment to {merchantName}",
@@ -215,15 +226,17 @@ public sealed class NfcPaymentHandler
             CompletedAt = now
         };
 
+        // Create merchant credit transaction (amount minus commission)
         var merchantTransaction = new Transaction
         {
             AccountId = merchantAccount.Id,
             Type = $"{type}_receipt",
-            Amount = amount,
-            Fee = 0,
+            Amount = merchantCredit,
+            Fee = merchantCommission,
+            Tax = 0m,
             Status = "completed",
             Reference = reference,
-            Description = $"{type.ToUpperInvariant()} payment received",
+            Description = $"{type.ToUpperInvariant()} payment received (commission {merchantCommission:F2} {currency})",
             CounterpartyName = payerAccount.FirstName is not null
                 ? $"{payerAccount.FirstName} {payerAccount.LastName}".Trim()
                 : payerAccount.PhoneNumber,
@@ -249,14 +262,16 @@ public sealed class NfcPaymentHandler
             ReferenceNumber: reference), cancellationToken);
 
         _logger.LogInformation(
-            "Payment {Reference} completed: {Type}, amount {Amount} {Currency}, payer {Payer}, merchant {Merchant}",
-            reference, type, amount, currency, payerAccount.Id, merchantAccount.Id);
+            "Payment {Reference} completed: {Type}, amount {Amount} {Currency}, fee {Fee}, tax {Tax}, merchantComm {MerchantComm}, payer {Payer}, merchant {Merchant}",
+            reference, type, amount, currency, fee, tax, merchantCommission, payerAccount.Id, merchantAccount.Id);
 
         return Result.Success(new PaymentResult(
             TransactionId: payment.Id.ToString(),
             Reference: reference,
             Amount: amount,
             Fee: fee,
+            Tax: tax,
+            MerchantCommission: merchantCommission,
             NewBalance: payerAccount.AvailableBalance,
             Currency: currency,
             Status: "completed",

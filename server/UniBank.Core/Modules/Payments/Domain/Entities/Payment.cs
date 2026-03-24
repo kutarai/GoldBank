@@ -12,6 +12,8 @@ public sealed class Payment : AggregateRoot
     public Guid MerchantAccountId { get; set; }
     public decimal Amount { get; set; }
     public decimal Fee { get; set; }
+    public decimal Tax { get; set; }
+    public decimal MerchantCommission { get; set; }
     public string Currency { get; set; } = "ZWG";
     public string Type { get; set; } = default!;
     public string Status { get; set; } = "pending";
