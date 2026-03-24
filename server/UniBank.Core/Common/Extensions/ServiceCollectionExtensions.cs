@@ -218,6 +218,12 @@ public static class ServiceCollectionExtensions
         // all of which are already registered above. No additional handler registrations needed
         // for this story; handlers for OCR (STORY-138) and valuation workflow (STORY-143) follow.
 
+        // STORY-138: Receipt OCR handler
+        // STORY-140: Daily price feed and asset valuation services
+        services.AddScoped<Modules.AssetCustody.Application.Handlers.ExtractReceiptHandler>();
+        services.AddScoped<Modules.AssetCustody.Infrastructure.Services.PriceFeedService>();
+        services.AddScoped<Modules.AssetCustody.Infrastructure.Services.AssetValuationService>();
+
         return services;
     }
 }
