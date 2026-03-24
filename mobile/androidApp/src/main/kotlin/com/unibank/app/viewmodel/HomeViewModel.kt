@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unibank.shared.data.local.SessionManager
 import com.unibank.shared.data.remote.grpc.AiGrpcClient
+import com.unibank.shared.data.remote.grpc.AssetGrpcClient
 import com.unibank.shared.domain.model.AccountSummary
 import com.unibank.shared.domain.model.Balance
+import com.unibank.shared.domain.model.PortfolioValue
 import com.unibank.shared.domain.model.Profile
 import com.unibank.shared.domain.model.SpendingInsight
 import com.unibank.shared.domain.model.Transaction
@@ -27,6 +29,7 @@ class HomeViewModel(
     private val logoutUseCase: LogoutUseCase,
     private val sessionManager: SessionManager,
     private val aiClient: AiGrpcClient,
+    private val assetClient: AssetGrpcClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -47,6 +50,19 @@ class HomeViewModel(
         loadBalance()
         loadRecentTransactions()
         loadSpendingInsights()
+        loadPortfolio()
+    }
+
+    fun loadPortfolio() {
+        val accountId = sessionManager.getAccountId() ?: return
+        viewModelScope.launch {
+            when (val result = assetClient.getPortfolioValue(accountId)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(portfolioValue = result.data)
+                }
+                is Result.Failure -> { /* Non-critical — silently skip if assets unavailable */ }
+            }
+        }
     }
 
     fun loadSpendingInsights() {
@@ -146,6 +162,7 @@ data class HomeUiState(
     val selectedAccountId: String? = null,
     val spendingInsights: List<SpendingInsight> = emptyList(),
     val isInsightsLoading: Boolean = false,
+    val portfolioValue: PortfolioValue? = null,
 ) {
     val accounts: List<AccountSummary> get() = profile?.accounts ?: emptyList()
     val selectedAccount: AccountSummary? get() =

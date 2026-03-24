@@ -291,6 +291,7 @@ private fun MainNavHost(modifier: Modifier) {
                 },
                 onProfileClick = { navController.navigate(Route.Profile) },
                 onNotificationsClick = { navController.navigate(Route.Notifications) },
+                onAssetsClick = { navController.navigate(Route.AssetList) },
                 onLogout = { homeViewModel.logout() },
             )
         }

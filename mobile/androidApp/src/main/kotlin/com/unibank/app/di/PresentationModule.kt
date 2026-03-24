@@ -23,7 +23,7 @@ import org.koin.dsl.module
 val presentationModule = module {
     viewModel { BrandingViewModel() }
     viewModel { AuthViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { PaymentViewModel(get(), get(), get()) }
     viewModel { TransferViewModel(get(), get()) }
     viewModel { BillPayViewModel(get(), get()) }
