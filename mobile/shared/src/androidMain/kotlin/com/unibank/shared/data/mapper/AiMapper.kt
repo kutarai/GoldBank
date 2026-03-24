@@ -166,4 +166,15 @@ object AiMapper {
         isAvailable = response.ollamaHealthy && response.faceModelLoaded,
         inferenceTimeMs = 0L,
     )
+
+    fun toDepositReceiptOcr(fields: DocumentFields) = DepositReceiptOcr(
+        depositHouse = fields.fields["deposit_house"] ?: fields.fields["institution"] ?: "",
+        receiptNumber = fields.fields["receipt_number"] ?: fields.fields["reference"] ?: "",
+        date = fields.fields["date"] ?: "",
+        depositorName = fields.fields["depositor_name"] ?: fields.fields["name"] ?: "",
+        description = fields.fields["description"] ?: fields.fields["item_description"] ?: "",
+        quantity = fields.fields["quantity"] ?: "",
+        weight = fields.fields["weight"] ?: fields.fields["weight_grams"] ?: "",
+        purity = fields.fields["purity"] ?: "",
+    )
 }

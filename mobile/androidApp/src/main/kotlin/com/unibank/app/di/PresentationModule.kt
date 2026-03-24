@@ -1,6 +1,7 @@
 package com.unibank.app.di
 
 import com.unibank.app.viewmodel.AgentViewModel
+import com.unibank.app.viewmodel.AssetViewModel
 import com.unibank.app.viewmodel.AuthViewModel
 import com.unibank.app.viewmodel.BillPayViewModel
 import com.unibank.app.viewmodel.BrandingViewModel
@@ -36,4 +37,5 @@ val presentationModule = module {
     viewModel { DocumentScanViewModel(get(), get()) }
     viewModel { DisputeViewModel(get(), get(), get()) }
     viewModel { FraudAlertViewModel(get(), get()) }
+    viewModel { AssetViewModel(get(), get(), get()) }
 }

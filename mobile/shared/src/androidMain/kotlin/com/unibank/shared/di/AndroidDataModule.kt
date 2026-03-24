@@ -8,6 +8,7 @@ import com.unibank.shared.data.remote.GrpcChannelFactory
 import com.unibank.shared.data.remote.grpc.AccountGrpcClient
 import com.unibank.shared.data.remote.grpc.AiGrpcClient
 import com.unibank.shared.data.remote.grpc.AgentGrpcClient
+import com.unibank.shared.data.remote.grpc.AssetGrpcClient
 import com.unibank.shared.data.remote.grpc.BillPayGrpcClient
 import com.unibank.shared.data.remote.grpc.PaymentGrpcClient
 import com.unibank.shared.data.remote.grpc.KycGrpcClient
@@ -65,6 +66,7 @@ fun androidDataModule(
     single { LoanGrpcClient(get()) }
     single { MerchantGrpcClient(get()) }
     single { AiGrpcClient(get()) }
+    single { AssetGrpcClient(get()) }
 
     // Repositories
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }

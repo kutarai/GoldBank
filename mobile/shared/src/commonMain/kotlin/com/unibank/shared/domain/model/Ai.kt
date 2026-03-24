@@ -173,3 +173,76 @@ data class FraudAlertDetail(
     val transactionAt: Long,
     val alertAt: Long,
 )
+
+// --- Asset Custody Models (EPIC-020) ---
+data class AssetSummary(
+    val assetId: String,
+    val receiptNumber: String,
+    val assetType: String,
+    val description: String,
+    val quantity: Double,
+    val unit: String,
+    val currentValueAmount: String,
+    val currentValueCurrency: String,
+    val verificationStatus: String,
+    val status: String,
+    val depositHouseName: String,
+    val receiptDate: Long,
+)
+
+data class AssetDetail(
+    val assetId: String,
+    val receiptNumber: String,
+    val assetType: String,
+    val description: String,
+    val quantity: Double,
+    val unit: String,
+    val weightGrams: Double?,
+    val purity: Double?,
+    val currentValueAmount: String,
+    val currentValueCurrency: String,
+    val verificationStatus: String,
+    val status: String,
+    val depositHouseName: String,
+    val depositHouseAddress: String,
+    val receiptDate: Long,
+    val valuations: List<ValuationEntry>,
+)
+
+data class ValuationEntry(
+    val amount: String,
+    val currency: String,
+    val valuerName: String,
+    val date: Long,
+)
+
+data class PortfolioValue(
+    val totalValueZwg: String,
+    val totalValueUsd: String,
+    val assetsByType: List<AssetTypeSummary>,
+)
+
+data class AssetTypeSummary(
+    val assetType: String,
+    val count: Int,
+    val totalValueUsd: String,
+)
+
+data class DailyPriceEntry(
+    val assetType: String,
+    val pricePerGramUsd: Double,
+    val pricePerOzUsd: Double,
+    val date: String,
+    val source: String,
+)
+
+data class DepositReceiptOcr(
+    val depositHouse: String,
+    val receiptNumber: String,
+    val date: String,
+    val depositorName: String,
+    val description: String,
+    val quantity: String,
+    val weight: String,
+    val purity: String,
+)

@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString
 import com.unibank.shared.data.mapper.AiMapper
 import com.unibank.shared.data.remote.grpcCall
 import com.unibank.shared.domain.model.BillFields
+import com.unibank.shared.domain.model.DepositReceiptOcr
 import com.unibank.shared.domain.model.ChequeFields
 import com.unibank.shared.domain.model.DisputeTriage
 import com.unibank.shared.domain.model.DocumentFields
@@ -211,5 +212,15 @@ class AiGrpcClient(channel: ManagedChannel) {
     suspend fun getModelStatus(): Result<ModelStatus> = grpcCall {
         val request = AiService.GetModelStatusRequest.newBuilder().build()
         AiMapper.toModelStatus(stub.getModelStatus(request))
+    }
+
+    /** Extract fields from a physical asset deposit receipt image for the Asset Custody flow. */
+    suspend fun extractDepositReceipt(imageBytes: ByteArray): Result<DepositReceiptOcr> = grpcCall {
+        val request = AiService.ExtractDocumentFieldsRequest.newBuilder()
+            .setDocumentImage(com.google.protobuf.ByteString.copyFrom(imageBytes))
+            .setDocumentType(AiService.DocumentType.DOCUMENT_TYPE_UNSPECIFIED)
+            .build()
+        val fields = AiMapper.toDocumentFields(stub.extractDocumentFields(request))
+        AiMapper.toDepositReceiptOcr(fields)
     }
 }
