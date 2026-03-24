@@ -224,6 +224,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Modules.AssetCustody.Infrastructure.Services.PriceFeedService>();
         services.AddScoped<Modules.AssetCustody.Infrastructure.Services.AssetValuationService>();
 
+        // STORY-144: Certificate verification (automated + on-demand)
+        // STORY-145: Asset release request and admin approval workflow
+        services.AddScoped<Modules.AssetCustody.Infrastructure.Services.CertificateVerificationService>();
+        services.AddScoped<Modules.AssetCustody.Application.Handlers.AssetReleaseHandler>();
+
         return services;
     }
 }
