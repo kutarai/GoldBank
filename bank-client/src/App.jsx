@@ -17,6 +17,7 @@ import UserManagement from './pages/UserManagement';
 import BranchManagement from './pages/BranchManagement';
 import DepositHouses from './pages/DepositHouses';
 import LoanReview from './pages/LoanReview';
+import AssetValuation from './pages/AssetValuation';
 import SystemConfig from './pages/SystemConfig';
 import Merchants from './pages/Merchants';
 import Tariffs from './pages/Tariffs';
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="branches" element={<ProtectedRoute roles={Access.UserManagement}><BranchManagement /></ProtectedRoute>} />
               <Route path="deposit-houses" element={<ProtectedRoute roles={Access.ConfigAccess}><DepositHouses /></ProtectedRoute>} />
               <Route path="loans" element={<ProtectedRoute roles={Access.LoanAccess}><LoanReview /></ProtectedRoute>} />
+              <Route path="assets" element={<ProtectedRoute roles={Access.LoanAccess}><AssetValuation /></ProtectedRoute>} />
               <Route path="config" element={<ProtectedRoute roles={Access.ConfigAccess}><SystemConfig /></ProtectedRoute>} />
               <Route path="merchants" element={<ProtectedRoute roles={Access.CustomerAccess}><Merchants /></ProtectedRoute>} />
               <Route path="tariffs" element={<ProtectedRoute roles={Access.ConfigAccess}><Tariffs /></ProtectedRoute>} />
