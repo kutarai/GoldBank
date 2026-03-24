@@ -9,17 +9,23 @@ namespace UniBank.Core.Modules.FraudDetection.Application.Services;
 
 /// <summary>
 /// Rules engine that evaluates transactions against fraud detection rules (STORY-072).
-/// Supports four rule types: UnusualAmount, VelocityBreach, GeographicAnomaly, PatternAnomaly.
+/// Supports six rule types: UnusualAmount, VelocityBreach, GeographicAnomaly,
+/// PatternAnomaly, NewAccountRisk, and FailedAttempts.
 /// </summary>
 public sealed class FraudDetectionEngine
 {
     private const string VelocityKeyPrefix = "fraud:velocity:";
     private const string PatternKeyPrefix = "fraud:pattern:";
+    private const string FailedAttemptsKeyPrefix = "fraud:failed:";
     private const int VelocityWindowSeconds = 3600; // 1 hour
     private const int PatternWindowSeconds = 86400; // 24 hours
+    private const int FailedAttemptsWindowSeconds = 1800; // 30 minutes
     private const int MaxTransactionsPerHour = 10;
     private const decimal UnusualAmountMultiplier = 5.0m;
     private const int PatternRepeatThreshold = 3;
+    private const int MaxFailedAttemptsPerWindow = 5;
+    private const int NewAccountWindowHours = 24;
+    private const decimal NewAccountDailyLimitPercentage = 0.50m; // 50% of daily limit
 
     private readonly UniBankDbContext _dbContext;
     private readonly ICacheStore _cache;
@@ -37,7 +43,7 @@ public sealed class FraudDetectionEngine
 
     public async Task<Result<List<FraudAlert>>> EvaluateTransactionAsync(
         Guid accountId, Guid transactionId, decimal amount, string currency,
-        string? counterpartyPhone, string tenantId,
+        string transactionType, string? counterpartyPhone, string tenantId,
         CancellationToken cancellationToken = default)
     {
         var alerts = new List<FraudAlert>();
@@ -61,7 +67,45 @@ public sealed class FraudDetectionEngine
             if (patternAlert is not null) alerts.Add(patternAlert);
         }
 
+        var newAccountAlert = await CheckNewAccountRiskAsync(
+            accountId, transactionId, amount, currency, tenantId, cancellationToken);
+        if (newAccountAlert is not null) alerts.Add(newAccountAlert);
+
         return Result.Success(alerts);
+    }
+
+    /// <summary>
+    /// Records a failed payment attempt for the account. Call this from payment handlers
+    /// when a transaction fails due to wrong PIN, insufficient funds, etc.
+    /// Returns a fraud alert if the threshold is breached.
+    /// </summary>
+    public async Task<FraudAlert?> RecordFailedAttemptAsync(
+        Guid accountId, Guid transactionId, string tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        var failedKey = $"{FailedAttemptsKeyPrefix}{accountId}";
+        var currentCount = await _cache.IncrementAsync(failedKey, cancellationToken);
+
+        if (currentCount == 1)
+            await _cache.SetExpiryAsync(failedKey, TimeSpan.FromSeconds(FailedAttemptsWindowSeconds), cancellationToken);
+
+        if (currentCount <= MaxFailedAttemptsPerWindow) return null;
+
+        var severity = currentCount > 10 ? "Critical" : "High";
+        _logger.LogWarning(
+            "FailedAttempts fraud alert: account {AccountId}, {Count} failed attempts in 30 minutes",
+            accountId, currentCount);
+
+        return new FraudAlert
+        {
+            AccountId = accountId,
+            TransactionId = transactionId,
+            AlertType = "FailedAttempts",
+            Severity = severity,
+            Description = $"Account has {currentCount} failed payment attempts in the last 30 minutes, exceeding the threshold of {MaxFailedAttemptsPerWindow}.",
+            Status = "Open",
+            TenantId = tenantId
+        };
     }
 
     private async Task<FraudAlert?> CheckUnusualAmountAsync(
@@ -159,6 +203,44 @@ public sealed class FraudDetectionEngine
             AlertType = "PatternAnomaly", Severity = severity,
             Description = $"Same amount {amount:F2} sent to {counterpartyPhone} {currentCount} times in the last 24 hours (threshold: {PatternRepeatThreshold}).",
             Status = "Open", TenantId = tenantId
+        };
+    }
+
+    /// <summary>
+    /// NewAccountRisk: Detects transactions exceeding 50% of daily limit within 24 hours of account activation.
+    /// New accounts are high risk for fraud — legitimate users rarely max out limits immediately.
+    /// </summary>
+    private async Task<FraudAlert?> CheckNewAccountRiskAsync(
+        Guid accountId, Guid transactionId, decimal amount, string currency,
+        string tenantId, CancellationToken cancellationToken)
+    {
+        var account = await _dbContext.Accounts
+            .Where(a => a.Id == accountId)
+            .Select(a => new { a.CreatedAt, a.DailyLimit, a.Status })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (account is null) return null;
+
+        // Only applies within 24 hours of account creation
+        var hoursSinceCreation = (DateTime.UtcNow - account.CreatedAt).TotalHours;
+        if (hoursSinceCreation > NewAccountWindowHours) return null;
+
+        var threshold = account.DailyLimit * NewAccountDailyLimitPercentage;
+        if (amount <= threshold) return null;
+
+        _logger.LogWarning(
+            "NewAccountRisk: account {AccountId} created {Hours:F1}h ago, tx {Amount} {Currency} exceeds {Threshold:F2} (50% of daily limit {DailyLimit:F2})",
+            accountId, hoursSinceCreation, amount, currency, threshold, account.DailyLimit);
+
+        return new FraudAlert
+        {
+            AccountId = accountId,
+            TransactionId = transactionId,
+            AlertType = "NewAccountRisk",
+            Severity = "High",
+            Description = $"New account (created {hoursSinceCreation:F0}h ago) transacting {amount:F2} {currency}, which exceeds 50% of daily limit ({threshold:F2} {currency}).",
+            Status = "Open",
+            TenantId = tenantId
         };
     }
 }

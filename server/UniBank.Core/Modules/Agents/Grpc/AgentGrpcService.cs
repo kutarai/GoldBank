@@ -74,7 +74,9 @@ public sealed class AgentGrpcService : AgentService.AgentServiceBase
             Amount = new Money { Amount = value.Amount.ToString("F2"), Currency = value.Currency },
             Commission = new Money { Amount = value.Commission.ToString("F2"), Currency = value.Currency },
             NewFloatBalance = new Money { Amount = value.NewFloatBalance.ToString("F2"), Currency = value.Currency },
-            CompletedAt = Timestamp.FromDateTime(DateTime.SpecifyKind(value.CompletedAt, DateTimeKind.Utc))
+            CompletedAt = Timestamp.FromDateTime(DateTime.SpecifyKind(value.CompletedAt, DateTimeKind.Utc)),
+            CustomerFee = new Money { Amount = value.CustomerFee.ToString("F2"), Currency = value.Currency },
+            Tax = new Money { Amount = value.Tax.ToString("F2"), Currency = value.Currency }
         };
     }
 
@@ -112,7 +114,9 @@ public sealed class AgentGrpcService : AgentService.AgentServiceBase
             Amount = new Money { Amount = value.Amount.ToString("F2"), Currency = value.Currency },
             Commission = new Money { Amount = value.Commission.ToString("F2"), Currency = value.Currency },
             NewFloatBalance = new Money { Amount = value.NewFloatBalance.ToString("F2"), Currency = value.Currency },
-            CompletedAt = Timestamp.FromDateTime(DateTime.SpecifyKind(value.CompletedAt, DateTimeKind.Utc))
+            CompletedAt = Timestamp.FromDateTime(DateTime.SpecifyKind(value.CompletedAt, DateTimeKind.Utc)),
+            CustomerFee = new Money { Amount = value.CustomerFee.ToString("F2"), Currency = value.Currency },
+            Tax = new Money { Amount = value.Tax.ToString("F2"), Currency = value.Currency }
         };
     }
 

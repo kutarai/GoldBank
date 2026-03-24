@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using UniBank.Core.Common.Persistence;
 using UniBank.Core.Modules.Accounts.Infrastructure.Services;
+using UniBank.Core.Modules.Agents.Infrastructure.Services;
 using UniBank.Core.Modules.Payments.Infrastructure.Services;
 using UniBank.SharedKernel.Caching;
 using UniBank.SharedKernel.Results;
@@ -9,13 +10,14 @@ using UniBank.SharedKernel.Results;
 namespace UniBank.Core.Modules.Payments.Application.Handlers;
 
 /// <summary>
-/// Handles QR code payment processing after scanning (STORY-027).
+/// Handles QR code payment processing after scanning (STORY-027, EPIC-020).
+/// Customer pays amount + fee + tax. Merchant receives amount minus discount rate.
 /// </summary>
 public sealed class QrPaymentHandler
 {
     private const string QrPaymentKeyPrefix = "qr_payment:";
-    private const decimal QrFeePercentage = 0.003m; // 0.3%
     private readonly UniBankDbContext _dbContext;
+    private readonly TariffEngine _tariffEngine;
     private readonly EmvQrCodeService _qrService;
     private readonly PinHashingService _pinHasher;
     private readonly NfcPaymentHandler _paymentExecutor;
@@ -24,6 +26,7 @@ public sealed class QrPaymentHandler
 
     public QrPaymentHandler(
         UniBankDbContext dbContext,
+        TariffEngine tariffEngine,
         EmvQrCodeService qrService,
         PinHashingService pinHasher,
         NfcPaymentHandler paymentExecutor,
@@ -31,6 +34,7 @@ public sealed class QrPaymentHandler
         ILogger<QrPaymentHandler> logger)
     {
         _dbContext = dbContext;
+        _tariffEngine = tariffEngine;
         _qrService = qrService;
         _pinHasher = pinHasher;
         _paymentExecutor = paymentExecutor;
@@ -97,13 +101,14 @@ public sealed class QrPaymentHandler
             return Result.Failure<PaymentResult>(
                 new Error("Auth.InvalidPIN", "Invalid PIN."));
 
-        var fee = Math.Round(storedAmount * QrFeePercentage, 2);
-        var totalDebit = storedAmount + fee;
+        var tariff = _tariffEngine.Calculate("pos_qr", storedAmount);
+        var fee = tariff.CustomerFee;
+        var totalDebit = tariff.TotalCustomerDebit;
 
         if (payerAccount.AvailableBalance < totalDebit)
             return Result.Failure<PaymentResult>(
                 new Error("Payment.InsufficientFunds",
-                    $"Insufficient balance. Required: {totalDebit:F2}, Available: {payerAccount.AvailableBalance:F2}"));
+                    $"Insufficient balance. Required: {totalDebit:F2} (amount {storedAmount:F2} + fee {fee:F2} + tax {tariff.Tax:F2}), Available: {payerAccount.AvailableBalance:F2}"));
 
         var merchantAccount = await _dbContext.Accounts
             .FirstOrDefaultAsync(
@@ -115,7 +120,7 @@ public sealed class QrPaymentHandler
                 new Error("Merchant.AccountNotFound", "Merchant account not found."));
 
         var result = await _paymentExecutor.ExecutePaymentAsync(
-            payerAccount, merchantAccount, storedAmount, fee,
+            payerAccount, merchantAccount, storedAmount, fee, tariff.Tax, tariff.MerchantDiscount,
             storedCurrency, "qr", null, command.QrCodeData,
             null, command.TenantId, merchantName,
             cancellationToken);

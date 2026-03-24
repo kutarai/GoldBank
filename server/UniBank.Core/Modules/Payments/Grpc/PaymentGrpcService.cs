@@ -299,6 +299,16 @@ public sealed class PaymentGrpcService : PaymentService.PaymentServiceBase
                 Amount = value.NewBalance.ToString("F2"),
                 Currency = currency
             },
+            Tax = new UniBank.Protos.Common.Money
+            {
+                Amount = value.Tax.ToString("F2"),
+                Currency = currency
+            },
+            MerchantCommission = new UniBank.Protos.Common.Money
+            {
+                Amount = value.MerchantCommission.ToString("F2"),
+                Currency = currency
+            },
             RequiresPin = value.RequiresPin,
             Status = value.Status
         };

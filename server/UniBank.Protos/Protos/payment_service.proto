@@ -62,6 +62,8 @@ message PaymentResponse {
   google.protobuf.Timestamp completed_at = 8;
   bool requires_pin = 9;
   string status = 10;
+  unibank.v1.common.Money tax = 11;
+  unibank.v1.common.Money merchant_commission = 12;
 }
 
 // STORY-022: Tokenize card for NFC payments

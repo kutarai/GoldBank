@@ -12,6 +12,7 @@ public class Transaction : BaseEntity
     public string Type { get; set; } = default!;
     public decimal Amount { get; set; }
     public decimal Fee { get; set; }
+    public decimal Tax { get; set; }
     public string Status { get; set; } = "pending";
     public string? Reference { get; set; }
     public string? Description { get; set; }
