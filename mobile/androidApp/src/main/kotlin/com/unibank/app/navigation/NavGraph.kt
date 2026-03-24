@@ -55,6 +55,9 @@ import com.unibank.app.ui.kyc.KycDashboardScreen
 import com.unibank.app.ui.kyc.KycVerificationResultScreen
 import com.unibank.app.ui.kyc.ProofOfAddressScreen
 import com.unibank.app.ui.kyc.SelfieScreen
+import com.unibank.app.ui.asset.AssetDetailScreen
+import com.unibank.app.ui.asset.AssetListScreen
+import com.unibank.app.ui.asset.AssetRegisterScreen
 import com.unibank.app.ui.dispute.DisputeDetailScreen
 import com.unibank.app.ui.dispute.DisputeListScreen
 import com.unibank.app.ui.dispute.DisputeWizardScreen
@@ -283,6 +286,7 @@ private fun MainNavHost(modifier: Modifier) {
                         "cash_out" -> navController.navigate(Route.CashOut)
                         "loan" -> navController.navigate(Route.LoanList)
                         "cheque_deposit" -> navController.navigate(Route.ChequeScan)
+                        "assets" -> navController.navigate(Route.AssetList)
                     }
                 },
                 onProfileClick = { navController.navigate(Route.Profile) },
@@ -670,6 +674,40 @@ private fun MainNavHost(modifier: Modifier) {
                 viewModel = fraudViewModel,
                 alertId = route.alertId,
                 onDisputeCreated = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Assets (STORY-141, STORY-142)
+        composable<Route.AssetList> {
+            val assetViewModel: AssetViewModel = koinViewModel()
+            AssetListScreen(
+                viewModel = assetViewModel,
+                onAssetClick = { assetId -> navController.navigate(Route.AssetDetail(assetId)) },
+                onRegister = { navController.navigate(Route.AssetRegister) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.AssetDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.AssetDetail>()
+            val assetViewModel: AssetViewModel = koinViewModel()
+            AssetDetailScreen(
+                viewModel = assetViewModel,
+                assetId = route.assetId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.AssetRegister> {
+            val assetViewModel: AssetViewModel = koinViewModel()
+            AssetRegisterScreen(
+                viewModel = assetViewModel,
+                onComplete = {
+                    navController.navigate(Route.AssetList) {
+                        popUpTo(Route.AssetRegister) { inclusive = true }
+                    }
+                },
                 onBack = { navController.popBackStack() },
             )
         }

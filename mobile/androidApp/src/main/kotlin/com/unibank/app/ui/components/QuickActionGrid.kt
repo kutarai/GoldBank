@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CreditScore
 import androidx.compose.material.icons.filled.LocalAtm
 import androidx.compose.material.icons.filled.AddCard
+import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Icon
@@ -43,6 +44,7 @@ val defaultQuickActions = listOf(
     QuickAction("My QR", Icons.Default.QrCode2, "qr_generate"),
     QuickAction("Loan", Icons.Default.CreditScore, "loan"),
     QuickAction("Deposit Cheque", Icons.Default.AddCard, "cheque_deposit"),
+    QuickAction("Assets", Icons.Default.Diamond, "assets"),
 )
 
 @Composable

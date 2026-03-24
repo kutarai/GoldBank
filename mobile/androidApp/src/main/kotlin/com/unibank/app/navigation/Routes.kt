@@ -109,4 +109,9 @@ sealed interface Route {
     // Fraud Alerts
     @Serializable data object FraudAlertList : Route
     @Serializable data class FraudAlertDetail(val alertId: String) : Route
+
+    // Assets
+    @Serializable data object AssetList : Route
+    @Serializable data class AssetDetail(val assetId: String) : Route
+    @Serializable data object AssetRegister : Route
 }
