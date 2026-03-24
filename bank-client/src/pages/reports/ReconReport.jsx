@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, TextField, Button, Chip,
+  Box, Typography, Card, CardContent, Grid, TextField, Button, Chip, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { generateReconData } from '../../services/api';
@@ -9,10 +9,15 @@ import dayjs from 'dayjs';
 export default function ReconReport() {
   const [batchDate, setBatchDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [partnerCode, setPartnerCode] = useState('');
-  const data = useMemo(() => generateReconData(), []);
+  const [data, setData] = useState({ totalTransactions: 0, totalAmount: 0, matched: 0, unmatched: 0, status: '', discrepancies: [] });
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateReconData().then(setData).finally(() => setLoading(false));
+  }, []);
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Typography variant="h5" gutterBottom>Reconciliation Report</Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>

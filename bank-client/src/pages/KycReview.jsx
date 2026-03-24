@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, Chip, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
@@ -17,7 +17,11 @@ function MatchIcon({ match }) {
 
 export default function KycReview() {
   const notify = useSnackbar();
-  const queue = useMemo(() => generateKycQueue(), []);
+  const [queue, setQueue] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateKycQueue().then(setQueue).finally(() => setLoading(false));
+  }, []);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [decision, setDecision] = useState('');
@@ -33,6 +37,7 @@ export default function KycReview() {
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Typography variant="h5" gutterBottom>KYC Review</Typography>
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[['Auto-Approved Today', 12, 'success'], ['Pending Review', queue.length, 'warning'], ['Rejected Today', 2, 'error']].map(([label, val, color]) => (
@@ -62,11 +67,15 @@ export default function KycReview() {
                 <TableCell>Level {item.level}</TableCell>
                 <TableCell>{item.submittedDate}</TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinearProgress variant="determinate" value={item.faceMatchScore * 100} sx={{ flex: 1, height: 8, borderRadius: 4 }}
-                      color={item.faceMatchScore > 0.9 ? 'success' : item.faceMatchScore > 0.8 ? 'warning' : 'error'} />
-                    <Typography variant="body2">{(item.faceMatchScore * 100).toFixed(0)}%</Typography>
-                  </Box>
+                  {item.faceMatchScore != null ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LinearProgress variant="determinate" value={item.faceMatchScore * 100} sx={{ flex: 1, height: 8, borderRadius: 4 }}
+                        color={item.faceMatchScore > 0.9 ? 'success' : item.faceMatchScore > 0.8 ? 'warning' : 'error'} />
+                      <Typography variant="body2">{(item.faceMatchScore * 100).toFixed(0)}%</Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">N/A</Typography>
+                  )}
                 </TableCell>
                 <TableCell><Chip label={item.aiDecision} color={item.aiDecision === 'AutoApproved' ? 'success' : 'error'} size="small" /></TableCell>
                 <TableCell><Button size="small" variant="outlined" onClick={() => openReview(item)}>Review</Button></TableCell>

@@ -1,14 +1,20 @@
-import { useState, useMemo } from 'react';
-import { Box, Typography, Card, CardContent, Grid, TextField, MenuItem } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Typography, Card, CardContent, Grid, TextField, MenuItem, LinearProgress } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { generateUserGrowthData } from '../../services/api';
 
 export default function UserGrowthReport() {
   const [granularity, setGranularity] = useState('Daily');
-  const data = useMemo(() => generateUserGrowthData(granularity), [granularity]);
+  const [data, setData] = useState({ totalRegistered: 0, totalActive: 0, growthRate: 0, data: [] });
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    setLoading(true);
+    generateUserGrowthData(granularity).then(setData).finally(() => setLoading(false));
+  }, [granularity]);
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">User Growth Report</Typography>
         <TextField select size="small" value={granularity} onChange={(e) => setGranularity(e.target.value)} sx={{ minWidth: 140 }}>

@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
-  Box, Typography, TextField, MenuItem, Button, Chip,
+  Box, Typography, TextField, MenuItem, Button, Chip, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Grid,
 } from '@mui/material';
 import { Search, Clear } from '@mui/icons-material';
@@ -10,7 +10,11 @@ const STATUS_COLORS = { Completed: 'success', Pending: 'warning', Failed: 'error
 
 export default function Transactions() {
   const [filters, setFilters] = useState({ accountId: '', type: '', status: '', search: '' });
-  const allTxns = useMemo(() => generateTransactions(), []);
+  const [allTxns, setAllTxns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateTransactions().then(setAllTxns).finally(() => setLoading(false));
+  }, []);
 
   const filtered = allTxns.filter((t) => {
     if (filters.accountId && !t.accountId.includes(filters.accountId)) return false;
@@ -25,6 +29,7 @@ export default function Transactions() {
   return (
     <Box>
       <Typography variant="h5" gutterBottom>Transactions</Typography>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 12, sm: 3 }}>
           <TextField size="small" fullWidth label="Account / Reference" value={filters.search} onChange={(e) => update('search', e.target.value)}

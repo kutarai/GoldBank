@@ -1,15 +1,20 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid,
+  Box, Typography, Card, CardContent, Grid, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { generateMerchantData } from '../../services/api';
 
 export default function MerchantReport() {
-  const data = useMemo(() => generateMerchantData(), []);
+  const [data, setData] = useState({ totalVolume: 0, totalTransactions: 0, merchants: [] });
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateMerchantData().then(setData).finally(() => setLoading(false));
+  }, []);
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Typography variant="h5" gutterBottom>Merchant Performance Report</Typography>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>

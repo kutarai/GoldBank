@@ -1,13 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, TextField, MenuItem, Grid, Chip, IconButton, Collapse,
+  Box, Typography, TextField, MenuItem, Grid, Chip, IconButton, Collapse, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { generateAuditTrail } from '../services/api';
 
 export default function AuditTrail() {
-  const data = useMemo(() => generateAuditTrail(), []);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateAuditTrail().then(setData).finally(() => setLoading(false));
+  }, []);
   const [userFilter, setUserFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [expanded, setExpanded] = useState({});
@@ -25,6 +29,7 @@ export default function AuditTrail() {
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Typography variant="h5" gutterBottom>Audit Trail</Typography>
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid size={{ xs: 6, sm: 3 }}>

@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Tabs, Tab, Chip, Button, TextField, MenuItem,
+  Box, Typography, Tabs, Tab, Chip, Button, TextField, MenuItem, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, Grid, FormControlLabel, Checkbox,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
@@ -16,7 +16,11 @@ function SlaChip({ hours }) {
 
 export default function Disputes() {
   const notify = useSnackbar();
-  const disputes = useMemo(() => generateDisputes(), []);
+  const [disputes, setDisputes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateDisputes().then(setDisputes).finally(() => setLoading(false));
+  }, []);
   const [tab, setTab] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
@@ -35,6 +39,7 @@ export default function Disputes() {
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Disputes</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={() => setCreateOpen(true)}>Create Dispute</Button>

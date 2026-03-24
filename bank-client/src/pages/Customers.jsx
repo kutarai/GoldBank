@@ -53,6 +53,7 @@ export default function Customers() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
   const [data, setData] = useState({ items: [], total: 0 });
+  const [loading, setLoading] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [detailTab, setDetailTab] = useState(0);
@@ -61,9 +62,14 @@ export default function Customers() {
   const [reason, setReason] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuCustomer, setMenuCustomer] = useState(null);
+  const [recentTxns, setRecentTxns] = useState([]);
 
-  const load = () => setData(generateCustomers(page, 10, search, statusFilter));
-  useEffect(load, [page, search, statusFilter]);
+  useEffect(() => {
+    setLoading(true);
+    generateCustomers(page, 10, search, statusFilter)
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, [page, search, statusFilter]);
 
   const handleAction = () => {
     notify(`${action} executed on ${selected?.name}`);
@@ -81,12 +87,11 @@ export default function Customers() {
     if (act === 'View') {
       setDetailTab(0);
       setDetailOpen(true);
+      generateTransactions({ pageSize: 5 }).then((items) => setRecentTxns(items.slice(0, 5)));
     } else {
       setActionOpen(true);
     }
   };
-
-  const recentTxns = generateTransactions().slice(0, 5);
 
   return (
     <Box>

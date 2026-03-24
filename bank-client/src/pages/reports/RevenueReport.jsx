@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, TextField, MenuItem,
+  Box, Typography, Card, CardContent, TextField, MenuItem, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -8,10 +8,16 @@ import { generateRevenueData } from '../../services/api';
 
 export default function RevenueReport() {
   const [granularity, setGranularity] = useState('Daily');
-  const data = useMemo(() => generateRevenueData(granularity), [granularity]);
+  const [data, setData] = useState({ totalRevenue: 0, data: [], breakdown: [] });
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    setLoading(true);
+    generateRevenueData(granularity).then(setData).finally(() => setLoading(false));
+  }, [granularity]);
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Revenue Report</Typography>
         <TextField select size="small" value={granularity} onChange={(e) => setGranularity(e.target.value)} sx={{ minWidth: 140 }}>

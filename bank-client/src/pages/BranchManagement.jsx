@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Chip, TextField, Grid,
+  Box, Typography, Button, Chip, TextField, Grid, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, FormControlLabel, Switch,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
@@ -10,7 +10,11 @@ import { useSnackbar } from '../services/snackbar';
 
 export default function BranchManagement() {
   const notify = useSnackbar();
-  const branches = useMemo(() => generateBranches(), []);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateBranches().then(setBranches).finally(() => setLoading(false));
+  }, []);
   const [editOpen, setEditOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', address: '', city: '', phone: '', active: true });
@@ -34,6 +38,7 @@ export default function BranchManagement() {
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Branch Management</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add Branch</Button>

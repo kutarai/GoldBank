@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Chip, TextField, MenuItem, Grid,
+  Box, Typography, Button, Chip, TextField, MenuItem, Grid, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
@@ -11,8 +11,14 @@ import { useSnackbar } from '../services/snackbar';
 
 export default function UserManagement() {
   const notify = useSnackbar();
-  const users = useMemo(() => generateAdminUsers(), []);
-  const branches = useMemo(() => generateBranches(), []);
+  const [users, setUsers] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    Promise.all([generateAdminUsers(), generateBranches()])
+      .then(([u, b]) => { setUsers(u); setBranches(b); })
+      .finally(() => setLoading(false));
+  }, []);
   const [editOpen, setEditOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -44,6 +50,7 @@ export default function UserManagement() {
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">User Management</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={openCreate}>Add User</Button>

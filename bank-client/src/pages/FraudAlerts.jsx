@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Grid, Chip, Button, TextField, MenuItem,
+  Box, Typography, Card, CardContent, Grid, Chip, Button, TextField, MenuItem, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, Stepper, Step, StepLabel,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
@@ -12,7 +12,11 @@ const STATUS_COLORS = { New: 'warning', Reviewed: 'info', Escalated: 'error', Di
 
 export default function FraudAlerts() {
   const notify = useSnackbar();
-  const alerts = useMemo(() => generateFraudAlerts(), []);
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateFraudAlerts().then(setAlerts).finally(() => setLoading(false));
+  }, []);
   const [statusFilter, setStatusFilter] = useState('');
   const [sevFilter, setSevFilter] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
@@ -42,6 +46,7 @@ export default function FraudAlerts() {
 
   return (
     <Box>
+      {loading && <LinearProgress sx={{ mb: 1 }} />}
       <Typography variant="h5" gutterBottom>Fraud Alerts</Typography>
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {[['Active High Alerts', stats.highActive, 'error'], ['Under Investigation', stats.investigating, 'warning'], ['Resolved Today', stats.resolved, 'success']].map(([label, val, color]) => (

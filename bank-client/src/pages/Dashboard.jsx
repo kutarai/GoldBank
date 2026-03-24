@@ -22,9 +22,12 @@ function StatCard({ icon, label, value, color }) {
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
-  useEffect(() => { setData(generateDashboardMetrics()); }, []);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    generateDashboardMetrics().then(setData).finally(() => setLoading(false));
+  }, []);
 
-  if (!data) return null;
+  if (loading || !data) return null;
 
   const stats = [
     { icon: <People color="primary" />, label: 'Total Users', value: fmt(data.totalUsers), color: 'primary' },
