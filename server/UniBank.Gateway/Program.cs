@@ -107,6 +107,16 @@ try
     builder.Services.AddAuthorization();
 
     // ---------------------------------------------------------------------------
+    // REST API controllers + CORS for the bank-client React app (localhost:5173)
+    // ---------------------------------------------------------------------------
+    builder.Services.AddControllers();
+
+    builder.Services.AddCors(options => options.AddPolicy("BankClient", p =>
+        p.WithOrigins("http://localhost:5173")
+         .AllowAnyHeader()
+         .AllowAnyMethod()));
+
+    // ---------------------------------------------------------------------------
     // Redis (optional — used only by RateLimitInterceptor for gRPC rate limiting)
     // All other caching uses ICacheStore (PostgreSQL-backed) registered in AddCoreModules.
     // ---------------------------------------------------------------------------
@@ -186,6 +196,7 @@ try
         };
     });
 
+    app.UseCors("BankClient");
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -266,6 +277,9 @@ try
             : Results.Json(new { Status = "NotReady", Checks = checks, Timestamp = DateTime.UtcNow },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
     });
+
+    // REST API controllers (admin endpoints for bank-client)
+    app.MapControllers();
 
     // ---------------------------------------------------------------------------
     // Run
