@@ -1,10 +1,11 @@
 @page "/login"
+@rendermode InteractiveServer
 @layout EmptyLayout
 @using UniBank.Admin.Services
 @inject AdminAuthStateProvider AuthProvider
 @inject NavigationManager Nav
 
-<PageTitle>Sign In — UniBank Admin</PageTitle>
+<PageTitle>Sign In - UniBank Admin</PageTitle>
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -29,62 +30,58 @@
             </MudAlert>
         }
 
-        <EditForm Model="_model" OnValidSubmit="HandleSignIn">
-            <DataAnnotationsValidator />
+        <MudTextField @bind-Value="_username"
+                      Label="Username"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Person"
+                      Class="mb-4"
+                      Disabled="_isLoading"
+                      AutoFocus="true"
+                      OnKeyUp="OnKeyUp" />
 
-            <MudTextField @bind-Value="_model.Username"
-                          Label="Username"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Person"
-                          Class="mb-4"
-                          Disabled="_isLoading"
-                          AutoFocus="true" />
+        <MudTextField @bind-Value="_password"
+                      Label="Password"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Lock"
+                      InputType="InputType.Password"
+                      Class="mb-6"
+                      Disabled="_isLoading"
+                      OnKeyUp="OnKeyUp" />
 
-            <MudTextField @bind-Value="_model.Password"
-                          Label="Password"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Lock"
-                          InputType="@_passwordInputType"
-                          AdornmentAriaLabel="Toggle password visibility"
-                          Class="mb-6"
-                          Disabled="_isLoading" />
-
-            <MudButton ButtonType="ButtonType.Submit"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       FullWidth="true"
-                       Size="Size.Large"
-                       Disabled="_isLoading">
-                @if (_isLoading)
-                {
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span>Signing in…</span>
-                }
-                else
-                {
-                    <span>Sign In</span>
-                }
-            </MudButton>
-        </EditForm>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   FullWidth="true"
+                   Size="Size.Large"
+                   Disabled="_isLoading"
+                   OnClick="HandleSignIn">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Signing in...</span>
+            }
+            else
+            {
+                <span>Sign In</span>
+            }
+        </MudButton>
 
     </MudPaper>
 </MudContainer>
 
 @code {
-    private readonly LoginModel _model = new();
+    private string _username = "";
+    private string _password = "";
     private string? _errorMessage;
     private bool _isLoading;
-    private InputType _passwordInputType = InputType.Password;
 
-    // If already authenticated, skip the login page.
     [CascadingParameter]
     private Task<AuthenticationState>? AuthState { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (AuthState is not null)
+        if (firstRender && AuthState is not null)
         {
             var state = await AuthState;
             if (state.User.Identity?.IsAuthenticated == true)
@@ -92,15 +89,22 @@
         }
     }
 
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await HandleSignIn();
+    }
+
     private async Task HandleSignIn()
     {
+        if (_isLoading) return;
+
         _errorMessage = null;
         _isLoading = true;
-        StateHasChanged();
 
         try
         {
-            var success = await AuthProvider.LoginAsync(_model.Username, _model.Password);
+            var success = await AuthProvider.LoginAsync(_username, _password);
             if (success)
                 Nav.NavigateTo("/", replace: true);
             else
@@ -114,11 +118,5 @@
         {
             _isLoading = false;
         }
-    }
-
-    private sealed class LoginModel
-    {
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
     }
 }

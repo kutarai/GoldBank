@@ -12,7 +12,13 @@ var builder = WebApplication.CreateBuilder(args);
 // MudBlazor
 builder.Services.AddMudServices();
 
-// Authorization + custom auth state provider
+// Authentication + Authorization + custom auth state provider
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = "/login";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    });
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, AdminAuthStateProvider>();
 builder.Services.AddScoped<AdminAuthStateProvider>(sp =>
@@ -49,6 +55,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

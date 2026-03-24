@@ -25,10 +25,10 @@ COPY . .
 
 # Publish the application
 WORKDIR /src/admin/UniBank.Admin
-RUN dotnet publish "UniBank.Admin.csproj" -c Release -o /app/publish --no-restore
+RUN dotnet publish "UniBank.Admin.csproj" -c Release -o /app/publish
 
 # --- Runtime Stage ---
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 EXPOSE 5010

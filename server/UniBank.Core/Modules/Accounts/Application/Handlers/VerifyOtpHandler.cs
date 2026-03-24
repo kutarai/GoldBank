@@ -21,6 +21,7 @@ public sealed class VerifyOtpHandler
     private readonly IOtpService _otpService;
     private readonly IMessageBus _messageBus;
     private readonly JwtTokenService _jwtTokenService;
+    private readonly VirtualCardGenerator _cardGenerator;
     private readonly ILogger<VerifyOtpHandler> _logger;
 
     public VerifyOtpHandler(
@@ -28,12 +29,14 @@ public sealed class VerifyOtpHandler
         IOtpService otpService,
         IMessageBus messageBus,
         JwtTokenService jwtTokenService,
+        VirtualCardGenerator cardGenerator,
         ILogger<VerifyOtpHandler> logger)
     {
         _dbContext = dbContext;
         _otpService = otpService;
         _messageBus = messageBus;
         _jwtTokenService = jwtTokenService;
+        _cardGenerator = cardGenerator;
         _logger = logger;
     }
 
@@ -72,7 +75,7 @@ public sealed class VerifyOtpHandler
                 Balance = 0.00m,
                 AvailableBalance = 0.00m,
                 Currency = currency,
-                CardPan = VirtualCardGenerator.GeneratePan(),
+                CardPan = await _cardGenerator.GeneratePanAsync(command.TenantId, cancellationToken),
                 TenantId = command.TenantId,
                 DeviceId = command.DeviceId,
                 CreatedAt = now,

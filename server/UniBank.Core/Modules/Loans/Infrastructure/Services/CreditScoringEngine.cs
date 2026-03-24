@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using UniBank.Core.Common.Persistence;
 using UniBank.Core.Modules.Accounts.Domain.Entities;
@@ -114,10 +115,39 @@ public sealed class CreditScoringEngine
     }
 
     /// <summary>
-    /// Determine interest rate based on credit score. Higher score = lower rate.
-    /// Range: 18% (excellent) to 36% (poor) annual.
+    /// Determine interest rate based on credit score and tenure.
+    /// Reads rate matrix from SystemConfig (key: "loan.rate_matrix").
+    /// Falls back to hardcoded defaults if not configured.
     /// </summary>
-    public static decimal GetInterestRate(int creditScore)
+    public async Task<decimal> GetInterestRateAsync(int creditScore, int tenureMonths, string? tenantId = null, CancellationToken ct = default)
+    {
+        var matrix = await LoadRateMatrixAsync(tenantId, ct);
+        if (matrix is { Count: > 0 })
+        {
+            var tier = matrix
+                .Where(t => creditScore >= t.ScoreMin && creditScore <= t.ScoreMax)
+                .FirstOrDefault();
+
+            if (tier is not null)
+            {
+                var rate = tenureMonths switch
+                {
+                    <= 6 => tier.Tenure6,
+                    <= 12 => tier.Tenure12,
+                    <= 24 => tier.Tenure24,
+                    <= 36 => tier.Tenure36,
+                    _ => tier.Tenure48,
+                };
+                return rate / 100m; // stored as percentage, convert to decimal
+            }
+        }
+
+        // Fallback to hardcoded defaults
+        return GetInterestRateDefault(creditScore);
+    }
+
+    /// <summary>Static fallback when SystemConfig is not available.</summary>
+    public static decimal GetInterestRateDefault(int creditScore)
     {
         return creditScore switch
         {
@@ -127,6 +157,41 @@ public sealed class CreditScoringEngine
             >= 350 => 0.30m,
             _ => 0.36m,
         };
+    }
+
+    private async Task<List<RateMatrixTier>?> LoadRateMatrixAsync(string? tenantId, CancellationToken ct)
+    {
+        try
+        {
+            var config = await _dbContext.SystemConfigs
+                .Where(c => c.Key == "loan.rate_matrix")
+                .Where(c => c.TenantId == tenantId || c.TenantId == null)
+                .OrderByDescending(c => c.TenantId)
+                .FirstOrDefaultAsync(ct);
+
+            if (config is null || string.IsNullOrWhiteSpace(config.ValueJson))
+                return null;
+
+            return JsonSerializer.Deserialize<List<RateMatrixTier>>(config.ValueJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Rate matrix tier matching the admin portal's configuration format.</summary>
+    private sealed class RateMatrixTier
+    {
+        public int ScoreMin { get; set; }
+        public int ScoreMax { get; set; }
+        public string Label { get; set; } = "";
+        public decimal Tenure6 { get; set; }
+        public decimal Tenure12 { get; set; }
+        public decimal Tenure24 { get; set; }
+        public decimal Tenure36 { get; set; }
+        public decimal Tenure48 { get; set; }
     }
 
     /// <summary>

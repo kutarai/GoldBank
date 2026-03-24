@@ -1,27 +1,71 @@
 using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
+using UniBank.Core.Common.Persistence;
 
 namespace UniBank.Core.Modules.Accounts.Infrastructure.Services;
 
 /// <summary>
 /// Generates Luhn-valid virtual card PANs for bank accounts.
-/// Format: 6275 XXXX XXXX XXXX (16 digits)
-/// BIN prefix 6275 = UniBank virtual cards.
+/// BIN prefix is read from SystemConfig (key: "card.bin_prefix").
+/// Falls back to "6275" if not configured.
 /// </summary>
-public static class VirtualCardGenerator
+public sealed class VirtualCardGenerator
 {
-    private const string BinPrefix = "6275";
+    public const string ConfigKey = "card.bin_prefix";
+    public const string DefaultBinPrefix = "6275";
     private const int PanLength = 16;
 
-    /// <summary>
-    /// Generate a unique 16-digit Luhn-valid virtual card PAN.
-    /// </summary>
-    public static string GeneratePan()
-    {
-        // 6275 (BIN) + 11 random digits + 1 Luhn check digit = 16
-        var randomDigits = RandomNumberGenerator.GetInt32(0, 99_999_999).ToString("D8")
-                         + RandomNumberGenerator.GetInt32(0, 1000).ToString("D3");
+    private readonly UniBankDbContext _dbContext;
 
-        var partial = $"{BinPrefix}{randomDigits}"; // 15 digits
+    public VirtualCardGenerator(UniBankDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    /// <summary>
+    /// Generate a unique 16-digit Luhn-valid virtual card PAN using the configured BIN prefix.
+    /// </summary>
+    public async Task<string> GeneratePanAsync(string? tenantId = null, CancellationToken ct = default)
+    {
+        var bin = await GetBinPrefixAsync(tenantId, ct);
+        return GenerateWithBin(bin);
+    }
+
+    /// <summary>
+    /// Generate a PAN with an explicit BIN prefix (for static/test usage).
+    /// </summary>
+    public static string GeneratePan(string binPrefix = DefaultBinPrefix)
+    {
+        return GenerateWithBin(binPrefix);
+    }
+
+    private async Task<string> GetBinPrefixAsync(string? tenantId, CancellationToken ct)
+    {
+        // Try tenant-specific config first, then global
+        var config = await _dbContext.SystemConfigs
+            .Where(c => c.Key == ConfigKey)
+            .Where(c => c.TenantId == tenantId || c.TenantId == null)
+            .OrderByDescending(c => c.TenantId) // tenant-specific takes priority over global
+            .FirstOrDefaultAsync(ct);
+
+        if (config is not null)
+        {
+            var value = config.ValueJson.Trim().Trim('"');
+            if (value.Length >= 4 && value.Length <= 6 && value.All(char.IsDigit))
+                return value;
+        }
+
+        return DefaultBinPrefix;
+    }
+
+    private static string GenerateWithBin(string binPrefix)
+    {
+        var randomLength = PanLength - binPrefix.Length - 1; // -1 for Luhn check digit
+        var randomPart = "";
+        for (var i = 0; i < randomLength; i++)
+            randomPart += RandomNumberGenerator.GetInt32(0, 10).ToString();
+
+        var partial = $"{binPrefix}{randomPart}";
         var checkDigit = CalculateLuhnCheckDigit(partial);
         return $"{partial}{checkDigit}";
     }
@@ -53,7 +97,7 @@ public static class VirtualCardGenerator
     private static int CalculateLuhnCheckDigit(string partial)
     {
         var sum = 0;
-        var alternate = true; // starts true because check digit position is even from right
+        var alternate = true;
         for (var i = partial.Length - 1; i >= 0; i--)
         {
             var digit = partial[i] - '0';

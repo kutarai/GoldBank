@@ -38,7 +38,7 @@ export default function Login() {
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Card sx={{ width: 400, p: 2 }}>
         <CardContent>
-          <Typography variant="h5" align="center" gutterBottom>UniBank Admin</Typography>
+          <Typography variant="h5" align="center" gutterBottom>UniBank</Typography>
           <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
             Sign in to continue
           </Typography>

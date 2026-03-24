@@ -109,6 +109,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Modules.Agents.Application.Handlers.GetCommissionReportHandler>();
         services.AddScoped<Modules.Agents.Application.Handlers.GetTransactionReceiptHandler>();
         services.AddScoped<Modules.Agents.Infrastructure.Services.CommissionEngine>();
+        services.AddScoped<Modules.Agents.Infrastructure.Services.TariffEngine>();
 
         // KYC module (Sprint 3)
         services.AddScoped<Modules.KYC.Application.Handlers.UploadDocumentHandler>();

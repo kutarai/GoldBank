@@ -42,10 +42,9 @@ import kotlin.math.pow
 
 private val tenureOptions = listOf(3, 6, 12, 18, 24)
 
-// Interest rate tiers matching server-side CreditScoringEngine.GetInterestRate()
-// We show the mid-range rate (26%) as estimate; actual rate depends on credit score
-private const val ESTIMATED_ANNUAL_RATE = 0.26
-private const val DISPLAY_RATE_PERCENT = 18.5
+// Rate is determined by server-side CreditScoringEngine using the configurable rate matrix.
+// The mobile app shows the rate from the eligibility check if available, otherwise prompts
+// the user to run the eligibility check first.
 
 /**
  * Calculate estimated monthly payment using amortization formula:
@@ -297,11 +296,11 @@ fun LoanApplyScreen(
                     // ── Interest Rate & Monthly Repayment Card ─────────────────
                     val principal = amount.replace(",", "").toDoubleOrNull() ?: 0.0
 
-                    // Use eligibility rate if available, otherwise fall back to DISPLAY_RATE_PERCENT
+                    // Use rate from eligibility check (server-side rate matrix)
+                    val hasEligibility = eligibility != null
                     val displayRatePercent = eligibility?.let {
                         (it.estimatedRateMin + it.estimatedRateMax) / 2.0
-                    } ?: DISPLAY_RATE_PERCENT
-                    val annualRate = displayRatePercent / 100.0
+                    }
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -316,27 +315,36 @@ fun LoanApplyScreen(
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            LoanInfoRow(
-                                "Current Interest Rate",
-                                "${"%.1f".format(displayRatePercent)}% p.a.",
-                            )
-                            if (principal > 0) {
-                                val monthlyPayment = calculateMonthlyPayment(principal, annualRate, tenureMonths)
-                                val totalRepayment = monthlyPayment * tenureMonths
-                                val totalInterest = totalRepayment - principal
-                                LoanInfoRow("Monthly Repayment", "$currency ${formatAmount(monthlyPayment)}")
-                                LoanInfoRow("Total Interest", "$currency ${formatAmount(totalInterest)}")
-                                LoanInfoRow("Total Repayment", "$currency ${formatAmount(totalRepayment)}")
+                            if (hasEligibility && displayRatePercent != null) {
+                                val annualRate = displayRatePercent / 100.0
+                                LoanInfoRow(
+                                    "Estimated Interest Rate",
+                                    "${"%.1f".format(displayRatePercent)}% — ${"%.1f".format(eligibility!!.estimatedRateMax)}% p.a.",
+                                )
+                                if (principal > 0) {
+                                    val monthlyPayment = calculateMonthlyPayment(principal, annualRate, tenureMonths)
+                                    val totalRepayment = monthlyPayment * tenureMonths
+                                    val totalInterest = totalRepayment - principal
+                                    LoanInfoRow("Monthly Repayment", "$currency ${formatAmount(monthlyPayment)}")
+                                    LoanInfoRow("Total Interest", "$currency ${formatAmount(totalInterest)}")
+                                    LoanInfoRow("Total Repayment", "$currency ${formatAmount(totalRepayment)}")
+                                } else {
+                                    Text(
+                                        "Enter an amount to see monthly repayment",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                    )
+                                }
                             } else {
                                 Text(
-                                    "Enter an amount to see monthly repayment",
+                                    "Run an eligibility check first to see your estimated rate and repayment.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                                 )
                             }
                             Spacer(modifier = Modifier.height(4.dp))
-                            val rateNote = if (eligibility != null) {
-                                "Rate based on your eligibility assessment"
+                            val rateNote = if (hasEligibility) {
+                                "Rate based on your credit score via eligibility assessment"
                             } else {
                                 "Actual rate depends on your credit score (18%–36% p.a.)"
                             }

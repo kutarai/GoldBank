@@ -1,9 +1,9 @@
 // Real API calls to the UniBank Gateway REST endpoints.
-// Base URL: http://localhost:1112/api/admin (CORS enabled for localhost:5173)
+// Base URL: gateway HTTP port (mapped to 5101 in docker-compose)
 
 import dayjs from 'dayjs';
 
-const API_BASE = 'http://localhost:1112/api/admin';
+const API_BASE = 'http://localhost:5101/api/admin';
 
 /**
  * Builds a URL with query params, calls fetch(), returns parsed JSON.
@@ -113,21 +113,12 @@ export async function generateLoans() {
   if (!data?.items) return [];
   return data.items.map((l) => ({
     ...l,
-    // Alias fields the page references
-    amount: l.principal,
-    tenure: l.tenureMonths,
-    monthlyRepayment: l.monthlyPayment || 0,
-    // Fields not available from the loans endpoint
-    name: '',
-    phone: '',
-    email: '',
-    kycLevel: null,
-    verificationStatus: 'Not Available',
-    faceMatchScore: null,
-    extractedName: '',
-    extractedEmployer: '',
-    extractedIncome: null,
-    statedIncome: null,
+    // Defaults for fields not yet available from the API
+    faceMatchScore: l.faceMatchScore ?? null,
+    extractedName: l.extractedName || l.name,
+    extractedEmployer: l.extractedEmployer || '',
+    extractedIncome: l.extractedIncome ?? l.amount,
+    statedIncome: l.statedIncome ?? l.amount,
   }));
 }
 

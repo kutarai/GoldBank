@@ -11,6 +11,7 @@ namespace UniBank.Migrator;
 ///   dotnet run                              (applies all migrations)
 ///   dotnet run -- --context PublicDb         (PublicDbContext only)
 ///   dotnet run -- --context UniBankDb        (UniBankDbContext only)
+///   dotnet run -- --demo                    (apply migrations + seed demo data)
 ///
 /// Design-time (dotnet ef):
 ///   dotnet ef migrations add Initial --context UniBankDbContext --output-dir Migrations/UniBankDb
@@ -30,7 +31,7 @@ internal sealed class Program
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
 
         var context = GetArg(args, "--context");
-        var seed = args.Contains("--seed", StringComparer.OrdinalIgnoreCase);
+        var seed = args.Contains("--demo", StringComparer.OrdinalIgnoreCase);
 
         switch (context)
         {

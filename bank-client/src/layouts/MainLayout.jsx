@@ -19,7 +19,7 @@ export default function MainLayout({ darkMode, onToggleDark }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap sx={{ ml: 2, flexGrow: 1 }}>
-            UniBank Admin
+            UniBank
           </Typography>
           <IconButton color="inherit" onClick={onToggleDark}>
             {darkMode ? <LightMode /> : <DarkMode />}

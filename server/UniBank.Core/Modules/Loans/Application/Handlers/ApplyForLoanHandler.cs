@@ -90,7 +90,7 @@ public sealed class ApplyForLoanHandler
         var creditScore = await _creditScoring.CalculateScoreAsync(account, cancellationToken);
         var isApproved = creditScore >= MinCreditScore;
 
-        var interestRate = CreditScoringEngine.GetInterestRate(creditScore);
+        var interestRate = await _creditScoring.GetInterestRateAsync(creditScore, command.TenureMonths, account.TenantId?.ToString(), cancellationToken);
         var monthlyPayment = CreditScoringEngine.CalculateMonthlyPayment(
             command.Amount, interestRate, command.TenureMonths);
 
