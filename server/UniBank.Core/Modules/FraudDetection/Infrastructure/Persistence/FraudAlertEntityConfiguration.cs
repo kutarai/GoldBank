@@ -59,6 +59,10 @@ public sealed class FraudAlertEntityConfiguration : IEntityTypeConfiguration<Fra
             .IsRequired()
             .HasColumnName("tenant_id");
 
+        builder.Property(f => f.ActivitiesJson)
+            .HasColumnType("jsonb")
+            .HasColumnName("activities_json");
+
         builder.Property(f => f.CreatedAt)
             .HasColumnName("created_at");
 

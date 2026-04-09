@@ -14,6 +14,8 @@ public sealed class KycVerificationEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(k => k.AccountId).IsRequired().HasColumnName("account_id");
         builder.Property(k => k.SelfieImagePath).IsRequired().HasMaxLength(500).HasColumnName("selfie_image_path");
         builder.Property(k => k.IdDocumentImagePath).IsRequired().HasMaxLength(500).HasColumnName("id_document_image_path");
+        builder.Property(k => k.SelfieImageData).HasColumnType("bytea").HasColumnName("selfie_image_data");
+        builder.Property(k => k.IdDocumentImageData).HasColumnType("bytea").HasColumnName("id_document_image_data");
         builder.Property(k => k.FaceMatchScore).HasColumnName("face_match_score");
         builder.Property(k => k.FaceMatchDecision).IsRequired().HasMaxLength(20).HasColumnName("face_match_decision");
         builder.Property(k => k.ExtractedFullName).HasMaxLength(200).HasColumnName("extracted_full_name");

@@ -271,57 +271,28 @@ function AssetDetailDialog({ asset, onClose }) {
         Asset Detail: {asset.id}
       </DialogTitle>
       <DialogContent>
-        <Grid container spacing={2} sx={{ mt: 0.5 }}>
-          <Grid size={6}>
-            <Typography variant="subtitle2" color="text.secondary">Customer</Typography>
-            <Typography>{asset.customer}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="subtitle2" color="text.secondary">Registered</Typography>
-            <Typography>{asset.registeredDate}</Typography>
-          </Grid>
-          <Grid size={12}>
-            <Typography variant="subtitle2" color="text.secondary">Description</Typography>
-            <Typography>{asset.description}</Typography>
-          </Grid>
-          <Grid size={4}>
-            <Typography variant="subtitle2" color="text.secondary">Type</Typography>
-            <Chip label={asset.type} color={TYPE_COLORS[asset.type] || 'default'} size="small" sx={{ mt: 0.5 }} />
-          </Grid>
-          <Grid size={4}>
-            <Typography variant="subtitle2" color="text.secondary">Quantity</Typography>
-            <Typography>{asset.quantity}</Typography>
-          </Grid>
-          <Grid size={4}>
-            <Typography variant="subtitle2" color="text.secondary">Deposit House</Typography>
-            <Typography variant="body2">{asset.depositHouse}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="subtitle2" color="text.secondary">Current Value</Typography>
-            <Typography variant="h6" color="success.main">{fmt(asset.currentValue, asset.currency)}</Typography>
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="subtitle2" color="text.secondary">Last Valued</Typography>
-            <Typography>{asset.lastValued || '—'}</Typography>
-            {asset.lastValued && (
-              <Typography variant="caption" color="text.secondary">{daysSince(asset.lastValued)} days ago</Typography>
-            )}
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-            <Chip label={asset.status} color={STATUS_COLORS[asset.status] || 'default'} size="small" sx={{ mt: 0.5 }} />
-          </Grid>
-          <Grid size={6}>
-            <Typography variant="subtitle2" color="text.secondary">Verification</Typography>
-            <Chip label={asset.verification} color={VERIFY_COLORS[asset.verification] || 'default'} size="small" sx={{ mt: 0.5 }} />
-          </Grid>
-          {asset.assignedValuer && (
-            <Grid size={12}>
-              <Typography variant="subtitle2" color="text.secondary">Assigned Valuer</Typography>
-              <Typography>{asset.assignedValuer}</Typography>
-            </Grid>
-          )}
-        </Grid>
+        <Table size="small">
+          <TableBody>
+            {[
+              ['Customer', asset.customer],
+              ['Registered', asset.registeredDate],
+              ['Description', asset.description],
+              ['Type', <Chip label={asset.type} color={TYPE_COLORS[asset.type] || 'default'} size="small" />],
+              ['Quantity', asset.quantity],
+              ['Deposit House', asset.depositHouse],
+              ['Current Value', <Typography variant="body1" color="success.main" fontWeight="medium">{fmt(asset.currentValue, asset.currency)}</Typography>],
+              ['Last Valued', asset.lastValued ? `${asset.lastValued} (${daysSince(asset.lastValued)} days ago)` : '—'],
+              ['Status', <Chip label={asset.status} color={STATUS_COLORS[asset.status] || 'default'} size="small" />],
+              ['Verification', <Chip label={asset.verification} color={VERIFY_COLORS[asset.verification] || 'default'} size="small" />],
+              ...(asset.assignedValuer ? [['Assigned Valuer', asset.assignedValuer]] : []),
+            ].map(([label, value]) => (
+              <TableRow key={label}>
+                <TableCell sx={{ width: '35%', color: 'text.secondary', borderBottom: 'none', py: 1 }}>{label}</TableCell>
+                <TableCell sx={{ borderBottom: 'none', py: 1 }}>{value}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>

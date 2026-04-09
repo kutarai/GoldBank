@@ -22,6 +22,7 @@ public sealed class KycDocumentEntityConfiguration : IEntityTypeConfiguration<Ky
         builder.Property(d => d.ChecksumSha256).IsRequired().HasMaxLength(64).HasColumnName("checksum_sha256");
         builder.Property(d => d.Status).IsRequired().HasMaxLength(30).HasColumnName("status");
         builder.Property(d => d.TenantId).IsRequired().HasColumnName("tenant_id");
+        builder.Property(d => d.FileData).HasColumnType("bytea").HasColumnName("file_data");
         builder.Property(d => d.CreatedAt).HasColumnName("created_at");
         builder.Property(d => d.UpdatedAt).HasColumnName("updated_at");
         builder.Property(d => d.VerifiedAt).HasColumnName("verified_at");

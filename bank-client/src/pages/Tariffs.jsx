@@ -135,51 +135,35 @@ export default function Tariffs() {
           <TextField select fullWidth label="Transaction Type" margin="normal" value={form.transactionType || ''} onChange={(e) => setForm({ ...form, transactionType: e.target.value })}>
             {TRANSACTION_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </TextField>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
-              <TextField select fullWidth label="Currency" margin="normal" value={form.currency || 'ZWG'} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
-                <MenuItem value="ZWG">ZWG</MenuItem>
-                <MenuItem value="USD">USD</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <TextField select fullWidth label="Tier" margin="normal" value={form.tier || 'Standard'} onChange={(e) => setForm({ ...form, tier: e.target.value })}>
-                <MenuItem value="Standard">Standard</MenuItem>
-                <MenuItem value="Premium">Premium</MenuItem>
-                <MenuItem value="Corporate">Corporate</MenuItem>
-              </TextField>
-            </Grid>
-          </Grid>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
-              <TextField select fullWidth label="Fee Type" margin="normal" value={form.feeType || 'percentage'} onChange={(e) => setForm({ ...form, feeType: e.target.value })}>
-                <MenuItem value="percentage">Percentage</MenuItem>
-                <MenuItem value="flat">Flat Fee</MenuItem>
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <TextField fullWidth label="Fee Value" margin="normal" type="number" value={form.feeValue ?? ''} onChange={(e) => setForm({ ...form, feeValue: parseFloat(e.target.value) || 0 })}
-                InputProps={{ endAdornment: <InputAdornment position="end">{form.feeType === 'percentage' ? '%' : '$'}</InputAdornment> }} />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'flex', gap: '5px' }}>
+            <TextField select fullWidth label="Currency" margin="normal" value={form.currency || 'ZWG'} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
+              <MenuItem value="ZWG">ZWG</MenuItem>
+              <MenuItem value="USD">USD</MenuItem>
+            </TextField>
+            <TextField select fullWidth label="Tier" margin="normal" value={form.tier || 'Standard'} onChange={(e) => setForm({ ...form, tier: e.target.value })}>
+              <MenuItem value="Standard">Standard</MenuItem>
+              <MenuItem value="Premium">Premium</MenuItem>
+              <MenuItem value="Corporate">Corporate</MenuItem>
+            </TextField>
+          </Box>
+          <Box sx={{ display: 'flex', gap: '5px' }}>
+            <TextField select fullWidth label="Fee Type" margin="normal" value={form.feeType || 'percentage'} onChange={(e) => setForm({ ...form, feeType: e.target.value })}>
+              <MenuItem value="percentage">Percentage</MenuItem>
+              <MenuItem value="flat">Flat Fee</MenuItem>
+            </TextField>
+            <TextField fullWidth label="Fee Value" margin="normal" type="number" value={form.feeValue ?? ''} onChange={(e) => setForm({ ...form, feeValue: parseFloat(e.target.value) || 0 })}
+              InputProps={{ endAdornment: <InputAdornment position="end">{form.feeType === 'percentage' ? '%' : '$'}</InputAdornment> }} />
+          </Box>
           {form.feeType === 'percentage' && (
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 6 }}>
-                <TextField fullWidth label="Min Fee ($)" margin="normal" type="number" value={form.minFee ?? ''} onChange={(e) => setForm({ ...form, minFee: parseFloat(e.target.value) || null })} />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField fullWidth label="Max Fee ($)" margin="normal" type="number" value={form.maxFee ?? ''} onChange={(e) => setForm({ ...form, maxFee: parseFloat(e.target.value) || null })} />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'flex', gap: '5px' }}>
+              <TextField fullWidth label="Min Fee ($)" margin="normal" type="number" value={form.minFee ?? ''} onChange={(e) => setForm({ ...form, minFee: parseFloat(e.target.value) || null })} />
+              <TextField fullWidth label="Max Fee ($)" margin="normal" type="number" value={form.maxFee ?? ''} onChange={(e) => setForm({ ...form, maxFee: parseFloat(e.target.value) || null })} />
+            </Box>
           )}
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
-              <TextField fullWidth label="Min Transaction Amount" margin="normal" type="number" value={form.minAmount ?? ''} onChange={(e) => setForm({ ...form, minAmount: parseFloat(e.target.value) || null })} />
-            </Grid>
-            <Grid size={{ xs: 6 }}>
-              <TextField fullWidth label="Max Transaction Amount" margin="normal" type="number" value={form.maxAmount ?? ''} onChange={(e) => setForm({ ...form, maxAmount: parseFloat(e.target.value) || null })} />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'flex', gap: '5px' }}>
+            <TextField fullWidth label="Min Transaction Amount" margin="normal" type="number" value={form.minAmount ?? ''} onChange={(e) => setForm({ ...form, minAmount: parseFloat(e.target.value) || null })} />
+            <TextField fullWidth label="Max Transaction Amount" margin="normal" type="number" value={form.maxAmount ?? ''} onChange={(e) => setForm({ ...form, maxAmount: parseFloat(e.target.value) || null })} />
+          </Box>
           <TextField fullWidth label="Effective From" margin="normal" type="date" value={form.effectiveFrom || ''} onChange={(e) => setForm({ ...form, effectiveFrom: e.target.value })} InputLabelProps={{ shrink: true }} />
           <FormControlLabel control={<Switch checked={form.status === 'active'} onChange={(e) => setForm({ ...form, status: e.target.checked ? 'active' : 'draft' })} />}
             label={form.status === 'active' ? 'Active' : 'Draft'} sx={{ mt: 1 }} />

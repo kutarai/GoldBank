@@ -153,6 +153,10 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasColumnType("double precision")
                         .HasColumnName("face_match_score");
 
+                    b.Property<byte[]>("IdDocumentImageData")
+                        .HasColumnType("bytea")
+                        .HasColumnName("id_document_image_data");
+
                     b.Property<string>("IdDocumentImagePath")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -186,6 +190,10 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("reviewed_by");
+
+                    b.Property<byte[]>("SelfieImageData")
+                        .HasColumnType("bytea")
+                        .HasColumnName("selfie_image_data");
 
                     b.Property<string>("SelfieImagePath")
                         .IsRequired()
@@ -433,6 +441,19 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("pin_hash");
+
+                    b.Property<byte[]>("SignatureImage")
+                        .HasColumnType("bytea")
+                        .HasColumnName("signature_image");
+
+                    b.Property<DateTime?>("SignatureVerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("signature_verified_at");
+
+                    b.Property<string>("SignatureVerifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("signature_verified_by");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -894,6 +915,10 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
+
+                    b.Property<string>("ActivitiesJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("activities_json");
 
                     b.Property<Guid?>("AdminUserId")
                         .HasColumnType("uuid")
@@ -1865,6 +1890,10 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
+                    b.Property<string>("ActivitiesJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("activities_json");
+
                     b.Property<string>("AdminNotes")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
@@ -2032,6 +2061,10 @@ namespace UniBank.Migrator.Migrations.UniBankDb
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("encryption_key_ref");
+
+                    b.Property<byte[]>("FileData")
+                        .HasColumnType("bytea")
+                        .HasColumnName("file_data");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -3120,6 +3153,206 @@ namespace UniBank.Migrator.Migrations.UniBankDb
             modelBuilder.Entity("UniBank.Core.Modules.Loans.Domain.Entities.Loan", b =>
                 {
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("UniBank.Core.Modules.BranchCash.Domain.Entities.TellerDrawerSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<Guid?>("ClosedBySupervisorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by_supervisor_id");
+
+                    b.Property<string>("ClosingBalanceJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("closing_balance_json");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("EodReportPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("eod_report_path");
+
+                    b.Property<string>("ExpectedClosingJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("expected_closing_json");
+
+                    b.Property<string>("OpeningFloatJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("opening_float_json");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("opened_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("teller_id");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("VarianceJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("variance_json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId")
+                        .HasDatabaseName("ix_teller_drawer_sessions_branch_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_teller_drawer_sessions_status");
+
+                    b.HasIndex("TellerId", "BusinessDate")
+                        .HasDatabaseName("ix_teller_drawer_sessions_teller_date");
+
+                    b.ToTable("teller_drawer_sessions", "bank");
+                });
+
+            modelBuilder.Entity("UniBank.Core.Modules.BranchCash.Domain.Entities.BranchCashTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("DenominationBreakdownJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("denomination_breakdown_json");
+
+                    b.Property<string>("DepositorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("depositor_name");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("direction");
+
+                    b.Property<Guid>("DrawerSessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("drawer_session_id");
+
+                    b.Property<bool>("IdentityVerified")
+                        .HasColumnType("boolean")
+                        .HasColumnName("identity_verified");
+
+                    b.Property<string>("ReceiptPdfPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("receipt_pdf_path");
+
+                    b.Property<DateTime?>("ReversedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reversed_at");
+
+                    b.Property<Guid?>("ReversedByTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversed_by_transaction_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SupervisorApprovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("supervisor_approved_at");
+
+                    b.Property<Guid?>("SupervisorApproverId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supervisor_approver_id");
+
+                    b.Property<Guid>("TellerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("teller_id");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DrawerSessionId")
+                        .HasDatabaseName("ix_branch_cash_transactions_drawer");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_branch_cash_transactions_status");
+
+                    b.HasIndex("TransactionId")
+                        .HasDatabaseName("ix_branch_cash_transactions_transaction_id");
+
+                    b.HasIndex("AccountId", "CreatedAt")
+                        .HasDatabaseName("ix_branch_cash_transactions_account_created");
+
+                    b.ToTable("branch_cash_transactions", "bank");
                 });
 #pragma warning restore 612, 618
         }

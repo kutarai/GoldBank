@@ -73,6 +73,38 @@ services:
         limits:
           memory: 256M
 
+  # ─── Migrators (run once, then exit) ───
+  server-migrator:
+    build:
+      context: .
+      dockerfile: server/UniBank.Migrator/Dockerfile
+    container_name: unibank-server-migrator
+    profiles: ["core"]
+    environment:
+      UNIBANK_ConnectionStrings__DefaultConnection: "Host=postgres;Database=${POSTGRES_DB:-unibank};Username=${POSTGRES_USER:-unibank};Password=${POSTGRES_PASSWORD:-unibank_dev_password}"
+    command: ["--demo"]
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  switch-migrator:
+    build:
+      context: ./switch
+      dockerfile: Containerfile.migrator
+    container_name: unibank-switch-migrator
+    profiles: ["core"]
+    environment:
+      ConnectionStrings__SwitchDb: "Host=postgres;Port=5432;Database=synergy_switch;Username=${POSTGRES_USER:-unibank};Password=${POSTGRES_PASSWORD:-unibank_dev_password}"
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # ─── Application Services ───
   gateway:
     build:
@@ -94,8 +126,8 @@ services:
       - frontend
       - backend
     depends_on:
-      postgres:
-        condition: service_healthy
+      server-migrator:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
@@ -218,8 +250,8 @@ services:
       - frontend
       - backend
     depends_on:
-      postgres:
-        condition: service_healthy
+      switch-migrator:
+        condition: service_completed_successfully
       gateway:
         condition: service_healthy
     deploy:

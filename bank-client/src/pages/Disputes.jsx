@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
-import { generateDisputes } from '../services/api';
+import { generateDisputes, getDisputeActivities, addDisputeActivity } from '../services/api';
 import { useSnackbar } from '../services/snackbar';
 
 function SlaChip({ hours }) {
@@ -29,6 +29,50 @@ export default function Disputes() {
   const [resNotes, setResNotes] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [notifyCustomer, setNotifyCustomer] = useState(true);
+
+  // Details dialog state
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsTab, setDetailsTab] = useState(0);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [newActionType, setNewActionType] = useState('Called Customer');
+  const [newNotes, setNewNotes] = useState('');
+  const [savingActivity, setSavingActivity] = useState(false);
+
+  const loadActivities = async (id) => {
+    setActivitiesLoading(true);
+    const data = await getDisputeActivities(id);
+    setActivities(data);
+    setActivitiesLoading(false);
+  };
+
+  const openDetails = (d) => {
+    setSelected(d);
+    setDetailsTab(0);
+    setActivities([]);
+    setNewActionType('Called Customer');
+    setNewNotes('');
+    setDetailsOpen(true);
+    loadActivities(d.id);
+  };
+
+  const handleAddActivity = async () => {
+    if (!selected || !newActionType.trim()) return;
+    setSavingActivity(true);
+    const ok = await addDisputeActivity(selected.id, {
+      actionType: newActionType,
+      notes: newNotes,
+      agent: 'admin',
+    });
+    setSavingActivity(false);
+    if (ok) {
+      notify('Activity logged');
+      setNewNotes('');
+      loadActivities(selected.id);
+    } else {
+      notify('Failed to log activity');
+    }
+  };
 
   const tabs = ['All', 'Open', 'Investigating', 'Resolved'];
   const filtered = tab === 0 ? disputes : disputes.filter((d) => d.status === tabs[tab]);
@@ -74,6 +118,7 @@ export default function Disputes() {
                 <TableCell><SlaChip hours={d.slaHours} /></TableCell>
                 <TableCell>
                   {d.status !== 'Resolved' && <Button size="small" onClick={() => openResolve(d)}>Resolve</Button>}
+                  <Button size="small" variant="outlined" sx={{ ml: 1 }} onClick={() => openDetails(d)}>Details</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -95,6 +140,134 @@ export default function Disputes() {
         <DialogActions>
           <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={() => { notify('Dispute created'); setCreateOpen(false); }}>Create</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Dispute {selected?.id}</DialogTitle>
+        <DialogContent sx={{ px: 0, pb: 0 }}>
+          <Tabs
+            value={detailsTab}
+            onChange={(_, v) => setDetailsTab(v)}
+            sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}
+          >
+            <Tab label="Details" />
+            <Tab label={`Activity Log (${activities.length})`} />
+          </Tabs>
+
+          {selected && (
+            <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+              {/* Tab 0: Details */}
+              {detailsTab === 0 && (
+                <Table size="small">
+                  <TableBody>
+                    {[
+                      ['Dispute ID', selected.id],
+                      ['Transaction', selected.transactionId],
+                      ['Account', selected.accountId],
+                      ['Type', selected.type],
+                      ['Status', <Chip label={selected.status} size="small" color={selected.status === 'Resolved' ? 'success' : selected.status === 'Open' ? 'warning' : 'info'} />],
+                      ['Description', selected.description || '—'],
+                      ['Resolution', selected.resolution || '—'],
+                      ['Refund Amount', selected.refundAmount > 0 ? selected.refundAmount.toLocaleString() : '—'],
+                      ['Agent', selected.agent || '—'],
+                      ['Filed', selected.filed],
+                      ['SLA', <SlaChip hours={selected.slaHours} />],
+                      ['Resolved At', selected.resolved || '—'],
+                    ].map(([label, value]) => (
+                      <TableRow key={label}>
+                        <TableCell sx={{ width: '30%', color: 'text.secondary', borderBottom: 'none', py: 1 }}>{label}</TableCell>
+                        <TableCell sx={{ borderBottom: 'none', py: 1 }}>{value}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+
+              {/* Tab 1: Activity Log */}
+              {detailsTab === 1 && (
+                <Box>
+                  {/* Add new activity form */}
+                  <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>Log New Activity</Typography>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      margin="dense"
+                      label="Action Type"
+                      value={newActionType}
+                      onChange={(e) => setNewActionType(e.target.value)}
+                    >
+                      {[
+                        'Called Customer',
+                        'Called Merchant',
+                        'Investigating',
+                        'Awaiting Response',
+                        'Reviewed Evidence',
+                        'Escalated',
+                        'Email Sent',
+                        'Note',
+                      ].map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+                    </TextField>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      margin="dense"
+                      label="Notes"
+                      multiline
+                      rows={2}
+                      value={newNotes}
+                      onChange={(e) => setNewNotes(e.target.value)}
+                    />
+                    <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={handleAddActivity}
+                        disabled={savingActivity || !newActionType.trim()}
+                      >
+                        {savingActivity ? 'Saving…' : 'Log Activity'}
+                      </Button>
+                    </Box>
+                  </Box>
+
+                  {/* Activity timeline */}
+                  <Typography variant="subtitle2" gutterBottom>Timeline</Typography>
+                  {activitiesLoading && <Typography variant="body2" color="text.secondary">Loading…</Typography>}
+                  {!activitiesLoading && activities.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">No activity logged yet.</Typography>
+                  )}
+                  {!activitiesLoading && activities.length > 0 && (
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Timestamp</TableCell>
+                          <TableCell>Action</TableCell>
+                          <TableCell>Notes</TableCell>
+                          <TableCell>Agent</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {activities.map((a, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell>{new Date(a.timestamp).toLocaleString()}</TableCell>
+                            <TableCell><Chip label={a.actionType} size="small" /></TableCell>
+                            <TableCell>{a.notes || '—'}</TableCell>
+                            <TableCell>{a.agent}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 

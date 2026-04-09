@@ -19,4 +19,9 @@ public class KycDocument : AggregateRoot
     public string Status { get; set; } = "uploaded";
     public string TenantId { get; set; } = default!;
     public DateTime? VerifiedAt { get; set; }
+
+    /// <summary>
+    /// Raw uploaded image bytes (unencrypted), stored for direct admin display.
+    /// </summary>
+    public byte[]? FileData { get; set; }
 }

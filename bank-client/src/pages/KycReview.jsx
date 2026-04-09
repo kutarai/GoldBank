@@ -90,44 +90,85 @@ export default function KycReview() {
         <DialogContent>
           {selected && (
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid size={12}>
-                <Typography variant="subtitle1" gutterBottom>Face Match Score</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <LinearProgress variant="determinate" value={selected.faceMatchScore * 100} sx={{ flex: 1, height: 12, borderRadius: 6 }}
-                    color={selected.faceMatchScore > 0.9 ? 'success' : selected.faceMatchScore > 0.8 ? 'warning' : 'error'} />
-                  <Typography variant="h6">{(selected.faceMatchScore * 100).toFixed(1)}%</Typography>
+              {/* LEFT: Status + ID + Selfie (side by side) */}
+              <Grid size={{ xs: 12, md: 5 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>Status</Typography>
+                <Chip label={selected.status || 'Pending'} color={selected.status === 'verified' ? 'success' : 'warning'} sx={{ mb: 2 }} />
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>ID Document</Typography>
+                    <Box
+                      component="img"
+                      src={selected.idImageUrl || `https://placehold.co/400x250/1E1E2E/4FC3F7?text=ID+Document%0A${encodeURIComponent(selected.extractedIdNumber || selected.id)}`}
+                      alt="ID Document"
+                      sx={{
+                        width: '100%',
+                        maxHeight: 180,
+                        objectFit: 'contain',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        display: 'block',
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>Selfie</Typography>
+                    <Box
+                      component="img"
+                      src={selected.selfieImageUrl || `https://placehold.co/400x400/1E1E2E/81C784?text=Selfie%0A${encodeURIComponent(selected.name || selected.id)}`}
+                      alt="Selfie"
+                      sx={{
+                        width: '50%',
+                        maxHeight: 180,
+                        objectFit: 'contain',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        display: 'block',
+                      }}
+                    />
+                  </Box>
                 </Box>
               </Grid>
-              <Grid size={12}>
-                <Typography variant="subtitle1" gutterBottom>Extracted Field Comparison</Typography>
-                <Table size="small">
-                  <TableHead><TableRow><TableCell>Field</TableCell><TableCell>Extracted</TableCell><TableCell>Match</TableCell></TableRow></TableHead>
-                  <TableBody>
-                    <TableRow><TableCell>Name</TableCell><TableCell>{selected.extractedName}</TableCell><TableCell><MatchIcon match={selected.nameMatch} /></TableCell></TableRow>
-                    <TableRow><TableCell>ID Number</TableCell><TableCell>{selected.extractedIdNumber}</TableCell><TableCell><MatchIcon match={selected.idMatch} /></TableCell></TableRow>
-                    <TableRow><TableCell>Date of Birth</TableCell><TableCell>{selected.extractedDob}</TableCell><TableCell><MatchIcon match={selected.dobMatch} /></TableCell></TableRow>
-                  </TableBody>
-                </Table>
-              </Grid>
-              <Grid size={12}>
-                <Typography variant="subtitle1" gutterBottom>AI Decision</Typography>
-                <Chip label={selected.aiDecision} color={selected.aiDecision === 'AutoApproved' ? 'success' : 'error'} />
-                {selected.aiReason && <Typography variant="body2" color="error" sx={{ mt: 0.5 }}>{selected.aiReason}</Typography>}
-              </Grid>
-              <Grid size={12}>
-                <TextField select fullWidth label="Decision" value={decision} onChange={(e) => setDecision(e.target.value)}>
-                  <MenuItem value="Approve">Approve</MenuItem>
-                  <MenuItem value="Reject">Reject</MenuItem>
-                  <MenuItem value="Escalate">Escalate to Compliance</MenuItem>
-                </TextField>
-              </Grid>
-              {decision === 'Reject' && (
-                <Grid size={12}>
-                  <TextField fullWidth label="Reject Reason" required value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-                </Grid>
-              )}
-              <Grid size={12}>
-                <TextField fullWidth label="Notes (optional)" multiline rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+              {/* RIGHT: Face Match, Extracted Fields, AI Decision, Notes, Decision */}
+              <Grid size={{ xs: 12, md: 7 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <Box>
+                    <Typography variant="subtitle1" gutterBottom>Face Match Score</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <LinearProgress variant="determinate" value={selected.faceMatchScore * 100} sx={{ flex: 1, height: 12, borderRadius: 6 }}
+                        color={selected.faceMatchScore > 0.9 ? 'success' : selected.faceMatchScore > 0.8 ? 'warning' : 'error'} />
+                      <Typography variant="h6">{(selected.faceMatchScore * 100).toFixed(1)}%</Typography>
+                    </Box>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1" gutterBottom>Extracted Field Comparison</Typography>
+                    <Table size="small">
+                      <TableHead><TableRow><TableCell>Field</TableCell><TableCell>Extracted</TableCell><TableCell>Match</TableCell></TableRow></TableHead>
+                      <TableBody>
+                        <TableRow><TableCell>Name</TableCell><TableCell>{selected.extractedName}</TableCell><TableCell><MatchIcon match={selected.nameMatch} /></TableCell></TableRow>
+                        <TableRow><TableCell>ID Number</TableCell><TableCell>{selected.extractedIdNumber}</TableCell><TableCell><MatchIcon match={selected.idMatch} /></TableCell></TableRow>
+                        <TableRow><TableCell>Date of Birth</TableCell><TableCell>{selected.extractedDob}</TableCell><TableCell><MatchIcon match={selected.dobMatch} /></TableCell></TableRow>
+                      </TableBody>
+                    </Table>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1" gutterBottom>AI Decision</Typography>
+                    <Chip label={selected.aiDecision} color={selected.aiDecision === 'AutoApproved' ? 'success' : 'error'} />
+                    {selected.aiReason && <Typography variant="body2" color="error" sx={{ mt: 0.5 }}>{selected.aiReason}</Typography>}
+                  </Box>
+                  <TextField fullWidth label="Notes (optional)" multiline rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                  <TextField select fullWidth label="Decision" value={decision} onChange={(e) => setDecision(e.target.value)}>
+                    <MenuItem value="Approve">Approve</MenuItem>
+                    <MenuItem value="Reject">Reject</MenuItem>
+                    <MenuItem value="Escalate">Escalate to Compliance</MenuItem>
+                  </TextField>
+                  {decision === 'Reject' && (
+                    <TextField fullWidth label="Reject Reason" required value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+                  )}
+                </Box>
               </Grid>
             </Grid>
           )}

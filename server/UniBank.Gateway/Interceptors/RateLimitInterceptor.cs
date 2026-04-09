@@ -6,6 +6,7 @@ using UniBank.Gateway.Configuration;
 
 namespace UniBank.Gateway.Interceptors;
 
+// MARKER: rate-limit-fix-v2
 /// <summary>
 /// Redis-backed sliding-window rate limiter for gRPC calls.
 /// Enforces per-user (100/min default) and per-tenant (10000/min default) limits.
@@ -50,8 +51,6 @@ public sealed class RateLimitInterceptor : Interceptor
         return 1
         """;
 
-    private readonly LuaScript? _preparedScript;
-
     public RateLimitInterceptor(
         IOptions<RateLimitSettings> settings,
         IConnectionMultiplexer? redis = null)
@@ -59,11 +58,6 @@ public sealed class RateLimitInterceptor : Interceptor
         _settings = settings.Value;
         _redis = redis;
         _exemptMethods = new HashSet<string>(_settings.ExemptMethods, StringComparer.OrdinalIgnoreCase);
-
-        if (_redis is not null)
-        {
-            _preparedScript = LuaScript.Prepare(SlidingWindowLuaScript);
-        }
     }
 
     // ----------------------------------------------------------------
@@ -124,7 +118,7 @@ public sealed class RateLimitInterceptor : Interceptor
         if (!_settings.Enabled)
             return;
 
-        if (_redis is null || _preparedScript is null)
+        if (_redis is null)
         {
             _logger.Debug("Rate limiting skipped: Redis not available");
             return;
@@ -147,12 +141,11 @@ public sealed class RateLimitInterceptor : Interceptor
             var userWindowStartMs = nowMs - (_settings.UserWindowSeconds * 1000L);
 
             var userAllowed = (int)await db.ScriptEvaluateAsync(
-                _preparedScript,
-                new { KEYS = new RedisKey[] { userKey },
-                      ARGV = new RedisValue[] {
-                          userWindowStartMs, nowMs, requestId,
-                          _settings.UserMaxRequests, _settings.UserWindowSeconds + 10
-                      }
+                SlidingWindowLuaScript,
+                new RedisKey[] { userKey },
+                new RedisValue[] {
+                    userWindowStartMs, nowMs, requestId,
+                    _settings.UserMaxRequests, _settings.UserWindowSeconds + 10
                 });
 
             if (userAllowed == 0)
@@ -183,12 +176,11 @@ public sealed class RateLimitInterceptor : Interceptor
             var tenantWindowStartMs = nowMs - (_settings.TenantWindowSeconds * 1000L);
 
             var tenantAllowed = (int)await db.ScriptEvaluateAsync(
-                _preparedScript,
-                new { KEYS = new RedisKey[] { tenantKey },
-                      ARGV = new RedisValue[] {
-                          tenantWindowStartMs, nowMs, requestId,
-                          _settings.TenantMaxRequests, _settings.TenantWindowSeconds + 10
-                      }
+                SlidingWindowLuaScript,
+                new RedisKey[] { tenantKey },
+                new RedisValue[] {
+                    tenantWindowStartMs, nowMs, requestId,
+                    _settings.TenantMaxRequests, _settings.TenantWindowSeconds + 10
                 });
 
             if (tenantAllowed == 0)

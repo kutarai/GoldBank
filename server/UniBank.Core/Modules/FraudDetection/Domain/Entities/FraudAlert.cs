@@ -18,4 +18,10 @@ public sealed class FraudAlert : AggregateRoot
     public DateTime? ReviewedAt { get; set; }
     public string? ReviewedBy { get; set; }
     public string TenantId { get; set; } = default!;
+
+    /// <summary>
+    /// JSON-encoded array of agent activity entries on this fraud alert.
+    /// Each entry: { timestamp, agent, actionType, notes }
+    /// </summary>
+    public string? ActivitiesJson { get; set; }
 }

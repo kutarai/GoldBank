@@ -27,6 +27,8 @@ using UniBank.Core.Modules.AI.Domain.Entities;
 using UniBank.Core.Modules.AI.Infrastructure.Persistence;
 using UniBank.Core.Modules.AssetCustody.Domain.Entities;
 using UniBank.Core.Modules.AssetCustody.Infrastructure.Persistence;
+using UniBank.Core.Modules.BranchCash.Domain.Entities;
+using UniBank.Core.Modules.BranchCash.Infrastructure.Persistence;
 using UniBank.SharedKernel.Domain;
 using UniBank.SharedKernel.MultiTenancy;
 
@@ -102,6 +104,15 @@ public class UniBankDbContext : DbContext
     public DbSet<AssetValuation> AssetValuations => Set<AssetValuation>();
     public DbSet<DailyPrice> DailyPrices => Set<DailyPrice>();
 
+    // BranchCash module (STORY-148)
+    public DbSet<TellerDrawerSession> TellerDrawerSessions => Set<TellerDrawerSession>();
+    public DbSet<BranchCashTransaction> BranchCashTransactions => Set<BranchCashTransaction>();
+    public DbSet<CurrencyDenomination> CurrencyDenominations => Set<CurrencyDenomination>();
+    public DbSet<Vault> Vaults => Set<Vault>();
+    public DbSet<VaultDenominationStock> VaultDenominationStock => Set<VaultDenominationStock>();
+    public DbSet<VaultMovement> VaultMovements => Set<VaultMovement>();
+    public DbSet<VaultSpotCheck> VaultSpotChecks => Set<VaultSpotCheck>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(_tenantSchema);
@@ -174,6 +185,15 @@ public class UniBankDbContext : DbContext
         modelBuilder.ApplyConfiguration(new DepositHouseEntityConfiguration());
         modelBuilder.ApplyConfiguration(new AssetValuationEntityConfiguration());
         modelBuilder.ApplyConfiguration(new DailyPriceEntityConfiguration());
+
+        // BranchCash module (STORY-148)
+        modelBuilder.ApplyConfiguration(new TellerDrawerSessionEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new BranchCashTransactionEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new CurrencyDenominationEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new VaultEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new VaultDenominationStockEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new VaultMovementEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new VaultSpotCheckEntityConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }

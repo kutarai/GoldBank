@@ -344,7 +344,7 @@ function RepaymentCalculator({ rates, calcMonthly }) {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>Repayment Calculator</Typography>
+      <Typography variant="h6" sx={{ mb: 3 }}>Repayment Calculator</Typography>
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
           <Card>

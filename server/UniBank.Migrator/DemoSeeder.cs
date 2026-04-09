@@ -42,6 +42,7 @@ internal static class DemoSeeder
     private static Guid BillUuid(int row) => MakeUuid(0x0a, row);
     private static Guid CfgUuid(int row) => MakeUuid(0x0b, row);
     private static Guid AuditUuid(int row) => MakeUuid(0x0c, row);
+    private static Guid BranchUuid(int row) => MakeUuid(0x0d, row);
 
     private static Guid MakeUuid(int prefix, int row)
     {
@@ -79,12 +80,15 @@ internal static class DemoSeeder
         Console.WriteLine("[DemoSeeder] Seeding demo data...");
 
         await SeedAdminUsersAsync(db);
+        await EnsureTellerUserAsync(db);
+        await BackfillAdminPasswordHashesAsync(db);
         await SeedAccountsAsync(db);
         await SeedTransactionsAsync(db);
         await SeedDisputesAsync(db);
         await SeedFraudAlertsAsync(db);
         await SeedKycDocumentsAsync(db);
         await SeedLoansAsync(db);
+        await SeedBranchesAsync(db);
         await SeedMerchantsAsync(db);
         await SeedBillProvidersAsync(db);
         await SeedSystemConfigsAsync(db);
@@ -106,7 +110,7 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(1), u =>
             {
                 u.Username = "admin";
-                u.PasswordHash = "$2a$10$demoSeedHashAdminXXXXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin", 11);
                 u.Email = "admin@unibank.co.zw";
                 u.FullName = "System Administrator";
                 u.Role = AdminRole.Admin;
@@ -117,7 +121,7 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(2), u =>
             {
                 u.Username = "kyc";
-                u.PasswordHash = "$2a$10$demoSeedHashKycXXXXXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("kyc", 11);
                 u.Email = "kyc@unibank.co.zw";
                 u.FullName = "KYC Officer";
                 u.Role = AdminRole.KycOfficer;
@@ -128,7 +132,7 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(3), u =>
             {
                 u.Username = "fraud";
-                u.PasswordHash = "$2a$10$demoSeedHashFraudXXXXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("fraud", 11);
                 u.Email = "fraud@unibank.co.zw";
                 u.FullName = "Fraud Analyst";
                 u.Role = AdminRole.FraudAnalyst;
@@ -139,7 +143,7 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(4), u =>
             {
                 u.Username = "support";
-                u.PasswordHash = "$2a$10$demoSeedHashSupportXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("support", 11);
                 u.Email = "support@unibank.co.zw";
                 u.FullName = "Customer Support";
                 u.Role = AdminRole.CustomerService;
@@ -150,7 +154,7 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(5), u =>
             {
                 u.Username = "loans";
-                u.PasswordHash = "$2a$10$demoSeedHashLoansXXXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("loans", 11);
                 u.Email = "loans@unibank.co.zw";
                 u.FullName = "Loan Officer";
                 u.Role = AdminRole.LoanOfficer;
@@ -161,7 +165,7 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(6), u =>
             {
                 u.Username = "compliance";
-                u.PasswordHash = "$2a$10$demoSeedHashComplyXXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("compliance", 11);
                 u.Email = "compliance@unibank.co.zw";
                 u.FullName = "Compliance Officer";
                 u.Role = AdminRole.ComplianceOfficer;
@@ -172,19 +176,132 @@ internal static class DemoSeeder
             New<AdminUser>(AdminUuid(7), u =>
             {
                 u.Username = "branch";
-                u.PasswordHash = "$2a$10$demoSeedHashBranchXXXuJ3NZ6hqKDR4k3vMt7lYwP2nQsR8gT.";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("branch", 11);
                 u.Email = "branch@unibank.co.zw";
                 u.FullName = "Branch Manager";
                 u.Role = AdminRole.BranchManager;
                 u.TenantId = "unibank";
+                u.BranchId = BranchUuid(2); // Borrowdale Branch
                 u.IsActive = true;
                 u.CreatedAt = Ago(180);
+            }),
+            // EPIC-021: bank teller (password "teller", hashed at seed time)
+            New<AdminUser>(AdminUuid(8), u =>
+            {
+                u.Username = "teller";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("teller", 11);
+                u.Email = "teller@unibank.co.zw";
+                u.FullName = "Branch Teller";
+                u.Role = AdminRole.Teller;
+                u.TenantId = "unibank";
+                u.BranchId = BranchUuid(2); // Borrowdale Branch
+                u.IsActive = true;
+                u.CreatedAt = Ago(150);
             }),
         };
 
         db.AdminUsers.AddRange(users);
         await db.SaveChangesAsync();
         Console.WriteLine($"  [AdminUsers] seeded {users.Length}");
+    }
+
+    // Idempotent backfill: replaces fake placeholder BCrypt hashes on the
+    // pre-EPIC-021 demo admin users with real ones so they can actually log in.
+    // Each user's password equals their username (demo only).
+    private static async Task BackfillAdminPasswordHashesAsync(UniBankDbContext db)
+    {
+        var demoCreds = new Dictionary<string, string>
+        {
+            ["admin"]      = "admin",
+            ["kyc"]        = "kyc",
+            ["fraud"]      = "fraud",
+            ["support"]    = "support",
+            ["loans"]      = "loans",
+            ["compliance"] = "compliance",
+            ["branch"]     = "branch",
+        };
+
+        var demoUsernames = demoCreds.Keys.ToList();
+        var users = await db.AdminUsers
+            .Where(u => demoUsernames.Contains(u.Username))
+            .ToListAsync();
+
+        var patched = 0;
+        foreach (var user in users)
+        {
+            // Only patch if the existing hash is not a verifiable BCrypt hash
+            // for the demo password. Skip if user has already been patched.
+            bool currentHashIsValid;
+            try { currentHashIsValid = BCrypt.Net.BCrypt.Verify(demoCreds[user.Username], user.PasswordHash); }
+            catch { currentHashIsValid = false; }
+
+            if (currentHashIsValid) continue;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(demoCreds[user.Username], 11);
+            patched++;
+        }
+
+        if (patched > 0)
+        {
+            await db.SaveChangesAsync();
+            Console.WriteLine($"  [AdminUsers] backfilled real BCrypt hashes for {patched} demo users");
+        }
+    }
+
+    // Idempotent backfill: ensure the teller user exists even if other admins
+    // were seeded in an earlier run that pre-dates EPIC-021. Also backfills the
+    // branch_id on the teller and branch-manager rows.
+    private static async Task EnsureTellerUserAsync(UniBankDbContext db)
+    {
+        var defaultBranchId = BranchUuid(2); // Borrowdale Branch
+
+        var existing = await db.AdminUsers.FirstOrDefaultAsync(u => u.Username == "teller");
+        if (existing != null)
+        {
+            var changed = false;
+            if (existing.Role != AdminRole.Teller)
+            {
+                existing.Role = AdminRole.Teller;
+                changed = true;
+            }
+            if (existing.BranchId == null)
+            {
+                existing.BranchId = defaultBranchId;
+                changed = true;
+            }
+            if (changed)
+            {
+                await db.SaveChangesAsync();
+                Console.WriteLine("  [AdminUsers] patched existing 'teller' user (role/branch)");
+            }
+        }
+        else
+        {
+            var teller = New<AdminUser>(AdminUuid(8), u =>
+            {
+                u.Username     = "teller";
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("teller", 11);
+                u.Email        = "teller@unibank.co.zw";
+                u.FullName     = "Branch Teller";
+                u.Role         = AdminRole.Teller;
+                u.TenantId     = "unibank";
+                u.BranchId     = defaultBranchId;
+                u.IsActive     = true;
+                u.CreatedAt    = Ago(150);
+            });
+            db.AdminUsers.Add(teller);
+            await db.SaveChangesAsync();
+            Console.WriteLine("  [AdminUsers] backfilled 'teller' user");
+        }
+
+        // Also backfill branch on the existing 'branch' (BranchManager) user
+        var branchUser = await db.AdminUsers.FirstOrDefaultAsync(u => u.Username == "branch");
+        if (branchUser != null && branchUser.BranchId == null)
+        {
+            branchUser.BranchId = defaultBranchId;
+            await db.SaveChangesAsync();
+            Console.WriteLine("  [AdminUsers] patched 'branch' user with default branch_id");
+        }
     }
 
     // ── 2. Accounts ────────────────────────────────────────────────────────
@@ -548,7 +665,41 @@ internal static class DemoSeeder
         Console.WriteLine($"  [Loans] seeded {loans.Count}");
     }
 
-    // ── 8. Merchants ──────────────────────────────────────────────────────
+    // ── 8. Branches ──────────────────────────────────────────────────────
+    // 6 branches across Zimbabwe
+
+    private static async Task SeedBranchesAsync(UniBankDbContext db)
+    {
+        if (await db.Branches.AnyAsync()) return;
+
+        var rows = new (string name, string code, string addr, string city, string phone)[]
+        {
+            ("Head Office",          "HQ-001", "1 Nelson Mandela Ave",       "Harare",    "+263 242 700 100"),
+            ("Borrowdale Branch",    "BR-002", "55 Borrowdale Rd",           "Harare",    "+263 242 882 200"),
+            ("Bulawayo Main",        "BU-003", "8th Ave & Main St",          "Bulawayo",  "+263 292 260 300"),
+            ("Mutare Branch",        "MU-004", "12 Herbert Chitepo St",      "Mutare",    "+263 220 640 400"),
+            ("Gweru Branch",         "GW-005", "4th Street & Livingstone",   "Gweru",     "+263 254 221 500"),
+            ("Victoria Falls Branch","VF-006", "Parkway Dr & Mallet Rd",     "Vic Falls", "+263 213 442 600"),
+        };
+
+        var branches = rows.Select((r, i) => New<Branch>(BranchUuid(i + 1), b =>
+        {
+            b.Name = r.name;
+            b.Code = r.code;
+            b.Address = r.addr;
+            b.City = r.city;
+            b.Phone = r.phone;
+            b.TenantId = Guid.Parse("01000000-0000-4000-8000-000000000001");
+            b.IsActive = true;
+            b.CreatedAt = Ago(300 - i * 30);
+        })).ToList();
+
+        db.Branches.AddRange(branches);
+        await db.SaveChangesAsync();
+        Console.WriteLine($"  [Branches] seeded {branches.Count}");
+    }
+
+    // ── 9. Merchants ──────────────────────────────────────────────────────
     // 8 rows (Merchants.jsx STUB_MERCHANTS)
 
     private static async Task SeedMerchantsAsync(UniBankDbContext db)

@@ -18,6 +18,12 @@ public sealed class Dispute : AggregateRoot
     public string RefundCurrency { get; set; } = "ZWG";
     public Guid? AdminUserId { get; set; }
     public DateTime? ResolvedAt { get; set; }
+
+    /// <summary>
+    /// JSON-encoded array of agent activity entries on this dispute.
+    /// Each entry: { timestamp, agent, actionType, notes }
+    /// </summary>
+    public string? ActivitiesJson { get; set; }
 }
 
 public enum DisputeType

@@ -212,6 +212,149 @@ public class AdminApiController : ControllerBase
     }
 
     // -------------------------------------------------------------------------
+    // GET /api/admin/disputes/{shortId}/activities
+    // Returns the activity timeline for a single dispute (parsed from jsonb).
+    // -------------------------------------------------------------------------
+    [HttpGet("disputes/{shortId}/activities")]
+    public async Task<IActionResult> GetDisputeActivities(string shortId)
+    {
+        var allDisputes = await _db.Disputes.Select(d => new { d.Id, d.ActivitiesJson }).ToListAsync();
+        var match = allDisputes.FirstOrDefault(d => ShortId("DSP", d.Id) == shortId);
+        if (match == null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(match.ActivitiesJson))
+            return Ok(Array.Empty<object>());
+
+        try
+        {
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<List<DisputeActivityEntry>>(match.ActivitiesJson)
+                         ?? new List<DisputeActivityEntry>();
+            var ordered = parsed.OrderByDescending(e => e.Timestamp).ToList();
+            return Ok(ordered);
+        }
+        catch
+        {
+            return Ok(Array.Empty<object>());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/admin/disputes/{shortId}/activities
+    // Appends a new activity entry to the dispute timeline.
+    // Body: { actionType, notes, agent }
+    // -------------------------------------------------------------------------
+    [HttpPost("disputes/{shortId}/activities")]
+    public async Task<IActionResult> AddDisputeActivity(string shortId, [FromBody] DisputeActivityEntry body)
+    {
+        if (body == null || string.IsNullOrWhiteSpace(body.ActionType))
+            return BadRequest("actionType is required");
+
+        // Project only needed columns to avoid loading the full Dispute entity
+        // (existing rows may have legacy enum values that don't deserialize)
+        var allRows = await _db.Disputes
+            .Select(d => new { d.Id, d.ActivitiesJson })
+            .ToListAsync();
+        var match = allRows.FirstOrDefault(d => ShortId("DSP", d.Id) == shortId);
+        if (match == null) return NotFound();
+
+        var existing = string.IsNullOrWhiteSpace(match.ActivitiesJson)
+            ? new List<DisputeActivityEntry>()
+            : (System.Text.Json.JsonSerializer.Deserialize<List<DisputeActivityEntry>>(match.ActivitiesJson)
+               ?? new List<DisputeActivityEntry>());
+
+        existing.Add(new DisputeActivityEntry
+        {
+            Timestamp  = DateTime.UtcNow,
+            ActionType = body.ActionType,
+            Notes      = body.Notes ?? "",
+            Agent      = string.IsNullOrWhiteSpace(body.Agent) ? "admin" : body.Agent,
+        });
+
+        var newJson = System.Text.Json.JsonSerializer.Serialize(existing);
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE bank.disputes SET activities_json = {newJson}::jsonb, updated_at = NOW() WHERE \"Id\" = {match.Id}");
+
+        return Ok(new { ok = true, count = existing.Count });
+    }
+
+    public sealed class DisputeActivityEntry
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("timestamp")]
+        public DateTime Timestamp { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("agent")]
+        public string Agent { get; set; } = "admin";
+
+        [System.Text.Json.Serialization.JsonPropertyName("actionType")]
+        public string ActionType { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("notes")]
+        public string Notes { get; set; } = "";
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/admin/fraud-alerts/{shortId}/activities
+    // -------------------------------------------------------------------------
+    [HttpGet("fraud-alerts/{shortId}/activities")]
+    public async Task<IActionResult> GetFraudAlertActivities(string shortId)
+    {
+        var rows = await _db.FraudAlerts
+            .Select(f => new { f.Id, f.ActivitiesJson })
+            .ToListAsync();
+        var match = rows.FirstOrDefault(r => ShortId("FRD", r.Id) == shortId);
+        if (match == null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(match.ActivitiesJson))
+            return Ok(Array.Empty<object>());
+
+        try
+        {
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<List<DisputeActivityEntry>>(match.ActivitiesJson)
+                         ?? new List<DisputeActivityEntry>();
+            return Ok(parsed.OrderByDescending(e => e.Timestamp).ToList());
+        }
+        catch
+        {
+            return Ok(Array.Empty<object>());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/admin/fraud-alerts/{shortId}/activities
+    // -------------------------------------------------------------------------
+    [HttpPost("fraud-alerts/{shortId}/activities")]
+    public async Task<IActionResult> AddFraudAlertActivity(string shortId, [FromBody] DisputeActivityEntry body)
+    {
+        if (body == null || string.IsNullOrWhiteSpace(body.ActionType))
+            return BadRequest("actionType is required");
+
+        var rows = await _db.FraudAlerts
+            .Select(f => new { f.Id, f.ActivitiesJson })
+            .ToListAsync();
+        var match = rows.FirstOrDefault(r => ShortId("FRD", r.Id) == shortId);
+        if (match == null) return NotFound();
+
+        var existing = string.IsNullOrWhiteSpace(match.ActivitiesJson)
+            ? new List<DisputeActivityEntry>()
+            : (System.Text.Json.JsonSerializer.Deserialize<List<DisputeActivityEntry>>(match.ActivitiesJson)
+               ?? new List<DisputeActivityEntry>());
+
+        existing.Add(new DisputeActivityEntry
+        {
+            Timestamp  = DateTime.UtcNow,
+            ActionType = body.ActionType,
+            Notes      = body.Notes ?? "",
+            Agent      = string.IsNullOrWhiteSpace(body.Agent) ? "admin" : body.Agent,
+        });
+
+        var newJson = System.Text.Json.JsonSerializer.Serialize(existing);
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE bank.fraud_alerts SET activities_json = {newJson}::jsonb, updated_at = NOW() WHERE \"Id\" = {match.Id}");
+
+        return Ok(new { ok = true, count = existing.Count });
+    }
+
+    // -------------------------------------------------------------------------
     // GET /api/admin/fraud-alerts?status=&severity=
     // -------------------------------------------------------------------------
     [HttpGet("fraud-alerts")]
@@ -256,30 +399,72 @@ public class AdminApiController : ControllerBase
     [HttpGet("kyc-queue")]
     public async Task<IActionResult> GetKycQueue([FromQuery] string status = "")
     {
-        var query = _db.KycDocuments.AsQueryable();
+        // Only show ID-type documents in the review queue (not selfies, which are
+        // matched up to their parent ID via account_id below).
+        var idDocTypes = new[] { "national_id", "passport", "drivers_license" };
+
+        var query = _db.KycDocuments
+            .Where(k => idDocTypes.Contains(k.DocumentType));
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(k => k.Status == status.ToLowerInvariant());
 
-        var items = await query
+        var rows = await query
             .Join(_db.Accounts, k => k.AccountId, a => a.Id, (k, a) => new { k, a })
             .OrderByDescending(x => x.k.CreatedAt)
             .Select(x => new
             {
-                id            = ShortId("KYC", x.k.Id),
-                accountId     = ShortId("ACC", x.k.AccountId),
-                name          = (x.a.FirstName + " " + x.a.LastName).Trim(),
-                documentType  = x.k.DocumentType,
-                status        = MapStatus(x.k.Status),
-                submittedDate = x.k.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
-                level         = x.a.KycLevel,
-                faceMatchScore = 0.85,
-                aiDecision    = x.k.Status == "approved" ? "AutoApproved" : x.k.Status == "rejected" ? "Rejected" : "Pending",
-                nameMatch     = true,
-                idMatch       = true,
-                dobMatch      = x.k.Status != "rejected",
+                x.k,
+                x.a,
+                // Latest selfie document for this account (if any)
+                selfie = _db.KycDocuments
+                    .Where(s => s.AccountId == x.k.AccountId && s.DocumentType == "selfie")
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Select(s => new { s.FileData, s.ContentType })
+                    .FirstOrDefault(),
+                // Latest KycVerification (AI) for this account
+                v = _db.KycVerifications
+                    .Where(vv => vv.AccountId == x.k.AccountId)
+                    .OrderByDescending(vv => vv.CreatedAt)
+                    .FirstOrDefault(),
             })
             .ToListAsync();
+
+        static string MimeOrJpeg(string? ct) => string.IsNullOrWhiteSpace(ct) ? "image/jpeg" : ct;
+
+        var items = rows.Select(x => new
+        {
+            id              = ShortId("KYC", x.k.Id),
+            accountId       = ShortId("ACC", x.k.AccountId),
+            name            = (x.a.FirstName + " " + x.a.LastName).Trim(),
+            documentType    = x.k.DocumentType,
+            status          = MapStatus(x.k.Status),
+            submittedDate   = x.k.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
+            level           = x.a.KycLevel,
+            faceMatchScore  = x.v?.FaceMatchScore ?? 0.85,
+            aiDecision      = x.v?.OverallDecision
+                                ?? (x.k.Status == "approved" ? "AutoApproved"
+                                    : x.k.Status == "rejected" ? "Rejected"
+                                    : "Pending"),
+            aiReason        = x.v?.RejectionReason ?? "",
+            extractedName   = x.v?.ExtractedFullName ?? "",
+            extractedIdNumber = x.v?.ExtractedIdNumber ?? "",
+            extractedDob    = x.v?.ExtractedDateOfBirth?.ToString("yyyy-MM-dd") ?? "",
+            nameMatch       = x.v?.NameMatch ?? true,
+            idMatch         = x.v?.IdNumberMatch ?? true,
+            dobMatch        = x.v?.DobMatch ?? (x.k.Status != "rejected"),
+            // Prefer raw file_data on the kyc_documents row; fall back to kyc_verifications bytea.
+            idImageUrl      = x.k.FileData != null
+                                ? $"data:{MimeOrJpeg(x.k.ContentType)};base64," + Convert.ToBase64String(x.k.FileData)
+                                : x.v?.IdDocumentImageData != null
+                                    ? "data:image/jpeg;base64," + Convert.ToBase64String(x.v.IdDocumentImageData)
+                                    : null,
+            selfieImageUrl  = x.selfie?.FileData != null
+                                ? $"data:{MimeOrJpeg(x.selfie.ContentType)};base64," + Convert.ToBase64String(x.selfie.FileData)
+                                : x.v?.SelfieImageData != null
+                                    ? "data:image/jpeg;base64," + Convert.ToBase64String(x.v.SelfieImageData)
+                                    : null,
+        }).ToList();
 
         return Ok(items);
     }
@@ -401,6 +586,92 @@ public class AdminApiController : ControllerBase
             .ToListAsync();
 
         return Ok(items);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/admin/admin-users — create a new admin user
+    // -------------------------------------------------------------------------
+    public sealed class CreateAdminUserRequest
+    {
+        public string Username { get; set; } = "";
+        public string FullName { get; set; } = "";
+        public string Email    { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Role     { get; set; } = "";
+        public Guid?  BranchId { get; set; }
+        public string? TenantId { get; set; }
+    }
+
+    [HttpPost("admin-users")]
+    public async Task<IActionResult> CreateAdminUser([FromBody] CreateAdminUserRequest body)
+    {
+        if (body == null) return BadRequest(new { error = "missing_body" });
+        if (string.IsNullOrWhiteSpace(body.Username)) return BadRequest(new { error = "username_required" });
+        if (string.IsNullOrWhiteSpace(body.Password)) return BadRequest(new { error = "password_required" });
+        if (!Enum.TryParse<UniBank.Core.Modules.Admin.Domain.Entities.AdminRole>(body.Role, out var roleEnum))
+            return BadRequest(new { error = "invalid_role" });
+
+        var dup = await _db.AdminUsers.AnyAsync(u => u.Username == body.Username);
+        if (dup) return Conflict(new { error = "username_taken" });
+
+        var user = new UniBank.Core.Modules.Admin.Domain.Entities.AdminUser
+        {
+            Username     = body.Username,
+            FullName     = body.FullName,
+            Email        = body.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(body.Password, 11),
+            Role         = roleEnum,
+            BranchId     = body.BranchId,
+            TenantId     = body.TenantId ?? "unibank",
+            IsActive     = true,
+            CreatedAt    = DateTime.UtcNow,
+        };
+        _db.AdminUsers.Add(user);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { id = user.Id, username = user.Username });
+    }
+
+    // -------------------------------------------------------------------------
+    // PUT /api/admin/admin-users/{id} — update an existing admin user
+    // -------------------------------------------------------------------------
+    public sealed class UpdateAdminUserRequest
+    {
+        public string? FullName { get; set; }
+        public string? Email    { get; set; }
+        public string? Password { get; set; }   // optional — only updated if non-empty
+        public string? Role     { get; set; }
+        public Guid?   BranchId { get; set; }
+        public bool?   IsActive { get; set; }
+    }
+
+    [HttpPut("admin-users/{id:guid}")]
+    public async Task<IActionResult> UpdateAdminUser(Guid id, [FromBody] UpdateAdminUserRequest body)
+    {
+        if (body == null) return BadRequest(new { error = "missing_body" });
+
+        var user = await _db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null) return NotFound();
+
+        if (!string.IsNullOrWhiteSpace(body.FullName)) user.FullName = body.FullName;
+        if (!string.IsNullOrWhiteSpace(body.Email))    user.Email    = body.Email;
+        if (body.BranchId.HasValue)                    user.BranchId = body.BranchId;
+        if (body.IsActive.HasValue)                    user.IsActive = body.IsActive.Value;
+
+        if (!string.IsNullOrWhiteSpace(body.Role))
+        {
+            if (!Enum.TryParse<UniBank.Core.Modules.Admin.Domain.Entities.AdminRole>(body.Role, out var roleEnum))
+                return BadRequest(new { error = "invalid_role" });
+            user.Role = roleEnum;
+        }
+
+        if (!string.IsNullOrWhiteSpace(body.Password))
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(body.Password, 11);
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { id = user.Id, username = user.Username });
     }
 
     // -------------------------------------------------------------------------
@@ -536,6 +807,272 @@ public class AdminApiController : ControllerBase
             .ToListAsync();
 
         return Ok(items);
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/admin/customers/{shortId}/activity
+    // Aggregates timeline of ALL activity on the account: KYC reviews,
+    // verifications, transactions, loans, disputes, fraud alerts, audit logs.
+    // -------------------------------------------------------------------------
+    [HttpGet("customers/{shortId}/activity")]
+    public async Task<IActionResult> GetCustomerActivity(string shortId)
+    {
+        // Resolve short id (e.g. ACC-000005) → all matching account GUIDs (one per currency)
+        var allAccounts = await _db.Accounts
+            .Select(a => new { a.Id, a.PhoneNumber })
+            .ToListAsync();
+
+        var primary = allAccounts.FirstOrDefault(a => ShortId("ACC", a.Id) == shortId);
+        if (primary == null) return NotFound();
+
+        // Group by phone so we capture both ZWG + USD accounts as one customer
+        var phone = primary.PhoneNumber;
+        var accountIds = allAccounts.Where(a => a.PhoneNumber == phone).Select(a => a.Id).ToHashSet();
+
+        var events = new List<object>();
+
+        // 1. Account creation
+        var accounts = await _db.Accounts.Where(a => accountIds.Contains(a.Id)).ToListAsync();
+        foreach (var a in accounts)
+        {
+            events.Add(new
+            {
+                timestamp = a.CreatedAt,
+                category  = "Account",
+                action    = "Account Created",
+                detail    = $"{a.Currency} account opened",
+                actor     = "system",
+            });
+            if (a.LastLoginAt.HasValue)
+            {
+                events.Add(new
+                {
+                    timestamp = a.LastLoginAt.Value,
+                    category  = "Auth",
+                    action    = "Last Login",
+                    detail    = $"{a.Currency} account",
+                    actor     = "user",
+                });
+            }
+        }
+
+        // 2. KYC documents uploaded
+        var kycDocs = await _db.KycDocuments.Where(k => accountIds.Contains(k.AccountId)).ToListAsync();
+        foreach (var k in kycDocs)
+        {
+            events.Add(new
+            {
+                timestamp = k.CreatedAt,
+                category  = "KYC",
+                action    = "Document Uploaded",
+                detail    = $"{k.DocumentType} ({k.Status})",
+                actor     = "user",
+            });
+            if (k.VerifiedAt.HasValue)
+            {
+                events.Add(new
+                {
+                    timestamp = k.VerifiedAt.Value,
+                    category  = "KYC",
+                    action    = "Document Verified",
+                    detail    = $"{k.DocumentType} → {k.Status}",
+                    actor     = "system",
+                });
+            }
+        }
+
+        // 3. KYC verifications (AI + manual reviews)
+        var kycVers = await _db.KycVerifications.Where(v => accountIds.Contains(v.AccountId)).ToListAsync();
+        foreach (var v in kycVers)
+        {
+            events.Add(new
+            {
+                timestamp = v.CreatedAt,
+                category  = "KYC",
+                action    = "AI Verification",
+                detail    = $"Face match {v.FaceMatchScore:P0}, decision: {v.OverallDecision}",
+                actor     = "ai",
+            });
+            if (v.ReviewedAt.HasValue)
+            {
+                events.Add(new
+                {
+                    timestamp = v.ReviewedAt.Value,
+                    category  = "KYC",
+                    action    = "Manual Review",
+                    detail    = $"{v.OverallDecision}{(string.IsNullOrEmpty(v.RejectionReason) ? "" : $" — {v.RejectionReason}")}",
+                    actor     = v.ReviewedBy ?? "admin",
+                });
+            }
+        }
+
+        // 4. Transactions
+        var txns = await _db.Transactions
+            .Where(t => accountIds.Contains(t.AccountId))
+            .OrderByDescending(t => t.CreatedAt)
+            .Take(200)
+            .ToListAsync();
+        foreach (var t in txns)
+        {
+            events.Add(new
+            {
+                timestamp = t.CreatedAt,
+                category  = "Transaction",
+                action    = t.Type ?? "Transaction",
+                detail    = $"{t.Currency} {t.Amount:N2} ({t.Status})",
+                actor     = "user",
+            });
+        }
+
+        // 5. Loans
+        var loans = await _db.Loans.Where(l => accountIds.Contains(l.AccountId)).ToListAsync();
+        foreach (var l in loans)
+        {
+            events.Add(new
+            {
+                timestamp = l.CreatedAt,
+                category  = "Loan",
+                action    = "Loan Applied",
+                detail    = $"Principal {l.Principal:N2}, status: {l.Status}",
+                actor     = "user",
+            });
+        }
+
+        // 6. Disputes
+        var disputes = await _db.Disputes.Where(d => accountIds.Contains(d.AccountId)).ToListAsync();
+        foreach (var d in disputes)
+        {
+            events.Add(new
+            {
+                timestamp = d.CreatedAt,
+                category  = "Dispute",
+                action    = "Dispute Filed",
+                detail    = $"{d.Type} — {d.Status}",
+                actor     = "user",
+            });
+            if (d.ResolvedAt.HasValue)
+            {
+                events.Add(new
+                {
+                    timestamp = d.ResolvedAt.Value,
+                    category  = "Dispute",
+                    action    = "Dispute Resolved",
+                    detail    = d.Resolution ?? d.Status.ToString(),
+                    actor     = "admin",
+                });
+            }
+        }
+
+        // 7. Fraud alerts
+        var fraud = await _db.FraudAlerts.Where(f => accountIds.Contains(f.AccountId)).ToListAsync();
+        foreach (var f in fraud)
+        {
+            events.Add(new
+            {
+                timestamp = f.CreatedAt,
+                category  = "Fraud",
+                action    = "Fraud Alert",
+                detail    = $"{f.AlertType} ({f.Severity}) — {f.Status}",
+                actor     = "system",
+            });
+        }
+
+        // 8. Audit logs targeting any of these account IDs (EntityId is string)
+        var accountIdStrings = accountIds.Select(g => g.ToString()).ToHashSet();
+        var auditRows = await _db.AuditLogs
+            .Where(a => accountIdStrings.Contains(a.EntityId))
+            .GroupJoin(_db.AdminUsers, a => a.AdminUserId, u => u.Id, (a, users) => new { a, user = users.FirstOrDefault() })
+            .ToListAsync();
+        foreach (var x in auditRows)
+        {
+            events.Add(new
+            {
+                timestamp = x.a.CreatedAt,
+                category  = "Audit",
+                action    = x.a.Action,
+                detail    = x.a.Details ?? x.a.EntityType,
+                actor     = x.user?.Username ?? "admin",
+            });
+        }
+
+        // Order by timestamp DESC and project to a uniform shape
+        var ordered = events
+            .OrderByDescending(e => (DateTime)e.GetType().GetProperty("timestamp")!.GetValue(e)!)
+            .Select(e => new
+            {
+                timestamp = ((DateTime)e.GetType().GetProperty("timestamp")!.GetValue(e)!).ToString("yyyy-MM-dd HH:mm:ss"),
+                category  = e.GetType().GetProperty("category")!.GetValue(e),
+                action    = e.GetType().GetProperty("action")!.GetValue(e),
+                detail    = e.GetType().GetProperty("detail")!.GetValue(e),
+                actor     = e.GetType().GetProperty("actor")!.GetValue(e),
+            })
+            .ToList();
+
+        return Ok(ordered);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/admin/customers/{shortId}/actions
+    // Records an admin action against a customer (Activate/Suspend/Freeze/etc.)
+    // by writing an audit log entry. Optionally updates account status.
+    // -------------------------------------------------------------------------
+    [HttpPost("customers/{shortId}/actions")]
+    public async Task<IActionResult> AddCustomerAction(string shortId, [FromBody] CustomerActionEntry body)
+    {
+        if (body == null || string.IsNullOrWhiteSpace(body.Action))
+            return BadRequest("action is required");
+
+        var allAccounts = await _db.Accounts.Select(a => new { a.Id, a.PhoneNumber }).ToListAsync();
+        var primary = allAccounts.FirstOrDefault(a => ShortId("ACC", a.Id) == shortId);
+        if (primary == null) return NotFound();
+
+        // Update status across all accounts for this phone (ZWG + USD pair)
+        var phone = primary.PhoneNumber;
+        var matchingIds = allAccounts.Where(a => a.PhoneNumber == phone).Select(a => a.Id).ToList();
+
+        var newStatus = body.Action.ToLowerInvariant() switch
+        {
+            "activate" => "active",
+            "suspend"  => "suspended",
+            "freeze"   => "frozen",
+            "unfreeze" => "active",
+            "close"    => "closed",
+            _          => null,
+        };
+
+        if (newStatus != null)
+        {
+            await _db.Accounts
+                .Where(a => matchingIds.Contains(a.Id))
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, newStatus));
+        }
+
+        // Write one audit log entry per account so the activity feed picks it up
+        foreach (var aid in matchingIds)
+        {
+            _db.AuditLogs.Add(new UniBank.Core.Modules.Admin.Domain.Entities.AuditLog
+            {
+                AdminUserId = Guid.Empty,
+                Action      = body.Action,
+                EntityType  = "Account",
+                EntityId    = aid.ToString(),
+                Details     = body.Reason ?? "",
+                IpAddress   = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                CreatedAt   = DateTime.UtcNow,
+            });
+        }
+        await _db.SaveChangesAsync();
+
+        return Ok(new { ok = true, action = body.Action, status = newStatus });
+    }
+
+    public sealed class CustomerActionEntry
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("action")]
+        public string Action { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("reason")]
+        public string Reason { get; set; } = "";
     }
 
     private static string ShortId(string prefix, Guid id)

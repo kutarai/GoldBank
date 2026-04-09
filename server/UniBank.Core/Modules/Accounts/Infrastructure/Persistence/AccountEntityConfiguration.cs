@@ -103,6 +103,17 @@ public sealed class AccountEntityConfiguration : IEntityTypeConfiguration<Accoun
         builder.Property(a => a.LastLoginAt)
             .HasColumnName("last_login_at");
 
+        builder.Property(a => a.SignatureImage)
+            .HasColumnType("bytea")
+            .HasColumnName("signature_image");
+
+        builder.Property(a => a.SignatureVerifiedBy)
+            .HasMaxLength(100)
+            .HasColumnName("signature_verified_by");
+
+        builder.Property(a => a.SignatureVerifiedAt)
+            .HasColumnName("signature_verified_at");
+
         // Unique constraint: one account per phone+currency combination
         builder.HasIndex(a => new { a.PhoneNumber, a.Currency })
             .IsUnique()

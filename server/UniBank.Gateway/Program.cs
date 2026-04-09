@@ -112,7 +112,9 @@ try
     builder.Services.AddControllers();
 
     builder.Services.AddCors(options => options.AddPolicy("BankClient", p =>
-        p.WithOrigins("http://localhost:5173")
+        p.WithOrigins(
+            "http://localhost:5173",  // bank-client (admin portal)
+            "http://localhost:5174")  // bank-teller (EPIC-021)
          .AllowAnyHeader()
          .AllowAnyMethod()));
 
@@ -159,6 +161,16 @@ try
     builder.Services.AddSingleton<AuthInterceptor>();
     builder.Services.AddSingleton<TenantInterceptor>();
     builder.Services.AddSingleton<RateLimitInterceptor>();
+
+    // BranchCash module services (STORY-151)
+    builder.Services.AddScoped<UniBank.Core.Modules.BranchCash.Application.Services.DenominationValidationService>();
+    builder.Services.AddScoped<UniBank.Core.Modules.BranchCash.Application.Services.VaultStockService>();
+    builder.Services.AddScoped<UniBank.Gateway.Services.VaultReportPdfService>();
+
+    // Receipt PDF service (STORY-158)
+    builder.Services.AddScoped<UniBank.Gateway.Services.ReceiptPdfService>();
+    // EOD report PDF service (STORY-159)
+    builder.Services.AddScoped<UniBank.Gateway.Services.EodReportPdfService>();
 
     // ---------------------------------------------------------------------------
     // gRPC services
@@ -244,7 +256,7 @@ try
         Service = "UniBank.Gateway",
         Timestamp = DateTime.UtcNow,
         Version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0"
-    }));
+    })).RequireCors("BankClient");
 
     app.MapGet("/ready", async (IServiceProvider sp) =>
     {

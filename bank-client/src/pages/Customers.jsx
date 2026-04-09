@@ -5,7 +5,7 @@ import {
   TableContainer, TableHead, TableRow, Paper, TablePagination, Tabs, Tab,
 } from '@mui/material';
 import { MoreVert, Search } from '@mui/icons-material';
-import { generateCustomers, generateTransactions } from '../services/api';
+import { generateCustomers, generateTransactions, generateCustomerActivity, postCustomerAction } from '../services/api';
 import { useSnackbar } from '../services/snackbar';
 
 const STATUS_COLORS = { Active: 'success', Suspended: 'warning', Frozen: 'info', Closed: 'error' };
@@ -63,6 +63,8 @@ export default function Customers() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuCustomer, setMenuCustomer] = useState(null);
   const [recentTxns, setRecentTxns] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -71,8 +73,20 @@ export default function Customers() {
       .finally(() => setLoading(false));
   }, [page, search, statusFilter]);
 
-  const handleAction = () => {
-    notify(`${action} executed on ${selected?.name}`);
+  const handleAction = async () => {
+    if (!selected) return;
+    const ok = await postCustomerAction(selected.id, action, reason);
+    if (ok) {
+      notify(`${action} executed on ${selected.name}`);
+      // Refresh activity log if dialog is open
+      if (detailOpen) {
+        generateCustomerActivity(selected.id).then(setActivity);
+      }
+      // Refresh customer list to reflect status change
+      generateCustomers(page, 10, search, statusFilter).then(setData);
+    } else {
+      notify(`Failed to ${action} ${selected.name}`);
+    }
     setActionOpen(false);
     setReason('');
   };
@@ -80,14 +94,20 @@ export default function Customers() {
   const openMenu = (e, customer) => { setAnchorEl(e.currentTarget); setMenuCustomer(customer); };
   const closeMenu = () => { setAnchorEl(null); setMenuCustomer(null); };
 
-  const startAction = (act) => {
-    setSelected(menuCustomer);
+  const startAction = (act, customer = null) => {
+    const target = customer || menuCustomer;
+    setSelected(target);
     setAction(act);
     closeMenu();
     if (act === 'View') {
       setDetailTab(0);
       setDetailOpen(true);
+      setActivity([]);
       generateTransactions({ pageSize: 5 }).then((items) => setRecentTxns(items.slice(0, 5)));
+      setActivityLoading(true);
+      generateCustomerActivity(target.id)
+        .then(setActivity)
+        .finally(() => setActivityLoading(false));
     } else {
       setActionOpen(true);
     }
@@ -125,7 +145,7 @@ export default function Customers() {
                 <TableCell>{c.created}</TableCell>
                 <TableCell>{c.lastLogin}</TableCell>
                 <TableCell>
-                  <IconButton size="small" onClick={(e) => openMenu(e, c)}><MoreVert /></IconButton>
+                  <Button size="small" variant="outlined" onClick={() => startAction('View', c)}>View</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -152,34 +172,44 @@ export default function Customers() {
             <Tab label="Profile" />
             <Tab label="Transactions" />
             <Tab label="Assets" />
+            <Tab label="Activity Log" />
           </Tabs>
 
           {selected && (
             <Box sx={{ px: 3, pt: 2, pb: 1 }}>
               {/* Tab 0: Profile */}
               {detailTab === 0 && (
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle2" color="text.secondary">Account ID</Typography>
-                    <Typography>{selected.id}</Typography>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Phone</Typography>
-                    <Typography>{selected.phone}</Typography>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Email</Typography>
-                    <Typography>{selected.email}</Typography>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>National ID</Typography>
-                    <Typography>{selected.nationalId}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-                    <Chip label={selected.status} color={STATUS_COLORS[selected.status]} size="small" />
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>KYC Level</Typography>
-                    <Typography>Level {selected.kycLevel}</Typography>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Balance (ZWG)</Typography>
-                    <Typography variant="h6">{selected.balanceZwg.toLocaleString()}</Typography>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Balance (USD)</Typography>
-                    <Typography variant="h6">${selected.balanceUsd.toLocaleString()}</Typography>
-                  </Grid>
-                </Grid>
+                <Box>
+                  <Table size="small">
+                    <TableBody>
+                      {[
+                        ['Account ID', selected.id],
+                        ['Phone', selected.phone],
+                        ['Email', selected.email],
+                        ['National ID', selected.nationalId],
+                        ['Status', <Chip label={selected.status} color={STATUS_COLORS[selected.status]} size="small" />],
+                        ['KYC Level', `Level ${selected.kycLevel}`],
+                        ['Balance (ZWG)', selected.balanceZwg?.toLocaleString() ?? '—'],
+                        ['Balance (USD)', selected.balanceUsd != null ? `$${selected.balanceUsd.toLocaleString()}` : '—'],
+                      ].map(([label, value]) => (
+                        <TableRow key={label}>
+                          <TableCell sx={{ width: '35%', color: 'text.secondary', borderBottom: 'none', py: 1 }}>{label}</TableCell>
+                          <TableCell sx={{ borderBottom: 'none', py: 1 }}>{value}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>Account Actions</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Button size="small" variant="outlined" color="success" onClick={() => { setAction('Activate'); setActionOpen(true); }}>Activate</Button>
+                    <Button size="small" variant="outlined" color="warning" onClick={() => { setAction('Suspend'); setActionOpen(true); }}>Suspend</Button>
+                    <Button size="small" variant="outlined" color="info" onClick={() => { setAction('Freeze'); setActionOpen(true); }}>Freeze</Button>
+                    <Button size="small" variant="outlined" color="info" onClick={() => { setAction('Unfreeze'); setActionOpen(true); }}>Unfreeze</Button>
+                    <Button size="small" variant="outlined" onClick={() => { setAction('Reset PIN'); setActionOpen(true); }}>Reset PIN</Button>
+                    <Button size="small" variant="outlined" color="error" onClick={() => { setAction('Close'); setActionOpen(true); }}>Close</Button>
+                  </Box>
+                </Box>
               )}
 
               {/* Tab 1: Transactions */}
@@ -258,6 +288,54 @@ export default function Customers() {
                       ))}
                     </TableBody>
                   </Table>
+                </Box>
+              )}
+
+              {/* Tab 3: Activity Log */}
+              {detailTab === 3 && (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>Account Activity Timeline</Typography>
+                  {activityLoading && <Typography variant="body2" color="text.secondary">Loading…</Typography>}
+                  {!activityLoading && activity.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">No activity recorded for this account.</Typography>
+                  )}
+                  {!activityLoading && activity.length > 0 && (
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Timestamp</TableCell>
+                          <TableCell>Category</TableCell>
+                          <TableCell>Action</TableCell>
+                          <TableCell>Detail</TableCell>
+                          <TableCell>Actor</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {activity.map((e, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell>{e.timestamp}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={e.category}
+                                size="small"
+                                color={
+                                  e.category === 'KYC' ? 'info'
+                                  : e.category === 'Transaction' ? 'success'
+                                  : e.category === 'Fraud' ? 'error'
+                                  : e.category === 'Dispute' ? 'warning'
+                                  : e.category === 'Audit' ? 'secondary'
+                                  : 'default'
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>{e.action}</TableCell>
+                            <TableCell>{e.detail}</TableCell>
+                            <TableCell>{e.actor}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </Box>
               )}
             </Box>

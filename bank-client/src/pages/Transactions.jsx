@@ -28,29 +28,26 @@ export default function Transactions() {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>Transactions</Typography>
+      <Typography variant="h5" sx={{ mb: 3 }}>Transactions</Typography>
       {loading && <LinearProgress sx={{ mb: 1 }} />}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid size={{ xs: 12, sm: 3 }}>
-          <TextField size="small" fullWidth label="Account / Reference" value={filters.search} onChange={(e) => update('search', e.target.value)}
-            slotProps={{ input: { startAdornment: <Search sx={{ mr: 1 }} /> } }} />
-        </Grid>
-        <Grid size={{ xs: 6, sm: 2 }}>
-          <TextField select size="small" fullWidth label="Type" value={filters.type} onChange={(e) => update('type', e.target.value)}>
+      <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+        <TextField size="small" sx={{ flex: '1 1 220px', minWidth: 180 }} label="Account / Reference"
+          value={filters.search} onChange={(e) => update('search', e.target.value)}
+          slotProps={{ input: { startAdornment: <Search sx={{ mr: 1 }} /> } }} />
+        <Box sx={{ display: 'flex', gap: '3px' }}>
+          <TextField select size="small" sx={{ minWidth: 140 }} label="Type"
+            value={filters.type} onChange={(e) => update('type', e.target.value)}>
             <MenuItem value="">All</MenuItem>
             {['Purchase', 'Transfer', 'CashIn', 'CashOut', 'BillPay', 'P2P'].map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </TextField>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 2 }}>
-          <TextField select size="small" fullWidth label="Status" value={filters.status} onChange={(e) => update('status', e.target.value)}>
+          <TextField select size="small" sx={{ minWidth: 140 }} label="Status"
+            value={filters.status} onChange={(e) => update('status', e.target.value)}>
             <MenuItem value="">All</MenuItem>
             {['Completed', 'Pending', 'Failed', 'Reversed'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
           </TextField>
-        </Grid>
-        <Grid size={{ xs: 12, sm: 2 }}>
-          <Button startIcon={<Clear />} onClick={() => setFilters({ accountId: '', type: '', status: '', search: '' })}>Clear</Button>
-        </Grid>
-      </Grid>
+        </Box>
+        <Button startIcon={<Clear />} onClick={() => setFilters({ accountId: '', type: '', status: '', search: '' })}>Clear</Button>
+      </Box>
 
       <TableContainer component={Paper}>
         <Table size="small">

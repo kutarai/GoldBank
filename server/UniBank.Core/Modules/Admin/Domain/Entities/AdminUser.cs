@@ -28,4 +28,5 @@ public enum AdminRole
     LoanOfficer = 4,        // Loans module (new)
     ComplianceOfficer = 5,  // Read-only all + reports (replaces Compliance)
     BranchManager = 6,      // Branch-scoped all (replaces TenantAdmin)
+    Teller = 7,             // Bank teller (EPIC-021)
 }

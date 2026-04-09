@@ -1,0 +1,21 @@
+# SynergySwitch.Migrator - EF Core migration runner
+# Build context: switch/
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY src/SynergySwitch.Data/SynergySwitch.Data.csproj src/SynergySwitch.Data/
+COPY src/SynergySwitch.Core/SynergySwitch.Core.csproj src/SynergySwitch.Core/
+COPY src/SynergySwitch.Migrator/SynergySwitch.Migrator.csproj src/SynergySwitch.Migrator/
+COPY protos/ protos/
+
+RUN dotnet restore src/SynergySwitch.Migrator/SynergySwitch.Migrator.csproj
+
+COPY src/ src/
+
+RUN dotnet publish src/SynergySwitch.Migrator/SynergySwitch.Migrator.csproj \
+    -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+ENTRYPOINT ["dotnet", "SynergySwitch.Migrator.dll"]

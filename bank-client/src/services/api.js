@@ -3,7 +3,7 @@
 
 import dayjs from 'dayjs';
 
-const API_BASE = 'http://localhost:5101/api/admin';
+const API_BASE = '/api/admin';
 
 /**
  * Builds a URL with query params, calls fetch(), returns parsed JSON.
@@ -11,13 +11,12 @@ const API_BASE = 'http://localhost:5101/api/admin';
  */
 async function fetchApi(path, params = {}) {
   try {
-    const url = new URL(`${API_BASE}${path}`);
-    Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') {
-        url.searchParams.set(k, v);
-      }
-    });
-    const res = await fetch(url.toString());
+    const query = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join('&');
+    const url = `${API_BASE}${path}${query ? '?' + query : ''}`;
+    const res = await fetch(url);
     if (!res.ok) {
       console.warn(`[api] ${path} responded ${res.status} ${res.statusText}`);
       return null;
@@ -38,6 +37,29 @@ export async function generateCustomers(page = 0, pageSize = 10, search = '', st
   return { items: data?.items || [], total: data?.total || 0 };
 }
 
+// Activity timeline for a single customer (aggregates KYC, transactions,
+// loans, disputes, fraud, audit logs into one chronological feed).
+export async function generateCustomerActivity(shortId) {
+  if (!shortId) return [];
+  const data = await fetchApi(`/customers/${encodeURIComponent(shortId)}/activity`);
+  return data || [];
+}
+
+// Record an admin action on a customer (Activate/Suspend/Freeze/Unfreeze/Reset PIN/Close)
+export async function postCustomerAction(shortId, action, reason) {
+  try {
+    const res = await fetch(`${API_BASE}/customers/${encodeURIComponent(shortId)}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, reason }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[api] postCustomerAction failed:', err);
+    return false;
+  }
+}
+
 // ─── Transactions ─────────────────────────────────────────────────────────────
 // GET /api/admin/transactions?page=&pageSize=&type=&status=&accountId=
 // API returns { items, total }; pages expect a flat array — return items array.
@@ -52,6 +74,28 @@ export async function generateTransactions(filters = {}) {
 // API returns a flat array. Pages use: id, transactionId, accountId, type,
 // description, status, resolution, refundAmount, filed, slaHours, resolved, agent.
 // Map: resolvedAt → resolved, adminUserId → agent (id string), compute slaHours.
+
+// Activity log entries for a single dispute
+export async function getDisputeActivities(shortId) {
+  if (!shortId) return [];
+  const data = await fetchApi(`/disputes/${encodeURIComponent(shortId)}/activities`);
+  return data || [];
+}
+
+// Append a new activity entry to a dispute
+export async function addDisputeActivity(shortId, { actionType, notes, agent }) {
+  try {
+    const res = await fetch(`${API_BASE}/disputes/${encodeURIComponent(shortId)}/activities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionType, notes, agent }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[api] addDisputeActivity failed:', err);
+    return false;
+  }
+}
 
 export async function generateDisputes() {
   const items = await fetchApi('/disputes');
@@ -77,6 +121,28 @@ export async function generateFraudAlerts() {
   return items || [];
 }
 
+// Activity log for a single fraud alert
+export async function getFraudAlertActivities(shortId) {
+  if (!shortId) return [];
+  const data = await fetchApi(`/fraud-alerts/${encodeURIComponent(shortId)}/activities`);
+  return data || [];
+}
+
+// Append a new activity entry to a fraud alert
+export async function addFraudAlertActivity(shortId, { actionType, notes, agent }) {
+  try {
+    const res = await fetch(`${API_BASE}/fraud-alerts/${encodeURIComponent(shortId)}/activities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionType, notes, agent }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[api] addFraudAlertActivity failed:', err);
+    return false;
+  }
+}
+
 // ─── KYC Queue ────────────────────────────────────────────────────────────────
 // GET /api/admin/kyc-queue?status=
 // API returns a flat array. Pages use: id, accountId, documentType, status,
@@ -88,17 +154,9 @@ export async function generateKycQueue() {
   if (!items) return [];
   return items.map((k) => ({
     ...k,
-    name: k.accountId ? String(k.accountId).slice(0, 8) : '—',
-    level: 1,
-    faceMatchScore: null,
-    aiDecision: k.status === 'verified' ? 'AutoApproved' : 'Pending',
-    aiReason: '',
-    extractedName: '',
-    extractedIdNumber: '',
-    extractedDob: '',
-    nameMatch: false,
-    idMatch: false,
-    dobMatch: false,
+    name: k.name || (k.accountId ? `ACC-${String(k.accountId).slice(0, 8)}` : '—'),
+    level: k.level ?? 1,
+    faceMatchScore: k.faceMatchScore ?? null,
   }));
 }
 
@@ -128,13 +186,49 @@ export async function generateLoans() {
 // branch, status. Map: isActive → status ('Active'/'Inactive'), branchId → branch.
 
 export async function generateAdminUsers() {
-  const items = await fetchApi('/admin-users');
+  const [items, branchData] = await Promise.all([
+    fetchApi('/admin-users'),
+    fetchApi('/branches'),
+  ]);
   if (!items) return [];
+  const nameById = {};
+  (branchData || []).forEach((b) => { nameById[b.id] = b.name; });
   return items.map((u) => ({
     ...u,
-    branch: u.branchId ? String(u.branchId) : 'Head Office',
+    branchId: u.branchId,
+    branch: u.branchId ? (nameById[u.branchId] || 'Unknown') : 'Head Office',
     status: u.isActive ? 'Active' : 'Inactive',
   }));
+}
+
+// Update an existing admin user
+export async function updateAdminUser(id, payload) {
+  try {
+    const res = await fetch(`${API_BASE}/admin-users/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[api] updateAdminUser failed:', err);
+    return false;
+  }
+}
+
+// Create a new admin user
+export async function createAdminUser(payload) {
+  try {
+    const res = await fetch(`${API_BASE}/admin-users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[api] createAdminUser failed:', err);
+    return false;
+  }
 }
 
 // ─── Branches ─────────────────────────────────────────────────────────────────

@@ -7,6 +7,8 @@ public sealed class KycVerification : BaseEntity
     public Guid AccountId { get; set; }
     public string SelfieImagePath { get; set; } = default!;
     public string IdDocumentImagePath { get; set; } = default!;
+    public byte[]? SelfieImageData { get; set; }
+    public byte[]? IdDocumentImageData { get; set; }
     public double FaceMatchScore { get; set; }
     public string FaceMatchDecision { get; set; } = default!;
     public string? ExtractedFullName { get; set; }

@@ -62,6 +62,7 @@ public sealed class UploadDocumentHandler
             ChecksumSha256 = checksum,
             Status = "uploaded",
             TenantId = command.TenantId,
+            FileData = command.FileData, // raw bytes for direct admin display
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

@@ -30,6 +30,22 @@ public class Account : AggregateRoot
     public DateTime? LastLoginAt { get; set; }
 
     /// <summary>
+    /// Customer's handwritten signature image (raw bytes, e.g. JPEG/PNG).
+    /// Captured during onboarding for cheque/withdrawal authorisation.
+    /// </summary>
+    public byte[]? SignatureImage { get; set; }
+
+    /// <summary>
+    /// Username (or short admin id) of the staff member who verified the signature.
+    /// </summary>
+    public string? SignatureVerifiedBy { get; set; }
+
+    /// <summary>
+    /// UTC timestamp at which the signature was verified.
+    /// </summary>
+    public DateTime? SignatureVerifiedAt { get; set; }
+
+    /// <summary>
     /// Returns true if a PIN has already been set for this account.
     /// </summary>
     public bool HasPinSet => !string.IsNullOrEmpty(PinHash);

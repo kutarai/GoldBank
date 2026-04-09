@@ -60,6 +60,10 @@ public sealed class DisputeEntityConfiguration : IEntityTypeConfiguration<Disput
         builder.Property(d => d.ResolvedAt)
             .HasColumnName("resolved_at");
 
+        builder.Property(d => d.ActivitiesJson)
+            .HasColumnType("jsonb")
+            .HasColumnName("activities_json");
+
         builder.Property(d => d.CreatedAt)
             .HasColumnName("created_at");
 

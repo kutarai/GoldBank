@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, Chip, Button, TextField, MenuItem, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, Stepper, Step, StepLabel,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tabs, Tab,
 } from '@mui/material';
-import { generateFraudAlerts } from '../services/api';
+import { generateFraudAlerts, getFraudAlertActivities, addFraudAlertActivity } from '../services/api';
 import { useSnackbar } from '../services/snackbar';
 
 const SEV_COLORS = { High: 'error', Medium: 'warning', Low: 'info' };
@@ -24,6 +24,37 @@ export default function FraudAlerts() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [decision, setDecision] = useState('');
   const [investigationNotes, setInvestigationNotes] = useState('');
+  const [detailTab, setDetailTab] = useState(0);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [newActionType, setNewActionType] = useState('Investigating');
+  const [newNotes, setNewNotes] = useState('');
+  const [savingActivity, setSavingActivity] = useState(false);
+
+  const loadActivities = async (id) => {
+    setActivitiesLoading(true);
+    const data = await getFraudAlertActivities(id);
+    setActivities(data);
+    setActivitiesLoading(false);
+  };
+
+  const handleAddActivity = async () => {
+    if (!selected || !newActionType.trim()) return;
+    setSavingActivity(true);
+    const ok = await addFraudAlertActivity(selected.id, {
+      actionType: newActionType,
+      notes: newNotes,
+      agent: 'admin',
+    });
+    setSavingActivity(false);
+    if (ok) {
+      notify('Activity logged');
+      setNewNotes('');
+      loadActivities(selected.id);
+    } else {
+      notify('Failed to log activity');
+    }
+  };
 
   const filtered = alerts.filter((a) => {
     if (statusFilter && a.status !== statusFilter) return false;
@@ -37,7 +68,15 @@ export default function FraudAlerts() {
     resolved: alerts.filter((a) => a.status === 'Dismissed').length,
   };
 
-  const openDetail = (alert) => { setSelected(alert); setDetailOpen(true); };
+  const openDetail = (alert) => {
+    setSelected(alert);
+    setDetailTab(0);
+    setActivities([]);
+    setNewActionType('Investigating');
+    setNewNotes('');
+    setDetailOpen(true);
+    loadActivities(alert.id);
+  };
   const openReview = () => { setDecision(''); setInvestigationNotes(''); setDetailOpen(false); setReviewOpen(true); };
   const handleReview = () => { notify(`Alert ${selected.id}: ${decision}`); setReviewOpen(false); };
 
@@ -99,20 +138,126 @@ export default function FraudAlerts() {
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Fraud Alert: {selected?.id}</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ px: 0, pb: 0 }}>
+          <Tabs
+            value={detailTab}
+            onChange={(_, v) => setDetailTab(v)}
+            sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}
+          >
+            <Tab label="Details" />
+            <Tab label={`Activity Log (${activities.length})`} />
+          </Tabs>
+
           {selected && (
-            <Box sx={{ mt: 1 }}>
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid size={6}><Typography variant="body2" color="text.secondary">Account</Typography><Typography>{selected.accountId}</Typography></Grid>
-                <Grid size={6}><Typography variant="body2" color="text.secondary">Transaction</Typography><Typography>{selected.transactionId}</Typography></Grid>
-                <Grid size={6}><Typography variant="body2" color="text.secondary">Alert Type</Typography><Chip label={selected.type} size="small" /></Grid>
-                <Grid size={6}><Typography variant="body2" color="text.secondary">Severity</Typography><Chip label={selected.severity} color={SEV_COLORS[selected.severity]} size="small" /></Grid>
-              </Grid>
-              <Typography variant="subtitle1" gutterBottom>Investigation Timeline</Typography>
-              <Stepper activeStep={activeStep} sx={{ mb: 2 }}>
-                {timelineSteps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-              </Stepper>
-              <Typography variant="body2">{selected.description}</Typography>
+            <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+              {/* Tab 0: Details */}
+              {detailTab === 0 && (
+                <Box>
+                  <Table size="small">
+                    <TableBody>
+                      {[
+                        ['Alert ID', selected.id],
+                        ['Account', selected.accountId],
+                        ['Transaction', selected.transactionId],
+                        ['Alert Type', <Chip label={selected.type} size="small" />],
+                        ['Severity', <Chip label={selected.severity} color={SEV_COLORS[selected.severity]} size="small" />],
+                        ['Status', <Chip label={selected.status} color={STATUS_COLORS[selected.status]} size="small" />],
+                        ['Created', selected.created],
+                        ['Description', selected.description],
+                      ].map(([label, value]) => (
+                        <TableRow key={label}>
+                          <TableCell sx={{ width: '30%', color: 'text.secondary', borderBottom: 'none', py: 1 }}>{label}</TableCell>
+                          <TableCell sx={{ borderBottom: 'none', py: 1 }}>{value}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>Investigation Timeline</Typography>
+                  <Stepper activeStep={activeStep}>
+                    {timelineSteps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                  </Stepper>
+                </Box>
+              )}
+
+              {/* Tab 1: Activity Log */}
+              {detailTab === 1 && (
+                <Box>
+                  {/* Add new activity form */}
+                  <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>Log New Activity</Typography>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      margin="dense"
+                      label="Action Type"
+                      value={newActionType}
+                      onChange={(e) => setNewActionType(e.target.value)}
+                    >
+                      {[
+                        'Investigating',
+                        'Called Customer',
+                        'Reviewed Transaction',
+                        'Contacted Merchant',
+                        'Awaiting Response',
+                        'Escalated',
+                        'Blocked Account',
+                        'Cleared',
+                        'Note',
+                      ].map((a) => <MenuItem key={a} value={a}>{a}</MenuItem>)}
+                    </TextField>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      margin="dense"
+                      label="Notes"
+                      multiline
+                      rows={2}
+                      value={newNotes}
+                      onChange={(e) => setNewNotes(e.target.value)}
+                    />
+                    <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={handleAddActivity}
+                        disabled={savingActivity || !newActionType.trim()}
+                      >
+                        {savingActivity ? 'Saving…' : 'Log Activity'}
+                      </Button>
+                    </Box>
+                  </Box>
+
+                  {/* Timeline */}
+                  <Typography variant="subtitle2" gutterBottom>Timeline</Typography>
+                  {activitiesLoading && <Typography variant="body2" color="text.secondary">Loading…</Typography>}
+                  {!activitiesLoading && activities.length === 0 && (
+                    <Typography variant="body2" color="text.secondary">No activity logged yet.</Typography>
+                  )}
+                  {!activitiesLoading && activities.length > 0 && (
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Timestamp</TableCell>
+                          <TableCell>Action</TableCell>
+                          <TableCell>Notes</TableCell>
+                          <TableCell>Agent</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {activities.map((a, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell>{new Date(a.timestamp).toLocaleString()}</TableCell>
+                            <TableCell><Chip label={a.actionType} size="small" /></TableCell>
+                            <TableCell>{a.notes || '—'}</TableCell>
+                            <TableCell>{a.agent}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Box>
+              )}
             </Box>
           )}
         </DialogContent>

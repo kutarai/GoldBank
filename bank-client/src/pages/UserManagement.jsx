@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Chip, TextField, MenuItem, Grid, LinearProgress,
+  Box, Typography, Button, Chip, TextField, MenuItem, LinearProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
-import { generateAdminUsers, generateBranches } from '../services/api';
+import {
+  generateAdminUsers, generateBranches, updateAdminUser, createAdminUser,
+} from '../services/api';
 import { Roles } from '../auth/roles';
 import { useSnackbar } from '../services/snackbar';
 
@@ -22,7 +24,8 @@ export default function UserManagement() {
   const [editOpen, setEditOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [form, setForm] = useState({ username: '', fullName: '', email: '', password: '', role: '', branch: '' });
+  const [form, setForm] = useState({ username: '', fullName: '', email: '', password: '', role: '', branchId: '' });
+  const [saving, setSaving] = useState(false);
   const [deactivateReason, setDeactivateReason] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
 
@@ -30,19 +33,57 @@ export default function UserManagement() {
 
   const openCreate = () => {
     setSelected(null);
-    setForm({ username: '', fullName: '', email: '', password: '', role: '', branch: '' });
+    setForm({ username: '', fullName: '', email: '', password: '', role: '', branchId: '' });
     setEditOpen(true);
   };
 
   const openEdit = (user) => {
     setSelected(user);
-    setForm({ username: user.username, fullName: user.fullName, email: user.email, password: '', role: user.role, branch: user.branch });
+    setForm({
+      username: user.username,
+      fullName: user.fullName,
+      email: user.email,
+      password: '',
+      role: user.role,
+      branchId: user.branchId || '',
+    });
     setEditOpen(true);
   };
 
-  const handleSave = () => {
-    notify(selected ? `User ${form.username} updated` : `User ${form.username} created`);
-    setEditOpen(false);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      let ok;
+      if (selected) {
+        ok = await updateAdminUser(selected.id, {
+          fullName: form.fullName,
+          email:    form.email,
+          role:     form.role,
+          branchId: form.branchId || null,
+          password: form.password || null, // only updated if non-empty
+        });
+      } else {
+        ok = await createAdminUser({
+          username: form.username,
+          fullName: form.fullName,
+          email:    form.email,
+          password: form.password,
+          role:     form.role,
+          branchId: form.branchId || null,
+        });
+      }
+      if (ok) {
+        notify(selected ? `User ${form.username} updated` : `User ${form.username} created`);
+        // Refresh list
+        const updated = await generateAdminUsers();
+        setUsers(updated);
+        setEditOpen(false);
+      } else {
+        notify(selected ? `Failed to update ${form.username}` : `Failed to create ${form.username}`);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const openDeactivate = (user) => { setSelected(user); setDeactivateReason(''); setDeactivateOpen(true); };
@@ -92,26 +133,56 @@ export default function UserManagement() {
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{selected ? 'Edit User' : 'Create User'}</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={6}><TextField fullWidth label="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} disabled={!!selected} required /></Grid>
-            <Grid size={6}><TextField fullWidth label="Full Name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required /></Grid>
-            <Grid size={6}><TextField fullWidth label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></Grid>
-            {!selected && <Grid size={6}><TextField fullWidth label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required /></Grid>}
-            <Grid size={6}>
-              <TextField select fullWidth label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} required>
-                {Object.values(Roles).map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid size={6}>
-              <TextField select fullWidth label="Branch" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })}>
-                {branches.map((b) => <MenuItem key={b.id} value={b.name}>{b.name}</MenuItem>)}
-              </TextField>
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px', mt: 1 }}>
+            <TextField
+              fullWidth label="Username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              disabled={!!selected}
+              required
+            />
+            <TextField
+              fullWidth label="Full Name"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              required
+            />
+            <TextField
+              fullWidth label="Email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
+            <TextField
+              fullWidth label={selected ? 'New Password (leave blank to keep current)' : 'Password'}
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required={!selected}
+            />
+            <TextField
+              select fullWidth label="Role"
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              required
+            >
+              {Object.values(Roles).map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
+            </TextField>
+            <TextField
+              select fullWidth label="Branch"
+              value={form.branchId || ''}
+              onChange={(e) => setForm({ ...form, branchId: e.target.value })}
+            >
+              <MenuItem value="">— None —</MenuItem>
+              {branches.map((b) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
+            </TextField>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>Save</Button>
+          <Button variant="contained" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
         </DialogActions>
       </Dialog>
 

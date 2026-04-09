@@ -6,6 +6,7 @@ export const Roles = {
   LoanOfficer: 'LoanOfficer',
   ComplianceOfficer: 'ComplianceOfficer',
   BranchManager: 'BranchManager',
+  Teller: 'Teller',
 };
 
 export const Access = {

@@ -74,16 +74,23 @@ object ApduProcessor {
      * Build SELECT response with FCI (File Control Information).
      */
     fun buildSelectResponse(token: String): ByteArray {
-        val fci = EmvTlvBuilder()
-            .addTag("9F38", hexToBytes("9F02069F03069F1A029C019A039505")) // PDOL
-            .addTag("84", VISA_AID) // DF Name
-            .addTag("A5", EmvTlvBuilder() // FCI proprietary
-                .addTag("50", "UniBank".toByteArray()) // Application label
+        val response = EmvTlvBuilder()
+            .addTag("6F", EmvTlvBuilder()                           // FCI Template
+                .addTag("84", VISA_AID)                             // DF Name (AID)
+                .addTag("A5", EmvTlvBuilder()                       // FCI Proprietary Template
+                    .addTag("50", "UniBank".toByteArray())          //   Application Label
+                    .addTag("9F38", hexToBytes(                     //   PDOL
+                        "9F0206"    // Amount Authorised (6 bytes)
+                      + "9F0306"   // Amount Other (6 bytes)
+                      + "9F1A02"   // Terminal Country Code (2 bytes)
+                      + "9C01"     // Transaction Type (1 byte)
+                      + "9A03"     // Transaction Date (3 bytes)
+                      + "9505"     // TVR (5 bytes)
+                    ))
+                    .build()
+                )
                 .build()
             )
-            .build()
-        val response = EmvTlvBuilder()
-            .addTag("6F", fci)
             .build()
         return response + SW_OK
     }
@@ -104,11 +111,25 @@ object ApduProcessor {
      * Build READ RECORD response with card data.
      */
     fun buildReadRecordResponse(token: String, accountId: String): ByteArray {
+        val pan = accountId.filter { it.isDigit() }.take(16).padEnd(16, '0')
+        val panBcd = if (pan.length % 2 != 0) pan + "F" else pan
+
+        // Track 2 Equivalent Data: PAN + separator 'D' + expiry + service code + padding
+        val track2 = panBcd + "D" + "3012" + "201"
+        val track2Padded = if (track2.length % 2 != 0) track2 + "F" else track2
+
         val record = EmvTlvBuilder()
-            .addTag("70", EmvTlvBuilder() // EMV Record
-                .addTag("5A", accountId.take(16).padEnd(16, '0').toByteArray()) // PAN
-                .addTag("5F24", "301231".toByteArray()) // Expiry YYMMDD
-                .addTag("9F26", token.take(8).toByteArray()) // Application Cryptogram (placeholder)
+            .addTag("70", EmvTlvBuilder()
+                .addTag("57", hexToBytes(track2Padded))                        // Track 2 Equivalent Data
+                .addTag("5A", hexToBytes(panBcd))                              // PAN (BCD)
+                .addTag("5F24", hexToBytes("301231"))                          // Expiry YYMMDD (BCD)
+                .addTag("5F28", hexToBytes("0716"))                            // Issuer Country Code
+                .addTag("5F34", hexToBytes("01"))                              // PAN Sequence Number
+                .addTag("9F07", hexToBytes("FF00"))                            // Application Usage Control
+                .addTag("8C", hexToBytes("9F02069F03069F1A0295059A039C019F3704")) // CDOL1
+                .addTag("8D", hexToBytes("8A02"))                              // CDOL2
+                .addTag("9F08", hexToBytes("0002"))                            // App Version Number
+                .addTag("9F42", hexToBytes("0840"))                            // App Currency Code (USD)
                 .build()
             )
             .build()
@@ -119,11 +140,13 @@ object ApduProcessor {
      * Build GENERATE AC response.
      */
     fun buildGenerateAcResponse(cryptogram: String): ByteArray {
+        val cryptBytes = cryptogram.take(16).padEnd(16, '0').let { hexToBytes(it) }
         val data = EmvTlvBuilder()
-            .addTag("80", EmvTlvBuilder()
-                .addTag("9F27", byteArrayOf(0x80.toByte())) // CID: ARQC
-                .addTag("9F26", cryptogram.take(16).toByteArray()) // Application Cryptogram
-                .addTag("9F10", "0A01100000000000000000".toByteArray()) // Issuer Application Data
+            .addTag("77", EmvTlvBuilder()                                      // Format 2 Template
+                .addTag("9F27", byteArrayOf(0x80.toByte()))                    // CID: ARQC
+                .addTag("9F36", hexToBytes("0001"))                            // Application Transaction Counter
+                .addTag("9F26", cryptBytes)                                    // Application Cryptogram (8 bytes)
+                .addTag("9F10", hexToBytes("0110A00003220000000000000000000000FF")) // Issuer Application Data
                 .build()
             )
             .build()

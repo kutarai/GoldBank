@@ -55,6 +55,8 @@ export default function Merchants() {
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({});
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerForm, setRegisterForm] = useState({ name: '', category: 'Retail', contactName: '', phone: '', email: '', commission: 1.5 });
 
   // Merchant status toggle dialog
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -63,6 +65,8 @@ export default function Merchants() {
 
   // Device dialog
   const [deviceOpen, setDeviceOpen] = useState(false);
+  const [issueDeviceOpen, setIssueDeviceOpen] = useState(false);
+  const [issueDeviceForm, setIssueDeviceForm] = useState({ terminalId: '', model: 'PAX A920', serialNumber: '' });
   const [selectedMerchantId, setSelectedMerchantId] = useState(null);
 
   // Device status toggle dialog
@@ -208,7 +212,7 @@ export default function Merchants() {
             disabled={auditLog.length === 0}>
             Event Log ({auditLog.length})
           </Button>
-          <Button variant="contained" startIcon={<Add />}>Register Merchant</Button>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setRegisterOpen(true)}>Register Merchant</Button>
         </Box>
       </Box>
 
@@ -246,6 +250,49 @@ export default function Merchants() {
       {/* Data Grid */}
       <DataGrid rows={filtered} columns={columns} autoHeight pageSize={10} rowsPerPageOptions={[10, 25]} disableRowSelectionOnClick
         sx={{ '& .MuiDataGrid-cell': { py: 1 } }} />
+
+      {/* ── Register Merchant Dialog ──────────────────────────────────── */}
+      <Dialog open={registerOpen} onClose={() => setRegisterOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Register New Merchant</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth label="Merchant Name" margin="normal" required
+            value={registerForm.name} onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })} />
+          <TextField select fullWidth label="Category" margin="normal" required
+            value={registerForm.category} onChange={(e) => setRegisterForm({ ...registerForm, category: e.target.value })}>
+            {['Retail', 'Food & Beverage', 'Health', 'Fuel', 'Clothing', 'Wholesale', 'Services'].map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+          </TextField>
+          <TextField fullWidth label="Contact Name" margin="normal" required
+            value={registerForm.contactName} onChange={(e) => setRegisterForm({ ...registerForm, contactName: e.target.value })} />
+          <TextField fullWidth label="Phone" margin="normal" required
+            value={registerForm.phone} onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })} />
+          <TextField fullWidth label="Email" margin="normal" type="email" required
+            value={registerForm.email} onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })} />
+          <TextField fullWidth label="Commission %" margin="normal" type="number"
+            value={registerForm.commission} onChange={(e) => setRegisterForm({ ...registerForm, commission: parseFloat(e.target.value) || 0 })}
+            InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRegisterOpen(false)}>Cancel</Button>
+          <Button variant="contained"
+            disabled={!registerForm.name || !registerForm.contactName || !registerForm.phone || !registerForm.email}
+            onClick={() => {
+              const newId = `M${String(merchants.length + 1).padStart(3, '0')}`;
+              const newMerchant = {
+                id: newId,
+                ...registerForm,
+                status: 'pending',
+                devices: 0,
+                lastRecon: null,
+                createdAt: new Date().toISOString().split('T')[0],
+              };
+              setMerchants([...merchants, newMerchant]);
+              setAuditLog([{ ts: new Date().toISOString(), action: 'register', merchantId: newId, details: registerForm.name }, ...auditLog]);
+              notify(`Merchant ${registerForm.name} registered (pending approval)`);
+              setRegisterForm({ name: '', category: 'Retail', contactName: '', phone: '', email: '', commission: 1.5 });
+              setRegisterOpen(false);
+            }}>Register</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ── Merchant Edit Dialog ──────────────────────────────────────────── */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
@@ -298,11 +345,61 @@ export default function Merchants() {
         </DialogActions>
       </Dialog>
 
+      {/* ── Issue Device Dialog ───────────────────────────────────────────── */}
+      <Dialog open={issueDeviceOpen} onClose={() => setIssueDeviceOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Issue New Device</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Issuing to: <strong>{merchants.find((m) => m.id === selectedMerchantId)?.name}</strong>
+          </Typography>
+          <TextField fullWidth label="Terminal ID" margin="normal" required
+            value={issueDeviceForm.terminalId}
+            onChange={(e) => setIssueDeviceForm({ ...issueDeviceForm, terminalId: e.target.value })}
+            placeholder="TID-XXXXX" />
+          <TextField select fullWidth label="Model" margin="normal" required
+            value={issueDeviceForm.model}
+            onChange={(e) => setIssueDeviceForm({ ...issueDeviceForm, model: e.target.value })}>
+            {['PAX A920', 'PAX A77', 'Ingenico Move 5000', 'Verifone V240m', 'Verifone X990'].map((m) => (
+              <MenuItem key={m} value={m}>{m}</MenuItem>
+            ))}
+          </TextField>
+          <TextField fullWidth label="Serial Number" margin="normal" required
+            value={issueDeviceForm.serialNumber}
+            onChange={(e) => setIssueDeviceForm({ ...issueDeviceForm, serialNumber: e.target.value })}
+            placeholder="SN-XXXX-XXX" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIssueDeviceOpen(false)}>Cancel</Button>
+          <Button variant="contained"
+            disabled={!issueDeviceForm.terminalId || !issueDeviceForm.serialNumber}
+            onClick={() => {
+              const newId = `T${String(devices.length + 1).padStart(3, '0')}`;
+              const newDevice = {
+                id: newId,
+                merchantId: selectedMerchantId,
+                terminalId: issueDeviceForm.terminalId,
+                model: issueDeviceForm.model,
+                serialNumber: issueDeviceForm.serialNumber,
+                status: 'active',
+                lastTxn: null,
+              };
+              setDevices([...devices, newDevice]);
+              // Increment merchant device count
+              setMerchants(merchants.map((m) => m.id === selectedMerchantId ? { ...m, devices: m.devices + 1 } : m));
+              setAuditLog([{ ts: new Date().toISOString(), action: 'issue-device', merchantId: selectedMerchantId, details: `${issueDeviceForm.terminalId} (${issueDeviceForm.model})` }, ...auditLog]);
+              notify(`Device ${issueDeviceForm.terminalId} issued`);
+              setIssueDeviceForm({ terminalId: '', model: 'PAX A920', serialNumber: '' });
+              setIssueDeviceOpen(false);
+            }}>Issue</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* ── Device Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={deviceOpen} onClose={() => setDeviceOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           Devices — {merchants.find((m) => m.id === selectedMerchantId)?.name}
-          <Button variant="outlined" size="small" startIcon={<Add />} sx={{ ml: 2 }}>Issue Device</Button>
+          <Button variant="outlined" size="small" startIcon={<Add />} sx={{ ml: 2 }}
+            onClick={() => setIssueDeviceOpen(true)}>Issue Device</Button>
         </DialogTitle>
         <DialogContent>
           <DataGrid rows={merchantDevices} columns={deviceColumns} autoHeight pageSize={5} disableRowSelectionOnClick />
