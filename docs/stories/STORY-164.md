@@ -111,7 +111,7 @@ CREATE TABLE bank.vault_spot_checks (
 - [ ] Indexes on `vault_movements.created_at`, `(vault_id, currency, created_at)`, `(teller_id, created_at)`, `(drawer_session_id)`
 - [ ] EF entities `Vault`, `VaultDenominationStock`, `VaultMovement`, `VaultSpotCheck` exist
 - [ ] EF configurations correctly map all columns and FKs
-- [ ] `UniBankDbContext` exposes `DbSet`s for all four
+- [ ] `GoldBankDbContext` exposes `DbSet`s for all four
 - [ ] Migration includes a data step that inserts a `vaults` row for every existing branch
 - [ ] `BranchCreatedHandler` auto-creates a `vaults` row for new branches
 - [ ] Migration applies cleanly forward AND backward

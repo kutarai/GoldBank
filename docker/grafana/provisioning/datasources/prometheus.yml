@@ -12,7 +12,7 @@ datasources:
     type: elasticsearch
     access: proxy
     url: http://elasticsearch:9200
-    database: "unibank-logs-*"
+    database: "goldbank-logs-*"
     isDefault: false
     editable: true
     jsonData:

@@ -21,7 +21,7 @@ So that all client requests are authenticated and properly routed.
 ## Description
 
 ### Background
-The API Gateway is the single entry point for all client-facing gRPC traffic in the UniBank platform. Every request from mobile apps, POS terminals, and the admin portal flows through this gateway. It is responsible for cross-cutting concerns: TLS termination, JWT authentication, tenant identification, rate limiting, request logging with PII masking, and routing to downstream services.
+The API Gateway is the single entry point for all client-facing gRPC traffic in the GoldBank platform. Every request from mobile apps, POS terminals, and the admin portal flows through this gateway. It is responsible for cross-cutting concerns: TLS termination, JWT authentication, tenant identification, rate limiting, request logging with PII masking, and routing to downstream services.
 
 The gateway uses ASP.NET Core's gRPC interceptor pipeline, which is analogous to HTTP middleware but specific to gRPC calls. Interceptors execute in order for each request, forming a chain: TLS -> JWT Validation -> Tenant Extraction -> Rate Limiting -> PII Masking Logger -> Route to Downstream Service.
 
@@ -83,11 +83,11 @@ The gateway uses ASP.NET Core's gRPC interceptor pipeline, which is analogous to
 
 ### Components
 
-**Project:** `UniBank.Gateway`
+**Project:** `GoldBank.Gateway`
 
 **File Structure:**
 ```
-UniBank.Gateway/
+GoldBank.Gateway/
   Program.cs
   appsettings.json
   appsettings.Development.json
@@ -177,8 +177,8 @@ public class AuthInterceptor : Interceptor
     // Methods that don't require authentication
     private static readonly HashSet<string> _anonymousMethods = new()
     {
-        "/unibank.v1.accounts.AccountService/Register",
-        "/unibank.v1.accounts.AccountService/VerifyOTP",
+        "/goldbank.v1.accounts.AccountService/Register",
+        "/goldbank.v1.accounts.AccountService/VerifyOTP",
         "/grpc.health.v1.Health/Check"
     };
 
@@ -396,8 +396,8 @@ public class PiiMasker
 public class JwtSettings
 {
     public string Secret { get; set; } = string.Empty;
-    public string Issuer { get; set; } = "unibank";
-    public string Audience { get; set; } = "unibank-api";
+    public string Issuer { get; set; } = "goldbank";
+    public string Audience { get; set; } = "goldbank-api";
     public int AccessTokenExpiryMinutes { get; set; } = 30;
     public int RefreshTokenExpiryDays { get; set; } = 30;
 }
@@ -421,8 +421,8 @@ public class RateLimitSettings
   },
   "Jwt": {
     "Secret": "${JWT_SECRET}",
-    "Issuer": "unibank",
-    "Audience": "unibank-api",
+    "Issuer": "goldbank",
+    "Audience": "goldbank-api",
     "AccessTokenExpiryMinutes": 30
   },
   "RateLimit": {
@@ -454,16 +454,16 @@ The Gateway does not define its own gRPC services (except Health). It proxies al
 **Downstream Routing:**
 | Client Request | Downstream Service | Downstream URL |
 |---|---|---|
-| `unibank.v1.accounts.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.payments.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.transfers.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.agents.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.billpay.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.merchants.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.terminals.*` | Terminal Manager | `https://terminal-manager:5004` |
-| `unibank.v1.admin.*` | Core Banking | `https://core:5002` |
-| `unibank.v1.reporting.*` | Reporting | `https://reporting:5006` |
-| `unibank.v1.hsm.*` | HSM (internal only) | Not routed from Gateway |
+| `goldbank.v1.accounts.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.payments.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.transfers.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.agents.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.billpay.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.merchants.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.terminals.*` | Terminal Manager | `https://terminal-manager:5004` |
+| `goldbank.v1.admin.*` | Core Banking | `https://core:5002` |
+| `goldbank.v1.reporting.*` | Reporting | `https://reporting:5006` |
+| `goldbank.v1.hsm.*` | HSM (internal only) | Not routed from Gateway |
 
 ### Database Changes
 None directly. Rate limit configuration can optionally be loaded from `system_config` table (STORY-003).

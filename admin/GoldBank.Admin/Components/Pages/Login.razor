@@ -1,0 +1,122 @@
+@page "/login"
+@rendermode InteractiveServer
+@layout EmptyLayout
+@using GoldBank.Admin.Services
+@inject AdminAuthStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<PageTitle>Sign In - GoldBank Admin</PageTitle>
+
+<MudThemeProvider Theme="GoldTheme.Instance" />
+<MudPopoverProvider />
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex flex-column align-center justify-center" Style="min-height:100vh;">
+    <MudPaper Elevation="4" Class="pa-8" Style="width:100%;max-width:420px;">
+
+        <MudStack Spacing="2" AlignItems="AlignItems.Center" Class="mb-6">
+            <MudText Typo="Typo.h5" Color="Color.Primary">
+                <b>GoldBank</b>
+            </MudText>
+            <MudText Typo="Typo.subtitle1" Class="mud-text-secondary">
+                Admin Portal
+            </MudText>
+        </MudStack>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4" ShowCloseIcon="true"
+                      CloseIconClicked="() => _errorMessage = null">
+                @_errorMessage
+            </MudAlert>
+        }
+
+        <MudTextField @bind-Value="_username"
+                      Label="Username"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Person"
+                      Class="mb-4"
+                      Disabled="_isLoading"
+                      AutoFocus="true"
+                      OnKeyUp="OnKeyUp" />
+
+        <MudTextField @bind-Value="_password"
+                      Label="Password"
+                      Variant="Variant.Outlined"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Lock"
+                      InputType="InputType.Password"
+                      Class="mb-6"
+                      Disabled="_isLoading"
+                      OnKeyUp="OnKeyUp" />
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   FullWidth="true"
+                   Size="Size.Large"
+                   Disabled="_isLoading"
+                   OnClick="HandleSignIn">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Signing in...</span>
+            }
+            else
+            {
+                <span>Sign In</span>
+            }
+        </MudButton>
+
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _username = "";
+    private string _password = "";
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AuthState is not null)
+        {
+            var state = await AuthState;
+            if (state.User.Identity?.IsAuthenticated == true)
+                Nav.NavigateTo("/", replace: true);
+        }
+    }
+
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await HandleSignIn();
+    }
+
+    private async Task HandleSignIn()
+    {
+        if (_isLoading) return;
+
+        _errorMessage = null;
+        _isLoading = true;
+
+        try
+        {
+            var success = await AuthProvider.LoginAsync(_username, _password);
+            if (success)
+                Nav.NavigateTo("/", replace: true);
+            else
+                _errorMessage = "Invalid username or password. Please try again.";
+        }
+        catch (Exception)
+        {
+            _errorMessage = "An unexpected error occurred. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

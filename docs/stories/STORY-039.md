@@ -103,7 +103,7 @@ Functional Requirement: **FR-027**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/BillPay/`
+**Module:** `GoldBank.Core/Modules/BillPay/`
 
 ```
 BillPay/

@@ -21,7 +21,7 @@ So that my account is secured conveniently
 ## Description
 
 ### Background
-Authentication is the gateway to every banking interaction. UniBank must balance security with convenience, especially for users in Southern Africa who may be using smartphones for the first time. The dual authentication model -- PIN and biometric -- provides this balance: PIN offers universal accessibility (works on all devices), while biometric (fingerprint or face unlock) provides a faster, more convenient experience for devices that support it.
+Authentication is the gateway to every banking interaction. GoldBank must balance security with convenience, especially for users in Southern Africa who may be using smartphones for the first time. The dual authentication model -- PIN and biometric -- provides this balance: PIN offers universal accessibility (works on all devices), while biometric (fingerprint or face unlock) provides a faster, more convenient experience for devices that support it.
 
 The PIN is a 4-6 digit numeric code set during registration (STORY-010). It is stored as a bcrypt hash and validated server-side. Biometric authentication is handled device-side: when the user authenticates via fingerprint or face unlock on their device, the device's secure keystore releases the stored credentials (encrypted PIN or a device-specific authentication token), which are then sent to the server for validation.
 
@@ -45,7 +45,7 @@ The JWT token architecture uses short-lived access tokens (15 minutes) paired wi
 - Biometric enrollment flow (handled in device settings, not server-side)
 - Social login or third-party identity providers
 - Multi-factor authentication beyond PIN + device binding
-- Password-based authentication (UniBank uses PIN only)
+- Password-based authentication (GoldBank uses PIN only)
 
 ### User Flow
 

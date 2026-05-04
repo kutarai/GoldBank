@@ -22,7 +22,7 @@ So that **I can see my recent transactions without visiting a branch or using th
 
 ### Background
 
-A statement enquiry (mini-statement) is a non-financial card transaction where the client requests their recent transaction history at a POS terminal or ATM. The terminal sends the request through the national switch to the issuing bank (UniBank). Core Banking retrieves the most recent transactions (typically last 5-10) and returns them in a format suitable for printing on a receipt or displaying on an ATM screen.
+A statement enquiry (mini-statement) is a non-financial card transaction where the client requests their recent transaction history at a POS terminal or ATM. The terminal sends the request through the national switch to the issuing bank (GoldBank). Core Banking retrieves the most recent transactions (typically last 5-10) and returns them in a format suitable for printing on a receipt or displaying on an ATM screen.
 
 Statement enquiries are common at ATMs where clients want a quick view of recent activity. The response format is constrained by the terminal's capabilities — typically a limited number of entries with short descriptions.
 
@@ -44,7 +44,7 @@ Statement enquiries are common at ATMs where clients want a quick view of recent
 ### User Flow
 
 1. **Client requests statement:** Client selects "Mini Statement" at POS/ATM
-2. **Switch routes:** Transaction flows through national switch to UniBank switch
+2. **Switch routes:** Transaction flows through national switch to GoldBank switch
 3. **gRPC call:** Switch calls `CardTransactionService.StatementEnquiry`
 4. **Validate account:** Check account exists, active
 5. **Apply fee (if any):** Deduct statement enquiry fee if configured

@@ -1,0 +1,176 @@
+package com.goldbank.app.ui.profile
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.goldbank.app.viewmodel.ProfileUiState
+import com.goldbank.app.viewmodel.ProfileViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditProfileScreen(
+    viewModel: ProfileViewModel,
+    onSuccess: () -> Unit,
+    onBack: () -> Unit,
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var dateOfBirth by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    var initialized by remember { mutableStateOf(false) }
+
+    // Display DD/MM/YYYY to user, keep YYYY-MM-DD for server
+    val displayDate = remember(dateOfBirth) {
+        if (dateOfBirth.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
+            val parts = dateOfBirth.split("-")
+            "${parts[2]}/${parts[1]}/${parts[0]}"
+        } else dateOfBirth
+    }
+
+    LaunchedEffect(Unit) {
+        if (!initialized) viewModel.loadProfile()
+    }
+
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is ProfileUiState.ProfileLoaded -> {
+                if (!initialized) {
+                    firstName = state.profile.firstName
+                    lastName = state.profile.lastName
+                    email = state.profile.email
+                    dateOfBirth = state.profile.dateOfBirth
+                    initialized = true
+                }
+            }
+            is ProfileUiState.ProfileUpdated -> onSuccess()
+            else -> {}
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Edit Profile") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text("First Name") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = { lastName = it },
+                label = { Text("Last Name") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                val cal = java.util.Calendar.getInstance().apply { timeInMillis = millis }
+                                dateOfBirth = "%04d-%02d-%02d".format(
+                                    cal.get(java.util.Calendar.YEAR),
+                                    cal.get(java.util.Calendar.MONTH) + 1,
+                                    cal.get(java.util.Calendar.DAY_OF_MONTH),
+                                )
+                            }
+                            showDatePicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                    },
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+            Box(modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }) {
+                OutlinedTextField(
+                    value = displayDate.ifEmpty { "Select date" },
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Date of Birth") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = if (dateOfBirth.isNotEmpty())
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                )
+            }
+
+            if (uiState is ProfileUiState.Error) {
+                Text(
+                    (uiState as ProfileUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    viewModel.updateProfile(
+                        firstName = firstName.ifBlank { null },
+                        lastName = lastName.ifBlank { null },
+                        email = email.ifBlank { null },
+                        dateOfBirth = dateOfBirth.ifBlank { null },
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState !is ProfileUiState.Loading,
+            ) {
+                if (uiState is ProfileUiState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text("Save Changes")
+                }
+            }
+        }
+    }
+}

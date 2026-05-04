@@ -21,7 +21,7 @@ So that I can track adoption and measure the platform's growth trajectory
 ## Description
 
 ### Background
-Tracking user growth is fundamental to understanding UniBank's market penetration and the effectiveness of customer acquisition strategies. For a platform targeting the unbanked in Southern Africa, registration numbers, KYC completion rates, and active user ratios are key business metrics. Business stakeholders need to see daily, weekly, and monthly trends, understand where users drop off in the onboarding funnel (registration -> KYC submission -> KYC approval), and measure churn (users who registered but stopped transacting). These metrics inform decisions about marketing spend, agent deployment, and product development.
+Tracking user growth is fundamental to understanding GoldBank's market penetration and the effectiveness of customer acquisition strategies. For a platform targeting the unbanked in Southern Africa, registration numbers, KYC completion rates, and active user ratios are key business metrics. Business stakeholders need to see daily, weekly, and monthly trends, understand where users drop off in the onboarding funnel (registration -> KYC submission -> KYC approval), and measure churn (users who registered but stopped transacting). These metrics inform decisions about marketing spend, agent deployment, and product development.
 
 ### Scope
 **In scope:**
@@ -37,7 +37,7 @@ Tracking user growth is fundamental to understanding UniBank's market penetratio
 **Out of scope:**
 - Demographic breakdown (age, gender, region)
 - Cohort retention analysis
-- Attribution tracking (how users heard about UniBank)
+- Attribution tracking (how users heard about GoldBank)
 - Predictive growth modelling
 
 ### User Flow

@@ -21,9 +21,9 @@ So that I can run the full stack locally with one command.
 ## Description
 
 ### Background
-UniBank comprises multiple services (Gateway, Core Banking, Switching, Terminal Manager, HSM, Admin, Reporting, Notifications) along with infrastructure dependencies (PostgreSQL, Redis, monitoring stack). Without a containerized development environment, developers would need to manually install and configure each component, leading to "works on my machine" issues and wasted setup time.
+GoldBank comprises multiple services (Gateway, Core Banking, Switching, Terminal Manager, HSM, Admin, Reporting, Notifications) along with infrastructure dependencies (PostgreSQL, Redis, monitoring stack). Without a containerized development environment, developers would need to manually install and configure each component, leading to "works on my machine" issues and wasted setup time.
 
-This story provides a comprehensive Docker Compose configuration that allows any developer to spin up the entire UniBank platform with a single `docker compose up` command. Docker Compose profiles allow selective startup of service groups (e.g., only infrastructure, or infrastructure + core services).
+This story provides a comprehensive Docker Compose configuration that allows any developer to spin up the entire GoldBank platform with a single `docker compose up` command. Docker Compose profiles allow selective startup of service groups (e.g., only infrastructure, or infrastructure + core services).
 
 ### Scope
 
@@ -96,14 +96,14 @@ This story provides a comprehensive Docker Compose configuration that allows any
 |---------|-------------|---------|---------|-------------|
 | postgres | `postgres:18` | 5432:5432 | infra | backend |
 | redis | `redis:7-alpine` | 6379:6379 | infra | backend |
-| gateway | Build: `src/UniBank.Gateway` | 5000:5000, 5001:5001 | core | frontend, backend |
-| core | Build: `src/UniBank.Core` | 5002:5002 | core | backend |
-| switching | Build: `src/UniBank.Switching` | 5003:5003 | core | backend |
-| terminal-manager | Build: `src/UniBank.TerminalManager` | 5004:5004, 1883:1883 | core | backend |
-| hsm | Build: `src/UniBank.HSM` | 5005:5005 | core | backend |
-| admin | Build: `src/UniBank.Admin` | 5010:5010 | core | frontend, backend |
-| reporting | Build: `src/UniBank.Reporting` | 5006:5006 | core | backend |
-| notifications | Build: `src/UniBank.Notifications` | 5007:5007 | core | backend |
+| gateway | Build: `src/GoldBank.Gateway` | 5000:5000, 5001:5001 | core | frontend, backend |
+| core | Build: `src/GoldBank.Core` | 5002:5002 | core | backend |
+| switching | Build: `src/GoldBank.Switching` | 5003:5003 | core | backend |
+| terminal-manager | Build: `src/GoldBank.TerminalManager` | 5004:5004, 1883:1883 | core | backend |
+| hsm | Build: `src/GoldBank.HSM` | 5005:5005 | core | backend |
+| admin | Build: `src/GoldBank.Admin` | 5010:5010 | core | frontend, backend |
+| reporting | Build: `src/GoldBank.Reporting` | 5006:5006 | core | backend |
+| notifications | Build: `src/GoldBank.Notifications` | 5007:5007 | core | backend |
 | prometheus | `prom/prometheus:latest` | 9090:9090 | monitoring | monitoring, backend |
 | grafana | `grafana/grafana:latest` | 3000:3000 | monitoring | monitoring, frontend |
 | elasticsearch | `elasticsearch:8.x` | 9200:9200 | monitoring | monitoring, backend |
@@ -114,19 +114,19 @@ This story provides a comprehensive Docker Compose configuration that allows any
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["src/UniBank.Gateway/UniBank.Gateway.csproj", "src/UniBank.Gateway/"]
-COPY ["src/UniBank.Protos/UniBank.Protos.csproj", "src/UniBank.Protos/"]
-COPY ["src/UniBank.SharedKernel/UniBank.SharedKernel.csproj", "src/UniBank.SharedKernel/"]
-RUN dotnet restore "src/UniBank.Gateway/UniBank.Gateway.csproj"
+COPY ["src/GoldBank.Gateway/GoldBank.Gateway.csproj", "src/GoldBank.Gateway/"]
+COPY ["src/GoldBank.Protos/GoldBank.Protos.csproj", "src/GoldBank.Protos/"]
+COPY ["src/GoldBank.SharedKernel/GoldBank.SharedKernel.csproj", "src/GoldBank.SharedKernel/"]
+RUN dotnet restore "src/GoldBank.Gateway/GoldBank.Gateway.csproj"
 COPY . .
-RUN dotnet publish "src/UniBank.Gateway/UniBank.Gateway.csproj" -c Release -o /app/publish
+RUN dotnet publish "src/GoldBank.Gateway/GoldBank.Gateway.csproj" -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 EXPOSE 5000
-ENTRYPOINT ["dotnet", "UniBank.Gateway.dll"]
+ENTRYPOINT ["dotnet", "GoldBank.Gateway.dll"]
 ```
 
 ### Docker Networks
@@ -135,13 +135,13 @@ ENTRYPOINT ["dotnet", "UniBank.Gateway.dll"]
 networks:
   frontend:
     driver: bridge
-    name: unibank-frontend
+    name: goldbank-frontend
   backend:
     driver: bridge
-    name: unibank-backend
+    name: goldbank-backend
   monitoring:
     driver: bridge
-    name: unibank-monitoring
+    name: goldbank-monitoring
 ```
 
 - **frontend**: Exposes services accessible by external clients (Gateway, Admin, Grafana, Kibana)
@@ -153,15 +153,15 @@ networks:
 ```yaml
 volumes:
   postgres-data:
-    name: unibank-postgres-data
+    name: goldbank-postgres-data
   redis-data:
-    name: unibank-redis-data
+    name: goldbank-redis-data
   elasticsearch-data:
-    name: unibank-elasticsearch-data
+    name: goldbank-elasticsearch-data
   grafana-data:
-    name: unibank-grafana-data
+    name: goldbank-grafana-data
   prometheus-data:
-    name: unibank-prometheus-data
+    name: goldbank-prometheus-data
 ```
 
 ### Health Check Definitions
@@ -199,9 +199,9 @@ healthcheck:
 
 ```env
 # PostgreSQL
-POSTGRES_USER=unibank
-POSTGRES_PASSWORD=unibank_dev_password
-POSTGRES_DB=unibank
+POSTGRES_USER=goldbank
+POSTGRES_PASSWORD=goldbank_dev_password
+POSTGRES_DB=goldbank
 POSTGRES_PORT=5432
 
 # Redis
@@ -210,8 +210,8 @@ REDIS_PASSWORD=
 
 # JWT
 JWT_SECRET=dev-secret-key-change-in-production-min-32-chars
-JWT_ISSUER=unibank-dev
-JWT_AUDIENCE=unibank-api
+JWT_ISSUER=goldbank-dev
+JWT_AUDIENCE=goldbank-api
 
 # Services
 GATEWAY_PORT=5000
@@ -258,7 +258,7 @@ services:
     build:
       target: build  # Stop at build stage for debugging
     volumes:
-      - ./src/UniBank.Gateway:/src/src/UniBank.Gateway  # Hot reload
+      - ./src/GoldBank.Gateway:/src/src/GoldBank.Gateway  # Hot reload
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - DOTNET_USE_POLLING_FILE_WATCHER=1

@@ -44,7 +44,7 @@ The teller workflow is high-velocity and very different from the back-office adm
 - [ ] `bank-teller/` directory exists with `package.json`, `vite.config.js`, `index.html`, `src/main.jsx`, `src/App.jsx`
 - [ ] `npm run dev` starts the dev server on port `5174`
 - [ ] Login screen at `/login` accepts username + password and POSTs to `/api/teller/auth/login` (or reuses existing `/api/auth/login` — depends on whether teller auth is already wired)
-- [ ] On successful login, the JWT is stored in `sessionStorage` under key `unibank_teller_token`
+- [ ] On successful login, the JWT is stored in `sessionStorage` under key `goldbank_teller_token`
 - [ ] If the JWT role isn't `teller`, `branch_manager`, or `super_admin`, login is rejected with "Access denied — teller role required"
 - [ ] App shell shows: tenant logo, teller full name, branch name, current drawer status (Open/Closed/None), Logout button
 - [ ] React Router routes: `/login`, `/` (dashboard), `/customers`, `/customers/:id`, `/deposit`, `/withdrawal`, `/drawer`, `/eod`
@@ -99,7 +99,7 @@ export default defineConfig({
 ### api.js base
 ```js
 const API_BASE = 'http://localhost:5001/api/teller';
-function token() { return sessionStorage.getItem('unibank_teller_token'); }
+function token() { return sessionStorage.getItem('goldbank_teller_token'); }
 async function call(path, opts = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...opts,

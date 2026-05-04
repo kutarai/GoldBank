@@ -1,14 +1,14 @@
 -- ============================================================================
--- UniBank Multi-Tenant Database Schema
+-- GoldBank Multi-Tenant Database Schema
 -- 003_seed_data.sql - Seed data for development
 -- ============================================================================
 
 -- Seed default tenant for development
 INSERT INTO public.tenants (name, code, schema_name, country_code, currency_code, timezone, status)
-VALUES ('UniBank Default', 'unibank_default', 'tenant_unibank_default', 'ZAF', 'ZAR', 'Africa/Johannesburg', 'active');
+VALUES ('GoldBank Default', 'goldbank_default', 'tenant_goldbank_default', 'ZAF', 'ZAR', 'Africa/Johannesburg', 'active');
 
 -- Provision the default tenant schema
-SELECT public.provision_tenant_schema('tenant_unibank_default');
+SELECT public.provision_tenant_schema('tenant_goldbank_default');
 
 -- Seed system configuration
 INSERT INTO public.system_config (key, value, description) VALUES

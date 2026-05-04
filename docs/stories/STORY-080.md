@@ -50,7 +50,7 @@ This is the reverse flow of an on-us purchase. The merchant's account is debited
 
 1. **Client requests deposit:** Client presents card and cash to on-us merchant/agent
 2. **Merchant initiates:** Merchant enters deposit amount on POS terminal
-3. **Switch receives:** National switch routes ISO 20022 message to UniBank switch
+3. **Switch receives:** National switch routes ISO 20022 message to GoldBank switch
 4. **Switch translates:** Switch identifies as on-us deposit, calls `ProcessDeposit` with `is_on_us = true`
 5. **Validate cardholder:** Check account exists, active, currency = ZWG
 6. **Validate merchant:** Look up merchant, check active, check merchant account balance >= deposit amount

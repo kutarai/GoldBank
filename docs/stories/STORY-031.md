@@ -21,7 +21,7 @@ So that I can verify details and have a receipt.
 ## Description
 
 ### Background
-Trust is paramount for unbanked users adopting digital financial services for the first time. Many users in Southern Africa have been victims of fraud or errors with informal money transfer channels. UniBank must provide a clear two-phase transfer experience: first a preview/confirmation step where the user can verify all details before committing, then comprehensive notifications after the transfer completes so both parties have receipts and records.
+Trust is paramount for unbanked users adopting digital financial services for the first time. Many users in Southern Africa have been victims of fraud or errors with informal money transfer channels. GoldBank must provide a clear two-phase transfer experience: first a preview/confirmation step where the user can verify all details before committing, then comprehensive notifications after the transfer completes so both parties have receipts and records.
 
 This story formalizes the confirmation flow and notification pipeline for all P2P transfers (domestic and cross-border). The confirmation phase is a distinct API call that returns a preview without executing the transfer. The notification phase is event-driven, triggered by the TransferCompleted Wolverine event, and delivers push notifications to both sender and receiver.
 
@@ -84,7 +84,7 @@ Functional Requirements: **FR-017** (Confirmation), **FR-018** (Notifications).
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Transfers/` (confirmation flow) and `UniBank.Notifications/` (notification delivery)
+**Module:** `GoldBank.Core/Modules/Transfers/` (confirmation flow) and `GoldBank.Notifications/` (notification delivery)
 
 ```
 Transfers/

@@ -21,7 +21,7 @@ So that the network is properly managed and only verified merchants operate on t
 ## Description
 
 ### Background
-UniBank's merchant and agent network is central to its strategy of serving the unbanked population in Southern Africa. Agents provide cash-in/cash-out services in physical locations, while merchants accept digital payments. Operations staff must be able to review and approve merchant applications, manage active merchants, configure per-merchant fee overrides and limits, and monitor agent performance. A well-managed merchant/agent network directly impacts financial inclusion reach and platform revenue.
+GoldBank's merchant and agent network is central to its strategy of serving the unbanked population in Southern Africa. Agents provide cash-in/cash-out services in physical locations, while merchants accept digital payments. Operations staff must be able to review and approve merchant applications, manage active merchants, configure per-merchant fee overrides and limits, and monitor agent performance. A well-managed merchant/agent network directly impacts financial inclusion reach and platform revenue.
 
 ### Scope
 **In scope:**

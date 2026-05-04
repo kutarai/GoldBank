@@ -5,12 +5,12 @@
 **Scope:** Untracked changes from the current session — vault subsystem (STORY-163–169) and the drawer-close variance UX
 
 **Files reviewed (8):**
-- `server/UniBank.Core/Modules/BranchCash/Domain/Entities/CurrencyDenomination.cs`
-- `server/UniBank.Core/Modules/BranchCash/Domain/Entities/Vault.cs` (4 entities)
-- `server/UniBank.Core/Modules/BranchCash/Application/Services/DenominationValidationService.cs`
-- `server/UniBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs`
-- `server/UniBank.Gateway/Services/VaultReportPdfService.cs`
-- `server/UniBank.Gateway/Controllers/TellerApiController.cs` (vault endpoints + drawer close)
+- `server/GoldBank.Core/Modules/BranchCash/Domain/Entities/CurrencyDenomination.cs`
+- `server/GoldBank.Core/Modules/BranchCash/Domain/Entities/Vault.cs` (4 entities)
+- `server/GoldBank.Core/Modules/BranchCash/Application/Services/DenominationValidationService.cs`
+- `server/GoldBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs`
+- `server/GoldBank.Gateway/Services/VaultReportPdfService.cs`
+- `server/GoldBank.Gateway/Controllers/TellerApiController.cs` (vault endpoints + drawer close)
 - `bank-teller/src/pages/VaultDashboard.jsx`
 - `bank-teller/src/pages/Drawer.jsx` (variance UX)
 
@@ -21,7 +21,7 @@
 ## §1 — Must fix before production
 
 ### 1.1 [HIGH] Spot check role check is bypassed for `Teller` users
-[`TellerApiController.cs`](../server/UniBank.Gateway/Controllers/TellerApiController.cs#L1172)
+[`TellerApiController.cs`](../server/GoldBank.Gateway/Controllers/TellerApiController.cs#L1172)
 ```csharp
 [Authorize(Roles = "BranchManager,VaultManager,Admin")]
 public async Task<IActionResult> PostSpotCheck(...)
@@ -36,7 +36,7 @@ The class-level `[Authorize(Roles = "Teller,BranchManager,VaultManager,Admin")]`
 Add the same to `vaults/{id}` GET endpoints too unless tellers genuinely need to read vault stock.
 
 ### 1.2 [HIGH] Spot check teller-equality check uses wrong identity
-[`TellerApiController.cs:1178`](../server/UniBank.Gateway/Controllers/TellerApiController.cs#L1178)
+[`TellerApiController.cs:1178`](../server/GoldBank.Gateway/Controllers/TellerApiController.cs#L1178)
 ```csharp
 if (req.WitnessId == Guid.Empty || req.WitnessId == TellerId)
     return BadRequest(new { error = "A distinct witness is required" });
@@ -44,7 +44,7 @@ if (req.WitnessId == Guid.Empty || req.WitnessId == TellerId)
 `TellerId` here is the **caller** (vault manager / branch manager), not a teller. The variable name in the helper is misleading but the value is correct — this happens to work. But it's a bug magnet: rename `TellerId` to `CurrentUserId` or add a `private Guid CurrentUserId => TellerId;` alias and use that here.
 
 ### 1.3 [HIGH] `VaultStockService.ApplyMovementAsync` row-lock is a no-op on first movement
-[`VaultStockService.cs:28`](../server/UniBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs#L28)
+[`VaultStockService.cs:28`](../server/GoldBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs#L28)
 ```csharp
 await _db.Database.ExecuteSqlInterpolatedAsync(
     $"SELECT 1 FROM bank.vault_denomination_stock WHERE vault_id = {m.VaultId} FOR UPDATE", ct);
@@ -56,13 +56,13 @@ await _db.Database.ExecuteSqlInterpolatedAsync(
 ```
 That row always exists (we create one per branch in the migration) and serializes all stock updates for the vault.
 
-### 1.4 [HIGH] Hardcoded `tenant_id = "unibank"` everywhere
-Search results: 9 occurrences across `TellerApiController.cs` vault endpoints and `VaultStockService.cs`. The teller endpoints set `TenantId = "unibank"` regardless of the caller's actual tenant claim. **In a multi-tenant deploy this leaks vault movements across tenants.**
+### 1.4 [HIGH] Hardcoded `tenant_id = "goldbank"` everywhere
+Search results: 9 occurrences across `TellerApiController.cs` vault endpoints and `VaultStockService.cs`. The teller endpoints set `TenantId = "goldbank"` regardless of the caller's actual tenant claim. **In a multi-tenant deploy this leaks vault movements across tenants.**
 
 **Fix:** read tenant from the JWT (`User.FindFirstValue("tenant_id")`) and use it everywhere — there's already a `TenantId` helper on the controller.
 
 ### 1.5 [MEDIUM] Drawer-close variance window is `OpenedAt` to `Now+1min`
-[`TellerApiController.cs:369`](../server/UniBank.Gateway/Controllers/TellerApiController.cs#L369)
+[`TellerApiController.cs:369`](../server/GoldBank.Gateway/Controllers/TellerApiController.cs#L369)
 ```csharp
 var dayStart = drawer.OpenedAt;
 var dayEnd   = DateTime.UtcNow.AddMinutes(1);
@@ -76,7 +76,7 @@ Bigger issue: **`Reversal` direction is treated as `+1` always** with the commen
 ## §2 — Should fix soon
 
 ### 2.1 [MEDIUM] `DenominationValidationService` cache is process-wide static state
-[`DenominationValidationService.cs:13-17`](../server/UniBank.Core/Modules/BranchCash/Application/Services/DenominationValidationService.cs#L13)
+[`DenominationValidationService.cs:13-17`](../server/GoldBank.Core/Modules/BranchCash/Application/Services/DenominationValidationService.cs#L13)
 ```csharp
 private static readonly object _lock = new();
 private static Dictionary<string, HashSet<decimal>>? _cache;
@@ -84,14 +84,14 @@ private static Dictionary<string, HashSet<decimal>>? _cache;
 Static state on a scoped service means the cache survives DI scope disposal — fine for the read path, but `InvalidateCache()` is also static and **fires globally across all tenants** if you ever multi-tenant. Consider an `IMemoryCache` keyed by `(tenantId, currency)` instead. Also, in a scaled-out gateway (multiple replicas) admin edits in one pod won't invalidate the cache in the others until 5 min ttl expires — switch to Redis pub/sub or pin the TTL to 60s.
 
 ### 2.2 [MEDIUM] `VaultStockService.ParseBreakdown` silently swallows malformed JSON
-[`VaultStockService.cs:129-145`](../server/UniBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs#L129)
+[`VaultStockService.cs:129-145`](../server/GoldBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs#L129)
 - Object form (`{denominationId: count}`) is mentioned in the comment but **not implemented** — only the array form is parsed.
 - A non-array root just returns nothing → the movement applies as a no-op and the stock silently goes out of sync with the recorded total.
 
 **Fix:** throw on unrecognized shape; let the controller catch and 400.
 
 ### 2.3 [MEDIUM] Spot check synthesises a "deposit" Direction but mixes positive and negative diffs into one breakdown
-[`TellerApiController.cs:1216-1247`](../server/UniBank.Gateway/Controllers/TellerApiController.cs#L1216)
+[`TellerApiController.cs:1216-1247`](../server/GoldBank.Gateway/Controllers/TellerApiController.cs#L1216)
 
 The current logic groups all variance lines for a currency into **one** movement with a single direction (whichever the net total is positive/negative). If you have variances `-10` on $100 notes and `+5` on $20 notes, this creates one movement with direction `Out` and a breakdown that mixes them — but `ApplyMovementAsync` applies the same sign to **every** line in the breakdown, so the $20 row will be **decremented** instead of incremented. Stock will be wrong.
 
@@ -100,7 +100,7 @@ The current logic groups all variance lines for a currency into **one** movement
 This is **the most important functional bug in the file** — the only reason the smoke test passed was that the test variance was a single negative diff.
 
 ### 2.4 [MEDIUM] `RebuildFromHistoryAsync` calls `ApplyMovementAsync` which expects an outer transaction it didn't open
-[`VaultStockService.cs:72-91`](../server/UniBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs#L72)
+[`VaultStockService.cs:72-91`](../server/GoldBank.Core/Modules/BranchCash/Application/Services/VaultStockService.cs#L72)
 
 `RebuildFromHistoryAsync` opens its own transaction and calls `ApplyMovementAsync` in a loop. Each call also issues a `FOR UPDATE` lock. This works in PostgreSQL because nested locks compose, but the `ApplyMovementAsync` xmldoc says "Caller must be inside a DB transaction" — clarify that it works either way, or pull the lock acquisition out of the inner method.
 
@@ -167,7 +167,7 @@ If the second submit (with `confirmVariance=true`) also fails (e.g. network drop
 |---|-------------------------------------------|----------|--------|---------|
 | 1 | Fix mixed-sign spot-check adjustment      | HIGH     | 30 min | Backend |
 | 2 | Lock `vaults` row not `vault_denomination_stock` | HIGH | 15 min | Backend |
-| 3 | Replace hardcoded `tenant_id = "unibank"` with JWT claim | HIGH | 30 min | Backend |
+| 3 | Replace hardcoded `tenant_id = "goldbank"` with JWT claim | HIGH | 30 min | Backend |
 | 4 | Add explicit role checks to vault movement endpoints | HIGH | 15 min | Backend |
 | 5 | Verify `Reversal` sign in drawer-close variance | HIGH | 30 min | Backend |
 | 6 | Add `services/api.js` `getDenominations()` helper, drop direct fetch | MEDIUM | 10 min | Frontend |

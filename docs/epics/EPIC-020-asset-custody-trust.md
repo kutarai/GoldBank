@@ -9,7 +9,7 @@
 
 ## Business Context
 
-UniBank customers may hold physical assets — such as gold coins, precious metals, or other valuables — stored at designated safe deposit facilities. The bank provides a digital registry of these assets, tracks their custody status, and calculates the customer's net worth from periodic valuations. This service differentiates UniBank from mobile-money-only competitors and opens revenue opportunities through custody fees, valuation services, and asset-backed lending.
+GoldBank customers may hold physical assets — such as gold coins, precious metals, or other valuables — stored at designated safe deposit facilities. The bank provides a digital registry of these assets, tracks their custody status, and calculates the customer's net worth from periodic valuations. This service differentiates GoldBank from mobile-money-only competitors and opens revenue opportunities through custody fees, valuation services, and asset-backed lending.
 
 ## User Personas
 

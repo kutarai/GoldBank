@@ -24,7 +24,7 @@ So that **my actual account credentials are never exposed during NFC payments**
 
 In traditional card payments, the cardholder's Primary Account Number (PAN) is transmitted during every transaction, creating a persistent target for fraud. EMV tokenization replaces the real PAN with a token PAN — a surrogate value that is useless if intercepted because it can only be used within the specific device and domain it was issued for.
 
-For UniBank's unbanked target users in Southern Africa, this is critically important. Many users are new to digital payments and need confidence that their money is safe. Tokenization ensures that even if a phone is compromised, the attacker cannot use the token on another device or for card-not-present fraud.
+For GoldBank's unbanked target users in Southern Africa, this is critically important. Many users are new to digital payments and need confidence that their money is safe. Tokenization ensures that even if a phone is compromised, the attacker cannot use the token on another device or for card-not-present fraud.
 
 The tokenization flow integrates the HSM service (STORY-021) for secure token generation and the mobile app's Android Keystore / HCE infrastructure for secure token storage on-device. Tokens have a full lifecycle — they can be provisioned, suspended (e.g., lost phone reported), revoked, and refreshed on expiry.
 
@@ -45,9 +45,9 @@ The tokenization flow integrates the HSM service (STORY-021) for secure token ge
 
 **Out of scope:**
 - iOS Secure Element / Apple Pay integration (future sprint)
-- Physical card tokenization (UniBank is phone-first)
+- Physical card tokenization (GoldBank is phone-first)
 - Token provisioning for wearables
-- Visa/Mastercard Token Service Provider (TSP) integration (UniBank acts as its own TSP for the closed-loop network)
+- Visa/Mastercard Token Service Provider (TSP) integration (GoldBank acts as its own TSP for the closed-loop network)
 
 ### User Flow
 
@@ -83,15 +83,15 @@ The tokenization flow integrates the HSM service (STORY-021) for secure token ge
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `TokenProvisioningService.cs` | `src/Modules/UniBank.Payment/Services/` | Orchestrates token provisioning flow |
-| `PaymentService.ProvisionToken` | `src/Modules/UniBank.Payment/Grpc/` | gRPC endpoint for token provisioning |
-| `TokenLifecycleManager.cs` | `src/Modules/UniBank.Payment/Services/` | Manages token state transitions |
-| `TokenRevocationHandler.cs` | `src/Modules/UniBank.Payment/Handlers/` | Wolverine handler for revocation events |
-| `TokenRefreshJob.cs` | `src/Modules/UniBank.Payment/Jobs/` | Background job for proactive token refresh |
+| `TokenProvisioningService.cs` | `src/Modules/GoldBank.Payment/Services/` | Orchestrates token provisioning flow |
+| `PaymentService.ProvisionToken` | `src/Modules/GoldBank.Payment/Grpc/` | gRPC endpoint for token provisioning |
+| `TokenLifecycleManager.cs` | `src/Modules/GoldBank.Payment/Services/` | Manages token state transitions |
+| `TokenRevocationHandler.cs` | `src/Modules/GoldBank.Payment/Handlers/` | Wolverine handler for revocation events |
+| `TokenRefreshJob.cs` | `src/Modules/GoldBank.Payment/Jobs/` | Background job for proactive token refresh |
 | `HceTokenStore.kt` | `mobile/android/app/.../hce/` | Android Keystore token storage |
 | `TokenProvisioner.kt` | `mobile/shared/.../payment/` | KMP shared token provisioning logic |
-| `hsm_service.proto` | `src/Shared/UniBank.Protos/` | HSMService.GenerateToken definition |
-| `payment_service.proto` | `src/Shared/UniBank.Protos/` | PaymentService.ProvisionToken definition |
+| `hsm_service.proto` | `src/Shared/GoldBank.Protos/` | HSMService.GenerateToken definition |
+| `payment_service.proto` | `src/Shared/GoldBank.Protos/` | PaymentService.ProvisionToken definition |
 
 ### API / gRPC Endpoints
 

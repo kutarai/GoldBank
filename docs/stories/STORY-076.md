@@ -22,9 +22,9 @@ So that we can launch with a real customer
 
 ### Background
 
-UniBank has completed development across seven sprints: user registration, KYC, account management, NFC/QR payments, P2P transfers, cash-in/cash-out, bill payments, admin portal, white-label configuration, and fraud detection. Sprint 8 is the launch sprint, and this story represents the culmination of all prior work: preparing the platform for its first real-world deployment with a pilot institution in Southern Africa.
+GoldBank has completed development across seven sprints: user registration, KYC, account management, NFC/QR payments, P2P transfers, cash-in/cash-out, bill payments, admin portal, white-label configuration, and fraud detection. Sprint 8 is the launch sprint, and this story represents the culmination of all prior work: preparing the platform for its first real-world deployment with a pilot institution in Southern Africa.
 
-The pilot deployment is the single most important milestone for the project. It transforms UniBank from a development project into a live financial services platform serving real customers. Every decision in this story carries real-world consequences: a failed deployment means lost trust with the pilot institution; a security gap means regulatory exposure; an untested recovery procedure means potential data loss.
+The pilot deployment is the single most important milestone for the project. It transforms GoldBank from a development project into a live financial services platform serving real customers. Every decision in this story carries real-world consequences: a failed deployment means lost trust with the pilot institution; a security gap means regulatory exposure; an untested recovery procedure means potential data loss.
 
 The on-premise deployment model means the team must deliver a complete, self-contained deployment package that the pilot institution's infrastructure team can operate. Unlike SaaS deployments managed by the development team, the pilot institution will eventually own operations. This story ensures everything needed for that handover is prepared, tested, and documented.
 
@@ -180,7 +180,7 @@ Create `docs/runbook.md` covering:
    curl -k https://localhost:5002/health
 
    # Check PostgreSQL connectivity
-   docker compose exec postgres pg_isready -U unibank
+   docker compose exec postgres pg_isready -U goldbank
 
    # Check Redis connectivity
    docker compose exec redis redis-cli -a $REDIS_PASSWORD ping
@@ -256,7 +256,7 @@ Create `docs/runbook.md` covering:
    - KYC document re-submission
    - Merchant terminal troubleshooting
 3. Escalation procedures:
-   - When to contact UniBank development team
+   - When to contact GoldBank development team
    - Communication channels and SLA expectations
 
 **Go/No-Go Checklist:**

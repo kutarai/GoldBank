@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package goldbank.v1.cardtransactions;
+option csharp_namespace = "GoldBank.Protos.CardTransactions";
+
+import "google/protobuf/timestamp.proto";
+import "Protos/common.proto";
+
+/// Service for processing card transactions routed from the switch.
+/// Handles purchases, deposits, balance enquiries, and statement enquiries
+/// for bank clients using their cards at POS terminals or ATMs.
+service CardTransactionService {
+  /// Process a card purchase (on-us or off-us).
+  rpc ProcessPurchase (PurchaseRequest) returns (CardTransactionResponse);
+
+  /// Process a card deposit (on-us or off-us).
+  rpc ProcessDeposit (DepositRequest) returns (CardTransactionResponse);
+
+  /// Process a balance enquiry (on-us or off-us).
+  rpc BalanceEnquiry (BalanceEnquiryRequest) returns (BalanceEnquiryResponse);
+
+  /// Process a mini-statement enquiry (on-us or off-us).
+  rpc StatementEnquiry (StatementEnquiryRequest) returns (StatementEnquiryResponse);
+}
+
+message PurchaseRequest {
+  string transaction_id = 1;
+  string card_holder_account = 2;
+  string merchant_id = 3;
+  string merchant_name = 4;
+  string terminal_id = 5;
+  goldbank.v1.common.Money amount = 6;
+  string processing_code = 7;
+  string source_institution = 8;
+  string acquiring_institution = 9;
+  string stan = 10;
+  string retrieval_reference = 11;
+  bool is_on_us = 12;
+  string tenant_id = 13;
+}
+
+message DepositRequest {
+  string transaction_id = 1;
+  string card_holder_account = 2;
+  string merchant_id = 3;
+  string merchant_name = 4;
+  string terminal_id = 5;
+  goldbank.v1.common.Money amount = 6;
+  string processing_code = 7;
+  string source_institution = 8;
+  string acquiring_institution = 9;
+  string stan = 10;
+  string retrieval_reference = 11;
+  bool is_on_us = 12;
+  string tenant_id = 13;
+}
+
+message BalanceEnquiryRequest {
+  string transaction_id = 1;
+  string card_holder_account = 2;
+  string terminal_id = 3;
+  string source_institution = 4;
+  string stan = 5;
+  string retrieval_reference = 6;
+  string tenant_id = 7;
+  bool is_on_us = 8;
+}
+
+message StatementEnquiryRequest {
+  string transaction_id = 1;
+  string card_holder_account = 2;
+  string terminal_id = 3;
+  string source_institution = 4;
+  string stan = 5;
+  string retrieval_reference = 6;
+  string tenant_id = 7;
+  int32 max_records = 8;
+  bool is_on_us = 9;
+}
+
+message CardTransactionResponse {
+  bool success = 1;
+  string response_code = 2;
+  string authorization_code = 3;
+  string message = 4;
+  goldbank.v1.common.Money available_balance = 5;
+  string transaction_id = 6;
+  google.protobuf.Timestamp processed_at = 7;
+}
+
+message BalanceEnquiryResponse {
+  bool success = 1;
+  string response_code = 2;
+  string message = 3;
+  goldbank.v1.common.Money available_balance = 4;
+  goldbank.v1.common.Money ledger_balance = 5;
+  string transaction_id = 6;
+}
+
+message StatementEntry {
+  google.protobuf.Timestamp date = 1;
+  string description = 2;
+  goldbank.v1.common.Money amount = 3;
+  string type = 4;
+  string reference = 5;
+  goldbank.v1.common.Money balance_after = 6;
+}
+
+message StatementEnquiryResponse {
+  bool success = 1;
+  string response_code = 2;
+  string message = 3;
+  repeated StatementEntry entries = 4;
+  goldbank.v1.common.Money available_balance = 5;
+  string transaction_id = 6;
+}

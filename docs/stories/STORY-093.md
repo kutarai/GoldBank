@@ -43,7 +43,7 @@ Currently, registration creates a single ZWG account per phone number. The bank 
 ### Virtual Card Number Format
 
 PAN format: `6275 XXXX XXXX XXXX` (16 digits)
-- `6275` — Bank Identification Number (BIN) for UniBank virtual cards
+- `6275` — Bank Identification Number (BIN) for GoldBank virtual cards
 - Next 8 digits — derived from account sequence
 - Last 4 digits — includes Luhn check digit
 - Luhn algorithm validates the full PAN
@@ -82,7 +82,7 @@ CREATE UNIQUE INDEX ix_accounts_card_pan ON accounts (card_pan) WHERE card_pan I
 ### Virtual Card PAN Generation
 
 ```csharp
-// BIN prefix for UniBank virtual cards
+// BIN prefix for GoldBank virtual cards
 const string BIN_PREFIX = "6275";
 
 // Generate: 6275 + 11 random digits + 1 Luhn check digit = 16 digits

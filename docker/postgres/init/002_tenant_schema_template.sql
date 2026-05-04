@@ -1,5 +1,5 @@
 -- ============================================================================
--- UniBank Multi-Tenant Database Schema
+-- GoldBank Multi-Tenant Database Schema
 -- 002_tenant_schema_template.sql - Tenant schema provisioning function
 -- ============================================================================
 

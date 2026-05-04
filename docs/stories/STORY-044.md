@@ -22,11 +22,11 @@ So that **users can receive payments from external institutions**
 
 ### Background
 
-UniBank customers do not only send money — they also receive it. When a customer at another bank initiates a transfer to a UniBank account, or when a POS transaction is processed where UniBank is the issuing bank, the national switch delivers an inbound message to UniBank's Switching Server. This message must be received, parsed, validated, and routed to Core Banking for account crediting.
+GoldBank customers do not only send money — they also receive it. When a customer at another bank initiates a transfer to a GoldBank account, or when a POS transaction is processed where GoldBank is the issuing bank, the national switch delivers an inbound message to GoldBank's Switching Server. This message must be received, parsed, validated, and routed to Core Banking for account crediting.
 
 Inbound processing is the mirror image of outbound routing. The Switching Server listens for incoming messages on TCP ports (for ISO 8583) and webhook endpoints (for ISO 20022). When a message arrives, the appropriate adapter parses it into the canonical format, and the inbound handler validates the transaction before forwarding it to Core Banking. After Core Banking processes the credit (or rejects it), the handler formats the response and sends it back to the switch via the adapter.
 
-Response time is critical for inbound processing. National switches typically expect a response within 15-30 seconds. If UniBank does not respond in time, the switch may time out and the sending institution's customer sees a failed transaction. The inbound handler must be fast and resilient.
+Response time is critical for inbound processing. National switches typically expect a response within 15-30 seconds. If GoldBank does not respond in time, the switch may time out and the sending institution's customer sees a failed transaction. The inbound handler must be fast and resilient.
 
 **Functional Requirements:** FR-029 (Inbound Transaction Processing)
 
@@ -56,14 +56,14 @@ Response time is critical for inbound processing. National switches typically ex
 
 **Inbound Credit Transfer Flow (e.g., incoming EFT):**
 
-1. **External Event:** A customer at Bank X initiates a transfer to a UniBank account
-2. **Switch Delivery:** The national switch routes the message to UniBank's Switching Server
+1. **External Event:** A customer at Bank X initiates a transfer to a GoldBank account
+2. **Switch Delivery:** The national switch routes the message to GoldBank's Switching Server
 3. **TCP/HTTP Receipt:** The Switching Server receives the raw message on the TCP listener (ISO 8583) or webhook endpoint (ISO 20022)
 4. **Adapter Detection:** The inbound listener determines the adapter based on the source (TCP = ISO 8583, HTTP = ISO 20022)
 5. **Message Parsing:** The adapter parses the raw message into a `CanonicalMessage`
 6. **MAC Verification (ISO 8583):** For ISO 8583 messages, the adapter verifies the MAC via HSM Interface Service. Invalid MAC = reject with "96"
 7. **Inbound Validation:**
-   - Destination account (DE-2 / CdtrAcct) exists in UniBank
+   - Destination account (DE-2 / CdtrAcct) exists in GoldBank
    - Account status is active (not frozen, closed, or dormant)
    - Amount is valid (positive, reasonable range)
    - Currency is supported by the destination account
@@ -75,11 +75,11 @@ Response time is critical for inbound processing. National switches typically ex
     - Declined: appropriate decline code (see decline code table)
 12. **Format and Send:** Adapter formats the response into protocol-specific format and sends it back to the switch
 13. **Log Everything:** Both inbound request and outbound response are logged to `switch_messages`
-14. **Customer Notification:** Core Banking triggers a push notification / SMS to the UniBank customer (handled separately)
+14. **Customer Notification:** Core Banking triggers a push notification / SMS to the GoldBank customer (handled separately)
 
 **Inbound POS Authorization Flow:**
 
-1. Switch delivers an authorization request (MTI 0100) for a UniBank cardholder
+1. Switch delivers an authorization request (MTI 0100) for a GoldBank cardholder
 2. Parsing and validation same as above
 3. Additional checks: card not blocked, PIN verification (if PIN present), available balance check
 4. Core Banking performs authorization hold on the cardholder's account
@@ -112,14 +112,14 @@ Response time is critical for inbound processing. National switches typically ex
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `InboundTcpListener.cs` | `src/Satellites/UniBank.Switching/Listeners/` | TCP socket listener for ISO 8583 inbound messages |
-| `InboundWebhookController.cs` | `src/Satellites/UniBank.Switching/Controllers/` | HTTP endpoint for ISO 20022 inbound messages |
-| `InboundMessageHandler.cs` | `src/Satellites/UniBank.Switching/Handlers/` | Orchestrates inbound validation and routing to Core Banking |
-| `InboundValidator.cs` | `src/Satellites/UniBank.Switching/Validation/` | Validates inbound transaction fields |
-| `AccountLookupService.cs` | `src/Satellites/UniBank.Switching/Services/` | Looks up destination account in Core Banking via gRPC |
-| `ProcessInboundTransactionHandler.cs` | `src/Core/UniBank.Core/Modules/Payments/Handlers/` | Core Banking handler that credits the account |
-| `DeclineCodeMapper.cs` | `src/Satellites/UniBank.Switching/Mapping/` | Maps validation failures to ISO 8583/20022 decline codes |
-| `SwitchMessageLogger.cs` | `src/Satellites/UniBank.Switching/Logging/` | Shared message logger |
+| `InboundTcpListener.cs` | `src/Satellites/GoldBank.Switching/Listeners/` | TCP socket listener for ISO 8583 inbound messages |
+| `InboundWebhookController.cs` | `src/Satellites/GoldBank.Switching/Controllers/` | HTTP endpoint for ISO 20022 inbound messages |
+| `InboundMessageHandler.cs` | `src/Satellites/GoldBank.Switching/Handlers/` | Orchestrates inbound validation and routing to Core Banking |
+| `InboundValidator.cs` | `src/Satellites/GoldBank.Switching/Validation/` | Validates inbound transaction fields |
+| `AccountLookupService.cs` | `src/Satellites/GoldBank.Switching/Services/` | Looks up destination account in Core Banking via gRPC |
+| `ProcessInboundTransactionHandler.cs` | `src/Core/GoldBank.Core/Modules/Payments/Handlers/` | Core Banking handler that credits the account |
+| `DeclineCodeMapper.cs` | `src/Satellites/GoldBank.Switching/Mapping/` | Maps validation failures to ISO 8583/20022 decline codes |
+| `SwitchMessageLogger.cs` | `src/Satellites/GoldBank.Switching/Logging/` | Shared message logger |
 
 ### API / gRPC Endpoints
 
@@ -285,7 +285,7 @@ CREATE INDEX idx_inbound_txn_dest_account ON switching.inbound_transactions (des
 - **Connection Flood:** If many TCP connections arrive simultaneously (switch reconnection storm), use a `SemaphoreSlim` to limit concurrent connection handling (max 50 concurrent connections).
 - **Network Management Messages:** Echo test (0800) and sign-on (0800) messages must be handled by the adapter/listener directly without routing to Core Banking. Respond immediately with the appropriate response MTI (0810).
 - **Malformed Messages:** If a message cannot be parsed at all (e.g., corrupted data, wrong protocol on the wrong port), log the raw bytes at ERROR level and close the connection gracefully.
-- **Multi-Tenant Routing:** Inbound messages do not contain a UniBank tenant ID. The tenant must be resolved from the destination account. The `AccountLookupService` returns the tenant ID associated with the account, which is then propagated through the processing chain.
+- **Multi-Tenant Routing:** Inbound messages do not contain a GoldBank tenant ID. The tenant must be resolved from the destination account. The `AccountLookupService` returns the tenant ID associated with the account, which is then propagated through the processing chain.
 
 ---
 
@@ -300,7 +300,7 @@ CREATE INDEX idx_inbound_txn_dest_account ON switching.inbound_transactions (des
 - STORY-045: Daily Reconciliation — reconciliation matches inbound transactions against switch records
 
 **External Dependencies:**
-- National switch sandbox for inbound message testing (switch must be able to send test messages to UniBank)
+- National switch sandbox for inbound message testing (switch must be able to send test messages to GoldBank)
 - Firewall rules to allow inbound TCP connections from switch IPs
 - Core Banking account lookup service must be available
 

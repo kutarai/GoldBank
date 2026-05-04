@@ -21,7 +21,7 @@ So that I know how much money I have
 ## Description
 
 ### Background
-Balance inquiry is the most frequently accessed feature in any mobile banking application. For UniBank's target users -- many of whom are newly banked -- having instant, reliable access to their account balance is fundamental to building trust in the platform. Users check their balance before making payments, after receiving money, and simply to reassure themselves their funds are secure.
+Balance inquiry is the most frequently accessed feature in any mobile banking application. For GoldBank's target users -- many of whom are newly banked -- having instant, reliable access to their account balance is fundamental to building trust in the platform. Users check their balance before making payments, after receiving money, and simply to reassure themselves their funds are secure.
 
 To meet the performance requirement of sub-500ms response times, even under high concurrent load, this feature implements a Redis caching layer. The balance is cached with a 5-second TTL, which provides a good balance between performance and data freshness. The cache is proactively invalidated whenever a `TransactionCompleted` event is published, ensuring users see an updated balance immediately after any transaction.
 

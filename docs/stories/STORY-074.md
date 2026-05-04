@@ -22,9 +22,9 @@ So that we confirm the system meets requirements before launch
 
 ### Background
 
-UniBank is preparing for pilot deployment with the first white-label institution in Southern Africa. Before launch, the team must have empirical evidence that the system meets all non-functional requirements (NFRs) defined during architecture. These NFRs are not aspirational targets but hard requirements: the pilot institution's contract likely specifies performance SLAs, and Southern African regulators expect financial systems to demonstrate reliability under load.
+GoldBank is preparing for pilot deployment with the first white-label institution in Southern Africa. Before launch, the team must have empirical evidence that the system meets all non-functional requirements (NFRs) defined during architecture. These NFRs are not aspirational targets but hard requirements: the pilot institution's contract likely specifies performance SLAs, and Southern African regulators expect financial systems to demonstrate reliability under load.
 
-The on-premise deployment model adds additional constraints. Unlike cloud deployments where auto-scaling can mask performance issues, UniBank runs on fixed hardware. The performance tests must validate that the defined hardware specification supports the required workloads. If tests reveal bottlenecks, the team has limited time (within Sprint 8) to optimize before launch.
+The on-premise deployment model adds additional constraints. Unlike cloud deployments where auto-scaling can mask performance issues, GoldBank runs on fixed hardware. The performance tests must validate that the defined hardware specification supports the required workloads. If tests reveal bottlenecks, the team has limited time (within Sprint 8) to optimize before launch.
 
 Key NFRs to validate:
 - Payment transactions (NFC, QR, P2P): p95 latency < 2 seconds
@@ -165,7 +165,7 @@ Key NFRs to validate:
 
 ### Components
 
-- **Load Test Project:** `tests/PerformanceTests/UniBank.LoadTests/`
+- **Load Test Project:** `tests/PerformanceTests/GoldBank.LoadTests/`
   - `Program.cs` — NBomber test runner, scenario registration
   - `Scenarios/RegistrationScenario.cs` — registration flow simulation
   - `Scenarios/AuthenticationScenario.cs` — login flow simulation
@@ -239,7 +239,7 @@ No schema changes. However, test data seeding requires:
 -- Transaction distribution matches expected production patterns
 ```
 
-Seed script: `tests/PerformanceTests/UniBank.LoadTests/seed-test-data.sql`
+Seed script: `tests/PerformanceTests/GoldBank.LoadTests/seed-test-data.sql`
 
 ### Monitoring During Tests
 

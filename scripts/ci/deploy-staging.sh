@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UniBank - Deploy to Staging
+# GoldBank - Deploy to Staging
 # Deploys all services to the staging environment via docker compose.
 #
 # Usage:
@@ -15,7 +15,7 @@
 #
 # Environment Variables:
 #   DOCKER_REGISTRY       Docker registry URL
-#   POSTGRES_USER         PostgreSQL username (default: unibank)
+#   POSTGRES_USER         PostgreSQL username (default: goldbank)
 #   POSTGRES_PASSWORD     PostgreSQL password (required in non-dry-run)
 #   JWT_SECRET            JWT signing key (required in non-dry-run)
 # =============================================================================
@@ -27,7 +27,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Default settings
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-localhost:5000}"
-IMAGE_PREFIX="${IMAGE_PREFIX:-unibank}"
+IMAGE_PREFIX="${IMAGE_PREFIX:-goldbank}"
 DOCKER_TAG="${DOCKER_TAG:-$(git -C "${PROJECT_ROOT}" rev-parse --short HEAD 2>/dev/null || echo 'latest')}"
 DRY_RUN=false
 SKIP_PULL=false
@@ -103,7 +103,7 @@ cd "${PROJECT_ROOT}"
 
 echo ""
 log_info "=============================================="
-log_info "UniBank Staging Deployment"
+log_info "GoldBank Staging Deployment"
 log_info "=============================================="
 log_info "Registry:      ${DOCKER_REGISTRY}"
 log_info "Image prefix:  ${IMAGE_PREFIX}"

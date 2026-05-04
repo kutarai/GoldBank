@@ -23,7 +23,7 @@ So that large payments require authorization
 ### Background
 Transaction authorization adds an extra layer of security for high-value transactions. While everyday low-value transactions (e.g., buying airtime, small transfers) can proceed with the existing session authentication, transactions above a configurable monetary threshold require explicit PIN confirmation. This protects users from unauthorized large transactions even if their phone is unlocked and the session is active.
 
-This is a regulatory best practice in Southern African mobile money and banking markets, where central banks typically require step-up authentication for transactions exceeding certain thresholds. UniBank implements this as a configurable feature at the tenant level, allowing each operator to set appropriate thresholds based on their country's regulations and risk appetite.
+This is a regulatory best practice in Southern African mobile money and banking markets, where central banks typically require step-up authentication for transactions exceeding certain thresholds. GoldBank implements this as a configurable feature at the tenant level, allowing each operator to set appropriate thresholds based on their country's regulations and risk appetite.
 
 The authorization requirement applies regardless of how the user originally authenticated -- even if the user logged in with biometrics, high-value transactions still require a PIN. This ensures that biometric convenience does not compromise security for significant financial operations.
 

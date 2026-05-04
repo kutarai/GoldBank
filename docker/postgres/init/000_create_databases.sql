@@ -1,5 +1,5 @@
 -- ============================================================================
--- Create additional databases needed by the UniBank platform
+-- Create additional databases needed by the GoldBank platform
 -- 000_create_databases.sql - Runs first (alphabetical ordering)
 -- ============================================================================
 

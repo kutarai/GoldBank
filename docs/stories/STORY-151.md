@@ -24,7 +24,7 @@ Every cash-handling endpoint takes a `denomination_breakdown_json` plus a `total
 
 ### Scope
 **In scope:**
-- New service `DenominationValidationService` in `UniBank.Core/Modules/BranchCash/Application/Services/`
+- New service `DenominationValidationService` in `GoldBank.Core/Modules/BranchCash/Application/Services/`
 - Validation rules:
   - Σ (denom × count) must equal the stated total amount (to 2 decimal places)
   - Each denom must exist in the `currency_denominations` table for the given currency

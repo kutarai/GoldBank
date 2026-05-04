@@ -29,7 +29,7 @@ The platform currently has no concept of physical-cash transactions distinct fro
 - New role value `teller` added to `admin_users.role`
 - EF Core configurations mapping the entities to PostgreSQL
 - EF migration creating both tables in the `bank` schema with indexes
-- Update `UniBankDbContext` to expose `DbSet<TellerDrawerSession>` and `DbSet<BranchCashTransaction>`
+- Update `GoldBankDbContext` to expose `DbSet<TellerDrawerSession>` and `DbSet<BranchCashTransaction>`
 - Snapshot file updated
 
 **Out of scope:**
@@ -45,9 +45,9 @@ The platform currently has no concept of physical-cash transactions distinct fro
 - [ ] `bank.teller_drawer_sessions` table exists with: `id` (uuid PK), `teller_id`, `branch_id`, `business_date`, `status`, `opening_float_json` (jsonb), `closing_balance_json`, `expected_closing_json`, `variance_json`, `opened_at`, `closed_at`, `closed_by_supervisor_id`, `tenant_id`, `created_at`, `updated_at`
 - [ ] `bank.branch_cash_transactions` table exists with: `id`, `transaction_id` (FK to transactions), `drawer_session_id`, `teller_id`, `branch_id`, `account_id`, `direction` (enum: Deposit/Withdrawal/Reversal), `currency`, `amount`, `depositor_name`, `denomination_breakdown_json` (jsonb), `identity_verified`, `supervisor_approver_id`, `supervisor_approved_at`, `receipt_pdf_path`, `reversed_by_transaction_id`, `reversed_at`, `tenant_id`, `created_at`, `updated_at`
 - [ ] Indexes: `(teller_id, business_date)` on drawer sessions, `(account_id, created_at)` and `(drawer_session_id)` on cash transactions
-- [ ] EF Core entity classes `TellerDrawerSession` and `BranchCashTransaction` exist under `UniBank.Core/Modules/BranchCash/Domain/Entities/`
-- [ ] EF Core configurations in `UniBank.Core/Modules/BranchCash/Infrastructure/Persistence/` correctly map every column with the right types
-- [ ] `UniBankDbContext` exposes both `DbSet`s
+- [ ] EF Core entity classes `TellerDrawerSession` and `BranchCashTransaction` exist under `GoldBank.Core/Modules/BranchCash/Domain/Entities/`
+- [ ] EF Core configurations in `GoldBank.Core/Modules/BranchCash/Infrastructure/Persistence/` correctly map every column with the right types
+- [ ] `GoldBankDbContext` exposes both `DbSet`s
 - [ ] Migration runs cleanly forward and backward against an empty DB
 - [ ] Migration runs cleanly forward against the current dev DB without affecting existing rows
 - [ ] Snapshot file is regenerated and matches the new entity model
@@ -57,10 +57,10 @@ The platform currently has no concept of physical-cash transactions distinct fro
 ## Technical Notes
 
 ### Module location
-Create a new module at `server/UniBank.Core/Modules/BranchCash/` (Domain, Application, Infrastructure folders) — do not put cash entities under Accounts to keep concerns separate.
+Create a new module at `server/GoldBank.Core/Modules/BranchCash/` (Domain, Application, Infrastructure folders) — do not put cash entities under Accounts to keep concerns separate.
 
 ### Migration filename
-`server/UniBank.Migrator/Migrations/UniBankDb/20260415090000_AddBranchCashTables.cs`
+`server/GoldBank.Migrator/Migrations/GoldBankDb/20260415090000_AddBranchCashTables.cs`
 
 ### admin_users role
 `admin_users.role` is a string column already; no schema change needed — just begin allowing the new value `"teller"` (validated in code where roles are enumerated).

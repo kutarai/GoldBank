@@ -21,7 +21,7 @@ So that code is built, tested, and deployed automatically.
 ## Description
 
 ### Background
-Automated CI/CD is essential for maintaining code quality and enabling rapid, reliable deployments. With 11 projects in the UniBank solution and multiple developers working in parallel on Sprint 1 stories, an automated pipeline ensures that every push to the repository is built, tested, and validated before merging.
+Automated CI/CD is essential for maintaining code quality and enabling rapid, reliable deployments. With 11 projects in the GoldBank solution and multiple developers working in parallel on Sprint 1 stories, an automated pipeline ensures that every push to the repository is built, tested, and validated before merging.
 
 The pipeline covers the full lifecycle from code commit to staging deployment. It builds all projects, runs unit and integration tests with coverage reporting, builds Docker images for each service, pushes them to a container registry, and deploys to the staging environment. The pipeline should enforce quality gates: builds must succeed, tests must pass, and code coverage must meet the minimum threshold.
 
@@ -118,8 +118,8 @@ stages:
 
 variables:
   DOTNET_VERSION: "10.0"
-  DOCKER_REGISTRY: "registry.example.com/unibank"
-  SOLUTION_FILE: "UniBank.sln"
+  DOCKER_REGISTRY: "registry.example.com/goldbank"
+  SOLUTION_FILE: "GoldBank.sln"
   COVERAGE_THRESHOLD: "80"
 
 # Shared configuration
@@ -169,7 +169,7 @@ test-unit:
   stage: test
   needs: [build]
   script:
-    - dotnet test tests/UniBank.Tests/UniBank.Tests.csproj
+    - dotnet test tests/GoldBank.Tests/GoldBank.Tests.csproj
       --no-build -c Release
       --collect:"XPlat Code Coverage"
       --results-directory ./coverage
@@ -204,16 +204,16 @@ test-integration:
     - name: postgres:18
       alias: postgres
       variables:
-        POSTGRES_USER: unibank_test
+        POSTGRES_USER: goldbank_test
         POSTGRES_PASSWORD: test_password
-        POSTGRES_DB: unibank_test
+        POSTGRES_DB: goldbank_test
     - name: redis:7-alpine
       alias: redis
   variables:
-    ConnectionStrings__PostgreSQL: "Host=postgres;Port=5432;Database=unibank_test;Username=unibank_test;Password=test_password"
+    ConnectionStrings__PostgreSQL: "Host=postgres;Port=5432;Database=goldbank_test;Username=goldbank_test;Password=test_password"
     ConnectionStrings__Redis: "redis:6379"
   script:
-    - dotnet test tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj
+    - dotnet test tests/GoldBank.IntegrationTests/GoldBank.IntegrationTests.csproj
       --no-build -c Release
       --logger "junit;LogFilePath=./test-results/integration-results.xml"
   artifacts:
@@ -385,7 +385,7 @@ deploy-staging:
     - echo "$STAGING_SSH_KEY" | ssh-add -
   script:
     - ssh ${STAGING_USER}@${STAGING_HOST} "
-        cd /opt/unibank &&
+        cd /opt/goldbank &&
         export IMAGE_TAG=${CI_COMMIT_SHA} &&
         docker compose pull &&
         docker compose up -d --remove-orphans &&
@@ -393,7 +393,7 @@ deploy-staging:
       "
   environment:
     name: staging
-    url: https://staging.unibank.example.com
+    url: https://staging.goldbank.example.com
 ```
 
 ### Jenkins Alternative
@@ -405,8 +405,8 @@ pipeline {
 
     environment {
         DOTNET_VERSION = '10.0'
-        DOCKER_REGISTRY = 'registry.example.com/unibank'
-        SOLUTION_FILE = 'UniBank.sln'
+        DOCKER_REGISTRY = 'registry.example.com/goldbank'
+        SOLUTION_FILE = 'GoldBank.sln'
     }
 
     stages {
@@ -427,7 +427,7 @@ pipeline {
                 stage('Unit Tests') {
                     steps {
                         sh '''
-                            dotnet test tests/UniBank.Tests/UniBank.Tests.csproj \
+                            dotnet test tests/GoldBank.Tests/GoldBank.Tests.csproj \
                                 --no-build -c Release \
                                 --collect:"XPlat Code Coverage" \
                                 --results-directory ./coverage
@@ -443,7 +443,7 @@ pipeline {
                     steps {
                         sh '''
                             docker compose -f docker-compose.test.yml up -d postgres redis
-                            dotnet test tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj \
+                            dotnet test tests/GoldBank.IntegrationTests/GoldBank.IntegrationTests.csproj \
                                 --no-build -c Release
                         '''
                     }
@@ -501,7 +501,7 @@ pipeline {
                 sshagent(['staging-ssh-key']) {
                     sh """
                         ssh ${STAGING_USER}@${STAGING_HOST} '
-                            cd /opt/unibank &&
+                            cd /opt/goldbank &&
                             export IMAGE_TAG=${GIT_COMMIT} &&
                             docker compose pull &&
                             docker compose up -d --remove-orphans

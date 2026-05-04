@@ -22,7 +22,7 @@ So that **I can see my available and ledger balance without visiting a branch or
 
 ### Background
 
-A balance enquiry is a non-financial card transaction where the client requests their account balance at a POS terminal or ATM. The terminal sends the request through the national switch to the issuing bank (UniBank). Core Banking looks up the account, retrieves the current available and ledger balances, and returns them in the response.
+A balance enquiry is a non-financial card transaction where the client requests their account balance at a POS terminal or ATM. The terminal sends the request through the national switch to the issuing bank (GoldBank). Core Banking looks up the account, retrieves the current available and ledger balances, and returns them in the response.
 
 Balance enquiries do not move money but must still be logged for audit purposes. Some banks charge a fee for balance enquiries at terminals (especially ATMs) — the fee configuration is tenant-specific.
 
@@ -46,7 +46,7 @@ The ISO 20022 processing code for balance enquiry is "310000" (balance inquiry) 
 ### User Flow
 
 1. **Client requests balance:** Client inserts/taps card at POS/ATM and selects "Balance Enquiry"
-2. **Switch routes:** Transaction flows through national switch to UniBank switch
+2. **Switch routes:** Transaction flows through national switch to GoldBank switch
 3. **gRPC call:** Switch calls `CardTransactionService.BalanceEnquiry`
 4. **Validate account:** Check account exists, active
 5. **Apply fee (if any):** Deduct balance enquiry fee from account if configured

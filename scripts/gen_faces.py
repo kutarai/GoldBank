@@ -4,7 +4,7 @@ import io, hashlib, random, sys, subprocess, uuid
 from PIL import Image, ImageDraw, ImageFont
 
 out = subprocess.check_output([
-    "podman", "exec", "unibank-postgres", "psql", "-U", "unibank", "-d", "unibank",
+    "podman", "exec", "goldbank-postgres", "psql", "-U", "goldbank", "-d", "goldbank",
     "-At", "-F", "|",
     "-c", "SELECT \"Id\", tenant_id, COALESCE(first_name,''), COALESCE(last_name,'') FROM bank.accounts WHERE first_name IS NOT NULL;"
 ]).decode()

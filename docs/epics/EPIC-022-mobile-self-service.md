@@ -32,7 +32,7 @@ The mobile app today provides registration, KYC, and basic balance lookup. Custo
 - Daily limit honoured per account-level KYC tier
 
 ### FR-003: Third-Party Transfers (Same Bank)
-- Send to another UniBank customer by phone, account number, or QR
+- Send to another GoldBank customer by phone, account number, or QR
 - Recipient lookup returns masked name for confirmation before debit
 - Optional message/memo (max 140 chars) stored in transaction metadata
 

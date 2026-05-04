@@ -1,0 +1,374 @@
+syntax = "proto3";
+package goldbank.v1.ai;
+option csharp_namespace = "GoldBank.Protos.AI";
+
+import "google/protobuf/timestamp.proto";
+
+// AI & Vision service — KYC verification, document OCR, banking assistant,
+// dispute triage, fraud explanation, and spending insights.
+// Backed by Qwen3-VL (Ollama) and ArcFace (ONNX).
+service AIService {
+  // KYC (STORY-094, 095, 096)
+  rpc VerifyIdentity(VerifyIdentityRequest) returns (VerifyIdentityResponse);
+  rpc ExtractDocumentFields(ExtractDocumentFieldsRequest) returns (ExtractDocumentFieldsResponse);
+  rpc VerifyProofOfAddress(VerifyProofOfAddressRequest) returns (VerifyProofOfAddressResponse);
+
+  // Cheque deposit (STORY-097)
+  rpc ExtractChequeFields(ExtractChequeFieldsRequest) returns (ExtractChequeFieldsResponse);
+
+  // Bill scanning (STORY-098)
+  rpc ExtractBillFields(ExtractBillFieldsRequest) returns (ExtractBillFieldsResponse);
+
+  // Banking assistant — server streaming (STORY-099)
+  rpc Chat(ChatRequest) returns (stream ChatResponse);
+
+  // Receipt scanning (STORY-100)
+  rpc ExtractReceiptFields(ExtractReceiptFieldsRequest) returns (ExtractReceiptFieldsResponse);
+
+  // Spending insights (STORY-101)
+  rpc GetSpendingInsights(GetSpendingInsightsRequest) returns (GetSpendingInsightsResponse);
+
+  // Loan eligibility (STORY-104)
+  rpc CheckLoanEligibility(CheckLoanEligibilityRequest) returns (CheckLoanEligibilityResponse);
+
+  // Loan document verification (STORY-103)
+  rpc VerifyLoanDocuments(VerifyLoanDocumentsRequest) returns (VerifyLoanDocumentsResponse);
+
+  // Dispute triage (STORY-105)
+  rpc TriageDispute(TriageDisputeRequest) returns (TriageDisputeResponse);
+
+  // Fraud alert explanation (STORY-106)
+  rpc ExplainFraudAlert(ExplainFraudAlertRequest) returns (ExplainFraudAlertResponse);
+
+  // Health check (STORY-093)
+  rpc GetModelStatus(GetModelStatusRequest) returns (GetModelStatusResponse);
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum VerificationDecision {
+  VERIFICATION_DECISION_UNSPECIFIED = 0;
+  VERIFICATION_DECISION_AUTO_APPROVED = 1;
+  VERIFICATION_DECISION_MANUAL_REVIEW = 2;
+  VERIFICATION_DECISION_REJECTED = 3;
+}
+
+enum FieldMatch {
+  FIELD_MATCH_UNSPECIFIED = 0;
+  FIELD_MATCH_MATCH = 1;
+  FIELD_MATCH_MISMATCH = 2;
+  FIELD_MATCH_NOT_AVAILABLE = 3;
+}
+
+enum DocumentType {
+  DOCUMENT_TYPE_UNSPECIFIED = 0;
+  DOCUMENT_TYPE_NATIONAL_ID = 1;
+  DOCUMENT_TYPE_BIOMETRIC_CARD = 2;
+  DOCUMENT_TYPE_PASSPORT = 3;
+  DOCUMENT_TYPE_CHEQUE = 4;
+  DOCUMENT_TYPE_UTILITY_BILL = 5;
+  DOCUMENT_TYPE_RECEIPT = 6;
+  DOCUMENT_TYPE_PAYSLIP = 7;
+  DOCUMENT_TYPE_BANK_STATEMENT = 8;
+  DOCUMENT_TYPE_LEASE_AGREEMENT = 9;
+}
+
+enum DisputeClassification {
+  DISPUTE_CLASSIFICATION_UNSPECIFIED = 0;
+  DISPUTE_CLASSIFICATION_UNAUTHORIZED_TRANSACTION = 1;
+  DISPUTE_CLASSIFICATION_DUPLICATE_CHARGE = 2;
+  DISPUTE_CLASSIFICATION_WRONG_AMOUNT = 3;
+  DISPUTE_CLASSIFICATION_SERVICE_NOT_RECEIVED = 4;
+  DISPUTE_CLASSIFICATION_ATM_FAILED_DISPENSING = 5;
+  DISPUTE_CLASSIFICATION_CARD_FRAUD = 6;
+}
+
+enum DisputePriority {
+  DISPUTE_PRIORITY_UNSPECIFIED = 0;
+  DISPUTE_PRIORITY_HIGH = 1;
+  DISPUTE_PRIORITY_MEDIUM = 2;
+  DISPUTE_PRIORITY_LOW = 3;
+}
+
+enum LoanEligibility {
+  LOAN_ELIGIBILITY_UNSPECIFIED = 0;
+  LOAN_ELIGIBILITY_HIGH = 1;
+  LOAN_ELIGIBILITY_MEDIUM = 2;
+  LOAN_ELIGIBILITY_LOW = 3;
+}
+
+// ─── KYC: VerifyIdentity ────────────────────────────────────────────────────
+
+message VerifyIdentityRequest {
+  string account_id = 1;
+  bytes selfie_image = 2;
+  bytes id_document_image = 3;
+}
+
+message VerifyIdentityResponse {
+  bool success = 1;
+  string message = 2;
+  VerificationDecision decision = 3;
+  double face_match_score = 4;
+  string face_match_confidence = 5;
+  FieldMatch name_match = 6;
+  FieldMatch id_number_match = 7;
+  FieldMatch dob_match = 8;
+  IdDocumentFields extracted_fields = 9;
+  string rejection_reason = 10;
+}
+
+// ─── KYC: ExtractDocumentFields ─────────────────────────────────────────────
+
+message ExtractDocumentFieldsRequest {
+  bytes document_image = 1;
+  DocumentType document_type = 2;
+}
+
+message ExtractDocumentFieldsResponse {
+  bool success = 1;
+  string message = 2;
+  IdDocumentFields id_fields = 3;
+  ChequeDocumentFields cheque_fields = 4;
+  BillDocumentFields bill_fields = 5;
+  ReceiptDocumentFields receipt_fields = 6;
+  PayslipDocumentFields payslip_fields = 7;
+  ProofOfAddressDocumentFields proof_of_address_fields = 8;
+}
+
+// ─── Shared field types ─────────────────────────────────────────────────────
+
+message IdDocumentFields {
+  string full_name = 1;
+  string id_number = 2;
+  string date_of_birth = 3;
+  string nationality = 4;
+  string gender = 5;
+  string expiry_date = 6;
+  string document_type = 7;
+}
+
+message ChequeDocumentFields {
+  string cheque_number = 1;
+  string amount_figures = 2;
+  string amount_words = 3;
+  string payee = 4;
+  string drawer = 5;
+  string bank_name = 6;
+  string branch_code = 7;
+  string date = 8;
+  string currency = 9;
+}
+
+message BillDocumentFields {
+  string provider = 1;
+  string account_number = 2;
+  string amount_due = 3;
+  string due_date = 4;
+  string reference = 5;
+  string currency = 6;
+}
+
+message ReceiptDocumentFields {
+  string merchant_name = 1;
+  string date = 2;
+  string total_amount = 3;
+  string currency = 4;
+  string category = 5;
+  repeated string items = 6;
+}
+
+message PayslipDocumentFields {
+  string employer = 1;
+  string employee_name = 2;
+  string gross_salary = 3;
+  string net_salary = 4;
+  string currency = 5;
+  string pay_period = 6;
+}
+
+message ProofOfAddressDocumentFields {
+  string name = 1;
+  string address = 2;
+  string document_date = 3;
+  string document_type = 4;
+}
+
+// ─── KYC: VerifyProofOfAddress ──────────────────────────────────────────────
+
+message VerifyProofOfAddressRequest {
+  string account_id = 1;
+  bytes document_image = 2;
+}
+
+message VerifyProofOfAddressResponse {
+  bool success = 1;
+  string message = 2;
+  VerificationDecision decision = 3;
+  FieldMatch name_match = 4;
+  ProofOfAddressDocumentFields extracted_fields = 5;
+  bool document_date_valid = 6;
+  int32 new_kyc_level = 7;
+}
+
+// ─── Cheque ─────────────────────────────────────────────────────────────────
+
+message ExtractChequeFieldsRequest {
+  string account_id = 1;
+  bytes cheque_image = 2;
+}
+
+message ExtractChequeFieldsResponse {
+  bool success = 1;
+  string message = 2;
+  ChequeDocumentFields fields = 3;
+  bool amount_consistent = 4;
+}
+
+// ─── Bill ───────────────────────────────────────────────────────────────────
+
+message ExtractBillFieldsRequest {
+  string account_id = 1;
+  bytes bill_image = 2;
+}
+
+message ExtractBillFieldsResponse {
+  bool success = 1;
+  string message = 2;
+  BillDocumentFields fields = 3;
+  string matched_provider_id = 4;
+}
+
+// ─── Chat ───────────────────────────────────────────────────────────────────
+
+message ChatRequest {
+  string account_id = 1;
+  string message = 2;
+  repeated ChatMessage history = 3;
+}
+
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message ChatResponse {
+  string token = 1;
+  bool done = 2;
+}
+
+// ─── Receipt ────────────────────────────────────────────────────────────────
+
+message ExtractReceiptFieldsRequest {
+  string account_id = 1;
+  string transaction_id = 2;
+  bytes receipt_image = 3;
+}
+
+message ExtractReceiptFieldsResponse {
+  bool success = 1;
+  string message = 2;
+  ReceiptDocumentFields fields = 3;
+  bool transaction_matched = 4;
+}
+
+// ─── Spending Insights ──────────────────────────────────────────────────────
+
+message GetSpendingInsightsRequest {
+  string account_id = 1;
+}
+
+message GetSpendingInsightsResponse {
+  bool success = 1;
+  repeated string insights = 2;
+  google.protobuf.Timestamp generated_at = 3;
+}
+
+// ─── Loan Eligibility ───────────────────────────────────────────────────────
+
+message CheckLoanEligibilityRequest {
+  string account_id = 1;
+  string desired_amount = 2;
+  string currency = 3;
+  int32 tenure_months = 4;
+  string purpose = 5;
+}
+
+message CheckLoanEligibilityResponse {
+  bool success = 1;
+  LoanEligibility likelihood = 2;
+  string estimated_rate_min = 3;
+  string estimated_rate_max = 4;
+  string assessment = 5;
+  string disclaimer = 6;
+}
+
+// ─── Loan Document Verification ─────────────────────────────────────────────
+
+message VerifyLoanDocumentsRequest {
+  string account_id = 1;
+  string loan_application_id = 2;
+  bytes document_image = 3;
+  DocumentType document_type = 4;
+  string declared_income = 5;
+}
+
+message VerifyLoanDocumentsResponse {
+  bool success = 1;
+  string message = 2;
+  PayslipDocumentFields extracted_fields = 3;
+  string extracted_income = 4;
+  string declared_income = 5;
+  double variance_percentage = 6;
+  FieldMatch name_match = 7;
+  FieldMatch income_match = 8;
+  bool flagged_for_review = 9;
+}
+
+// ─── Dispute Triage ─────────────────────────────────────────────────────────
+
+message TriageDisputeRequest {
+  string account_id = 1;
+  string transaction_id = 2;
+  string description = 3;
+  bytes evidence_image = 4;
+}
+
+message TriageDisputeResponse {
+  bool success = 1;
+  string message = 2;
+  string reference = 3;
+  DisputeClassification classification = 4;
+  DisputePriority priority = 5;
+  string assigned_team = 6;
+  string summary = 7;
+  double confidence = 8;
+  string expected_resolution = 9;
+}
+
+// ─── Fraud Alert Explanation ────────────────────────────────────────────────
+
+message ExplainFraudAlertRequest {
+  string account_id = 1;
+  string transaction_id = 2;
+  string fraud_rules_triggered = 3;
+  double risk_score = 4;
+}
+
+message ExplainFraudAlertResponse {
+  bool success = 1;
+  string explanation = 2;
+  repeated string suggested_actions = 3;
+}
+
+// ─── Model Status ───────────────────────────────────────────────────────────
+
+message GetModelStatusRequest {}
+
+message GetModelStatusResponse {
+  bool ollama_healthy = 1;
+  string vision_model = 2;
+  int64 vision_model_size = 3;
+  bool face_model_loaded = 4;
+  string face_model_name = 5;
+}

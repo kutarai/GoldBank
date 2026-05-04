@@ -14,14 +14,14 @@
 
 As a consumer,
 I want to deposit cash at a merchant agent,
-So that I can load money into my UniBank account.
+So that I can load money into my GoldBank account.
 
 ---
 
 ## Description
 
 ### Background
-For the unbanked population in Southern Africa, physical cash remains the primary medium of exchange. The ability to convert physical cash into digital funds is the critical on-ramp for mobile money adoption. UniBank's agent banking model leverages a network of merchant agents — typically small shop owners, petrol stations, and kiosks — who act as human ATMs, accepting cash from customers and crediting their UniBank accounts.
+For the unbanked population in Southern Africa, physical cash remains the primary medium of exchange. The ability to convert physical cash into digital funds is the critical on-ramp for mobile money adoption. GoldBank's agent banking model leverages a network of merchant agents — typically small shop owners, petrol stations, and kiosks — who act as human ATMs, accepting cash from customers and crediting their GoldBank accounts.
 
 The cash-in flow involves a three-party interaction: the merchant agent (who accepts physical cash), the consumer (who receives digital funds), and the system (which orchestrates the float debit, customer credit, and commission recording). The agent's "float" balance represents their pool of digital funds available for cash-in operations; accepting cash decreases their float while increasing the customer's balance.
 
@@ -70,7 +70,7 @@ Functional Requirement: **FR-019**.
 
 - [ ] Agent can initiate a cash-in transaction from the agent app or POS terminal
 - [ ] Agent can enter the customer's phone number to identify the recipient
-- [ ] System validates that the customer phone number belongs to an active UniBank account
+- [ ] System validates that the customer phone number belongs to an active GoldBank account
 - [ ] System displays an error if the customer is not found or account is inactive/frozen
 - [ ] Agent can enter the cash amount; system validates it is within acceptable limits
 - [ ] System validates that the agent has sufficient float balance for the cash-in amount
@@ -96,7 +96,7 @@ Functional Requirement: **FR-019**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Agents/`
+**Module:** `GoldBank.Core/Modules/Agents/`
 
 ```
 Agents/

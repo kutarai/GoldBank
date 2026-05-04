@@ -9,8 +9,8 @@
 -dontwarn com.google.protobuf.**
 
 # gRPC Kotlin stubs
--keep class unibank.v1.** { *; }
--keepnames class unibank.v1.** { *; }
+-keep class goldbank.v1.** { *; }
+-keepnames class goldbank.v1.** { *; }
 
 # OkHttp
 -dontwarn okhttp3.**

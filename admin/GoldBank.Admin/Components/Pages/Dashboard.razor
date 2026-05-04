@@ -1,0 +1,177 @@
+@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ReportingService.ReportingServiceClient ReportingClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Dashboard - GoldBank Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Dashboard</MudText>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="6" md="3">
+        <MudDateRangePicker Label="Date Range"
+                            @bind-DateRange="_dateRange"
+                            AutoClose="true"
+                            Variant="Variant.Outlined"
+                            Class="mb-0" />
+    </MudItem>
+    <MudItem xs="12" sm="6" md="2">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="LoadDashboardAsync"
+                   Disabled="_loading"
+                   FullWidth="true"
+                   Class="mt-1">
+            @if (_loading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Refresh
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+@if (_response is not null)
+{
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Users</MudText>
+                <MudText Typo="Typo.h5">@_response.TotalUsers.ToString("N0")</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Active Users</MudText>
+                <MudText Typo="Typo.h5">@_response.ActiveUsers.ToString("N0")</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Transactions</MudText>
+                <MudText Typo="Typo.h5">@_response.TotalTransactions.ToString("N0")</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Volume</MudText>
+                <MudText Typo="Typo.h5">@FormatMoney(_response.TotalVolume)</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Revenue</MudText>
+                <MudText Typo="Typo.h5">@FormatMoney(_response.TotalRevenue)</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Active Merchants</MudText>
+                <MudText Typo="Typo.h5">@_response.ActiveMerchants.ToString("N0")</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Active Agents</MudText>
+                <MudText Typo="Typo.h5">@_response.ActiveAgents.ToString("N0")</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Active Terminals</MudText>
+                <MudText Typo="Typo.h5">@_response.ActiveTerminals.ToString("N0")</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    @if (_chartLabels.Length > 0)
+    {
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">Daily Transactions</MudText>
+            <MudChart ChartType="ChartType.Line"
+                      ChartSeries="@_chartSeries"
+                      XAxisLabels="@_chartLabels"
+                      Width="100%"
+                      Height="350px" />
+        </MudPaper>
+    }
+}
+else if (!_loading)
+{
+    <MudText Typo="Typo.body1" Color="Color.Secondary">Select a date range and click Refresh to load dashboard data.</MudText>
+}
+
+@code {
+    private bool _loading;
+    private DashboardResponse? _response;
+    private MudBlazor.DateRange? _dateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
+    private List<ChartSeries> _chartSeries = [];
+    private string[] _chartLabels = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            var request = new DashboardRequest();
+
+            if (_dateRange?.Start is not null && _dateRange?.End is not null)
+            {
+                request.DateRange = new GoldBank.Protos.Common.DateRange
+                {
+                    From = Timestamp.FromDateTime(DateTime.SpecifyKind(_dateRange.Start.Value, DateTimeKind.Utc)),
+                    To = Timestamp.FromDateTime(DateTime.SpecifyKind(_dateRange.End.Value, DateTimeKind.Utc))
+                };
+            }
+
+            _response = await ReportingClient.GetDashboardAsync(request);
+            BuildChart();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load dashboard: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void BuildChart()
+    {
+        if (_response is null || _response.DailyMetrics.Count == 0)
+        {
+            _chartLabels = [];
+            _chartSeries = [];
+            return;
+        }
+
+        _chartLabels = _response.DailyMetrics.Select(m => m.Date).ToArray();
+
+        var transactionData = _response.DailyMetrics.Select(m => (double)m.Transactions).ToArray();
+        var newUsersData = _response.DailyMetrics.Select(m => (double)m.NewUsers).ToArray();
+
+        _chartSeries =
+        [
+            new ChartSeries { Name = "Transactions", Data = transactionData },
+            new ChartSeries { Name = "New Users", Data = newUsersData }
+        ];
+    }
+
+    private static string FormatMoney(Money? money)
+    {
+        if (money is null || string.IsNullOrEmpty(money.Amount))
+            return "ZWG 0.00";
+
+        var amount = decimal.Parse(money.Amount);
+        return $"ZWG {amount:N2}";
+    }
+}

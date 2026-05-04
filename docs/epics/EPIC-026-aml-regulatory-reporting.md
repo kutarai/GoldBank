@@ -9,7 +9,7 @@
 
 ## Business Context
 
-Banks live and die by their compliance posture. UniBank already captures KYC documents but has no transactional monitoring, sanctions screening, PEP checks, or regulatory submission pipeline. This epic delivers the compliance backbone that every other transactional epic depends on, and produces the central-bank and FIU reports required to operate as a licensed bank in Zimbabwe.
+Banks live and die by their compliance posture. GoldBank already captures KYC documents but has no transactional monitoring, sanctions screening, PEP checks, or regulatory submission pipeline. This epic delivers the compliance backbone that every other transactional epic depends on, and produces the central-bank and FIU reports required to operate as a licensed bank in Zimbabwe.
 
 ## User Personas
 

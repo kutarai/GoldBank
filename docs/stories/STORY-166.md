@@ -25,7 +25,7 @@ With the schema (164) and stock service (165) in place, this story exposes the a
 ### Scope
 **In scope:**
 - REST endpoints under `/api/vault/*`
-- Equivalent gRPC service `unibank.v1.vault.VaultService`
+- Equivalent gRPC service `goldbank.v1.vault.VaultService`
 - All endpoints JWT-protected with role `vault_manager`, `branch_manager`, or `super_admin`
 - Tenant scoping: vault manager only sees their own tenant's vaults
 
@@ -60,7 +60,7 @@ With the schema (164) and stock service (165) in place, this story exposes the a
 ## Technical Notes
 
 ### Controller location
-`server/UniBank.Gateway/Controllers/VaultApiController.cs`
+`server/GoldBank.Gateway/Controllers/VaultApiController.cs`
 
 ### Atomic float-out + drawer creation
 ```csharp

@@ -21,14 +21,14 @@ So that the team can begin parallel development immediately.
 ## Description
 
 ### Background
-UniBank is a white-label banking platform targeting the unbanked population in Southern Africa. Before any feature development can begin, the team needs a well-organized solution structure that reflects the Modular Monolith with Satellite Services architecture. This story establishes the foundational codebase that every subsequent story depends on.
+GoldBank is a white-label banking platform targeting the unbanked population in Southern Africa. Before any feature development can begin, the team needs a well-organized solution structure that reflects the Modular Monolith with Satellite Services architecture. This story establishes the foundational codebase that every subsequent story depends on.
 
 The architecture follows a Modular Monolith pattern for the Core Banking domain (accounts, payments, transfers, agents, bill pay, merchants) with Satellite Services for specialized concerns (switching/ISO 8583, terminal management, HSM/cryptography). The API Gateway serves as the single entry point for all gRPC traffic, and shared concerns live in a SharedKernel project.
 
 ### Scope
 
 **In scope:**
-- Creation of `UniBank.sln` solution file with all project references
+- Creation of `GoldBank.sln` solution file with all project references
 - Scaffolding of all 11 projects with correct project types and dependencies
 - `global.json` pinning .NET 10 SDK version
 - `Directory.Build.props` for shared MSBuild properties (versioning, nullable, implicit usings)
@@ -47,7 +47,7 @@ The architecture follows a Modular Monolith pattern for the Core Banking domain 
 
 ### User Flow
 1. Developer clones the repository
-2. Developer opens `UniBank.sln` in IDE (Visual Studio, Rider, or VS Code)
+2. Developer opens `GoldBank.sln` in IDE (Visual Studio, Rider, or VS Code)
 3. Developer runs `dotnet restore` to pull NuGet packages
 4. Developer runs `dotnet build` and all projects compile successfully
 5. Developer can navigate the project structure and understand the architecture
@@ -57,19 +57,19 @@ The architecture follows a Modular Monolith pattern for the Core Banking domain 
 
 ## Acceptance Criteria
 
-- [ ] `UniBank.sln` exists at the repository root and contains references to all 11 projects
+- [ ] `GoldBank.sln` exists at the repository root and contains references to all 11 projects
 - [ ] All projects are created with correct project types:
-  - `UniBank.Gateway` - ASP.NET Core gRPC host (`web` template)
-  - `UniBank.Core` - Class library with modular folder structure
-  - `UniBank.Switching` - ASP.NET Core worker service
-  - `UniBank.TerminalManager` - ASP.NET Core worker service
-  - `UniBank.HSM` - ASP.NET Core worker service
-  - `UniBank.Admin` - Blazor Server application
-  - `UniBank.Reporting` - Class library
-  - `UniBank.Notifications` - ASP.NET Core worker service
-  - `UniBank.Protos` - Class library for protobuf contracts
-  - `UniBank.SharedKernel` - Class library
-  - `UniBank.Tests` - xUnit test project
+  - `GoldBank.Gateway` - ASP.NET Core gRPC host (`web` template)
+  - `GoldBank.Core` - Class library with modular folder structure
+  - `GoldBank.Switching` - ASP.NET Core worker service
+  - `GoldBank.TerminalManager` - ASP.NET Core worker service
+  - `GoldBank.HSM` - ASP.NET Core worker service
+  - `GoldBank.Admin` - Blazor Server application
+  - `GoldBank.Reporting` - Class library
+  - `GoldBank.Notifications` - ASP.NET Core worker service
+  - `GoldBank.Protos` - Class library for protobuf contracts
+  - `GoldBank.SharedKernel` - Class library
+  - `GoldBank.Tests` - xUnit test project
 - [ ] `global.json` pins .NET 10 SDK (version `10.0.100` or latest preview)
 - [ ] `Directory.Build.props` configures: `<Nullable>enable</Nullable>`, `<ImplicitUsings>enable</ImplicitUsings>`, `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`, shared version properties
 - [ ] `.editorconfig` enforces C# coding conventions (indentation, naming, etc.)
@@ -87,32 +87,32 @@ The architecture follows a Modular Monolith pattern for the Core Banking domain 
 
 **Solution Root Structure:**
 ```
-UniBank/
-  UniBank.sln
+GoldBank/
+  GoldBank.sln
   global.json
   Directory.Build.props
   .editorconfig
   .gitignore
   README.md
   src/
-    UniBank.Gateway/
-    UniBank.Core/
-    UniBank.Switching/
-    UniBank.TerminalManager/
-    UniBank.HSM/
-    UniBank.Admin/
-    UniBank.Reporting/
-    UniBank.Notifications/
-    UniBank.Protos/
-    UniBank.SharedKernel/
+    GoldBank.Gateway/
+    GoldBank.Core/
+    GoldBank.Switching/
+    GoldBank.TerminalManager/
+    GoldBank.HSM/
+    GoldBank.Admin/
+    GoldBank.Reporting/
+    GoldBank.Notifications/
+    GoldBank.Protos/
+    GoldBank.SharedKernel/
   tests/
-    UniBank.Tests/
-    UniBank.IntegrationTests/
+    GoldBank.Tests/
+    GoldBank.IntegrationTests/
 ```
 
-**UniBank.Gateway Project Structure:**
+**GoldBank.Gateway Project Structure:**
 ```
-UniBank.Gateway/
+GoldBank.Gateway/
   Program.cs
   appsettings.json
   appsettings.Development.json
@@ -125,9 +125,9 @@ UniBank.Gateway/
   Configuration/
 ```
 
-**UniBank.Core Project Structure (Modular Monolith):**
+**GoldBank.Core Project Structure (Modular Monolith):**
 ```
-UniBank.Core/
+GoldBank.Core/
   Modules/
     Accounts/
       Domain/
@@ -162,9 +162,9 @@ UniBank.Core/
     Extensions/
 ```
 
-**UniBank.SharedKernel Project Structure:**
+**GoldBank.SharedKernel Project Structure:**
 ```
-UniBank.SharedKernel/
+GoldBank.SharedKernel/
   Domain/
     BaseEntity.cs
     AggregateRoot.cs
@@ -195,7 +195,7 @@ UniBank.SharedKernel/
 
 ### NuGet Package References
 
-**UniBank.Gateway:**
+**GoldBank.Gateway:**
 - `Grpc.AspNetCore` (latest)
 - `Microsoft.AspNetCore.Authentication.JwtBearer`
 - `StackExchange.Redis`
@@ -203,7 +203,7 @@ UniBank.SharedKernel/
 - `Serilog.Sinks.Elasticsearch`
 - `prometheus-net.AspNetCore`
 
-**UniBank.Core:**
+**GoldBank.Core:**
 - `Npgsql.EntityFrameworkCore.PostgreSQL`
 - `Wolverine`
 - `Wolverine.EntityFrameworkCore`
@@ -212,34 +212,34 @@ UniBank.SharedKernel/
 - `StackExchange.Redis`
 - `Serilog.AspNetCore`
 
-**UniBank.Switching:**
+**GoldBank.Switching:**
 - `Grpc.AspNetCore`
 - `Serilog.AspNetCore`
 
-**UniBank.TerminalManager:**
+**GoldBank.TerminalManager:**
 - `MQTTnet` (v4+)
 - `Grpc.AspNetCore`
 - `Serilog.AspNetCore`
 
-**UniBank.HSM:**
+**GoldBank.HSM:**
 - `Grpc.AspNetCore`
 - `Serilog.AspNetCore`
 - (PKCS#11 interop will be added when HSM stories are implemented)
 
-**UniBank.Admin:**
+**GoldBank.Admin:**
 - `Microsoft.AspNetCore.Components.Web`
 - `MudBlazor` or `Radzen.Blazor`
 - `Grpc.Net.Client`
 - `Serilog.AspNetCore`
 
-**UniBank.Protos:**
+**GoldBank.Protos:**
 - `Grpc.Tools`
 - `Google.Protobuf`
 
-**UniBank.SharedKernel:**
+**GoldBank.SharedKernel:**
 - No external dependencies (pure domain)
 
-**UniBank.Tests:**
+**GoldBank.Tests:**
 - `xunit`
 - `xunit.runner.visualstudio`
 - `Moq` or `NSubstitute`
@@ -285,25 +285,25 @@ Not applicable for this story. Database setup is handled in STORY-003.
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <VersionPrefix>0.1.0</VersionPrefix>
-    <Authors>UniBank Team</Authors>
-    <Company>UniBank</Company>
+    <Authors>GoldBank Team</Authors>
+    <Company>GoldBank</Company>
   </PropertyGroup>
 </Project>
 ```
 
 **Project Dependency Graph:**
 ```
-UniBank.Gateway        --> UniBank.Protos, UniBank.SharedKernel
-UniBank.Core           --> UniBank.Protos, UniBank.SharedKernel
-UniBank.Switching      --> UniBank.Protos, UniBank.SharedKernel
-UniBank.TerminalManager --> UniBank.Protos, UniBank.SharedKernel
-UniBank.HSM            --> UniBank.Protos, UniBank.SharedKernel
-UniBank.Admin          --> UniBank.Protos, UniBank.SharedKernel
-UniBank.Reporting      --> UniBank.Protos, UniBank.SharedKernel
-UniBank.Notifications  --> UniBank.Protos, UniBank.SharedKernel
-UniBank.Protos         --> (none)
-UniBank.SharedKernel   --> (none)
-UniBank.Tests          --> all src projects
+GoldBank.Gateway        --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.Core           --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.Switching      --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.TerminalManager --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.HSM            --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.Admin          --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.Reporting      --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.Notifications  --> GoldBank.Protos, GoldBank.SharedKernel
+GoldBank.Protos         --> (none)
+GoldBank.SharedKernel   --> (none)
+GoldBank.Tests          --> all src projects
 ```
 
 ---

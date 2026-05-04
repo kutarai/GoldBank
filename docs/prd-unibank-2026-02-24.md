@@ -1,4 +1,4 @@
-# Product Requirements Document: UniBank
+# Product Requirements Document: GoldBank
 
 **Date:** 2026-02-24
 **Author:** wmapundu
@@ -11,16 +11,16 @@
 
 ## Document Overview
 
-This Product Requirements Document (PRD) defines the functional and non-functional requirements for UniBank. It serves as the source of truth for what will be built and provides traceability from requirements through implementation.
+This Product Requirements Document (PRD) defines the functional and non-functional requirements for GoldBank. It serves as the source of truth for what will be built and provides traceability from requirements through implementation.
 
 **Related Documents:**
-- Product Brief: docs/product-brief-unibank-2026-02-24.md
+- Product Brief: docs/product-brief-goldbank-2026-02-24.md
 
 ---
 
 ## Executive Summary
 
-UniBank is a white-label banking platform targeting the Southern African region, comprising a mobile wallet app, account management backend, national network switching server, and EFT POS terminal manager with HSM. Its key differentiator is NFC-based contactless payments that turn capable smartphones into virtual payment cards, enabling card-present transactions without physical cards. The platform serves the unbanked mass market with zero-cost accounts while creating a self-sustaining merchant agent ecosystem.
+GoldBank is a white-label banking platform targeting the Southern African region, comprising a mobile wallet app, account management backend, national network switching server, and EFT POS terminal manager with HSM. Its key differentiator is NFC-based contactless payments that turn capable smartphones into virtual payment cards, enabling card-present transactions without physical cards. The platform serves the unbanked mass market with zero-cost accounts while creating a self-sustaining merchant agent ecosystem.
 
 ---
 
@@ -299,12 +299,12 @@ System displays payment details for user confirmation before executing QR code p
 
 ### Feature Area 4: P2P Transfers
 
-#### FR-015: Send Money to UniBank User
+#### FR-015: Send Money to GoldBank User
 
 **Priority:** Must Have
 
 **Description:**
-User can send money to another UniBank user using their phone number.
+User can send money to another GoldBank user using their phone number.
 
 **Acceptance Criteria:**
 - [ ] User can enter recipient phone number or select from contacts
@@ -1522,7 +1522,7 @@ NFC-based contactless payment capability allowing users to tap their phone on PO
 **Priority:** Must Have
 
 **Business Value:**
-Core differentiator. This is what makes UniBank unique — turning phones into contactless payment cards.
+Core differentiator. This is what makes GoldBank unique — turning phones into contactless payment cards.
 
 ---
 
@@ -1551,7 +1551,7 @@ Complements NFC by enabling payments on non-NFC devices and remote payment scena
 Person-to-person money transfers including domestic and cross-border transfers within Southern Africa.
 
 **Functional Requirements:**
-- FR-015: Send Money to UniBank User
+- FR-015: Send Money to GoldBank User
 - FR-016: Cross-Border P2P Transfer
 - FR-017: Transfer Confirmation Screen
 - FR-018: P2P Transfer Notifications
@@ -1622,7 +1622,7 @@ Integration with the national payment switch for routing transactions to externa
 **Priority:** Must Have
 
 **Business Value:**
-Enables interoperability with the broader financial system. Without this, UniBank is a closed-loop system with limited value.
+Enables interoperability with the broader financial system. Without this, GoldBank is a closed-loop system with limited value.
 
 ---
 

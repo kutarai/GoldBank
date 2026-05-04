@@ -21,7 +21,7 @@ So that customer issues are resolved fairly and in compliance with regulations
 ## Description
 
 ### Background
-Transaction disputes are an inevitable part of financial services. Customers may report unauthorized transactions, duplicate charges, services not received, or incorrect amounts. UniBank needs a structured dispute management workflow that allows support staff to open, investigate, and resolve disputes fairly. Resolutions may include full refunds, partial refunds, or denial. Each resolution that involves a refund must trigger a reversal of the original transaction and its associated fees. The dispute lifecycle must be fully tracked for regulatory compliance and customer trust.
+Transaction disputes are an inevitable part of financial services. Customers may report unauthorized transactions, duplicate charges, services not received, or incorrect amounts. GoldBank needs a structured dispute management workflow that allows support staff to open, investigate, and resolve disputes fairly. Resolutions may include full refunds, partial refunds, or denial. Each resolution that involves a refund must trigger a reversal of the original transaction and its associated fees. The dispute lifecycle must be fully tracked for regulatory compliance and customer trust.
 
 In Southern Africa, regulators expect financial institutions to have documented dispute resolution processes with defined timeframes. This system provides the operational tooling to meet those requirements.
 

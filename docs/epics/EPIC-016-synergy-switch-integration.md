@@ -10,9 +10,9 @@
 
 ## Overview
 
-Integrate the SynergySwitch payment switch into the UniBank platform as the EFT transaction gateway between POS terminals/ATMs and the core banking system. The switch supports two inbound protocols: ISO 8583 over TCP (from the national payment network / Zimswitch) and ISO 20022 over gRPC (from modern POS terminals). Both paths translate to gRPC calls against UniBank Core Banking's CardTransactionService.
+Integrate the SynergySwitch payment switch into the GoldBank platform as the EFT transaction gateway between POS terminals/ATMs and the core banking system. The switch supports two inbound protocols: ISO 8583 over TCP (from the national payment network / Zimswitch) and ISO 20022 over gRPC (from modern POS terminals). Both paths translate to gRPC calls against GoldBank Core Banking's CardTransactionService.
 
-SynergySwitch is a standalone .NET 10 application that has been moved into `switch/` within the UniBank monorepo. It already has:
+SynergySwitch is a standalone .NET 10 application that has been moved into `switch/` within the GoldBank monorepo. It already has:
 - **ISO 8583** message parsing/building (NetCore8583) over persistent TCP connections
 - **ISO 20022** AcceptorAuthorisationRequest/Response via gRPC (PaymentService)
 - High-throughput TCP connection pooling (10k+ concurrent, STAN-multiplexed)
@@ -31,10 +31,10 @@ Complete the end-to-end integration so that card transactions flow through eithe
 
 ```
 Path A (National Network / Legacy):
-  Zimswitch → SynergySwitch (ISO 8583 ↔ gRPC) → UniBank Gateway → CardTransactions Module
+  Zimswitch → SynergySwitch (ISO 8583 ↔ gRPC) → GoldBank Gateway → CardTransactions Module
 
 Path B (Modern POS Terminals):
-  POS Terminal → SynergySwitch (ISO 20022 ↔ gRPC) → UniBank Gateway → CardTransactions Module
+  POS Terminal → SynergySwitch (ISO 20022 ↔ gRPC) → GoldBank Gateway → CardTransactions Module
 ```
 
 Both paths converge at the same gRPC `CardTransactionService` endpoints. Responses flow back through the same path in reverse.
@@ -72,7 +72,7 @@ Both paths converge at the same gRPC `CardTransactionService` endpoints. Respons
                         │  └────────────┬───────────────────┘  │
                         │               │ gRPC                 │
                         │  ┌────────────┴───────────────────┐  │
-                        │  │ Iso20022GrpcClient             │──│──→ UniBank Gateway :1111
+                        │  │ Iso20022GrpcClient             │──│──→ GoldBank Gateway :1111
                         │  └────────────────────────────────┘  │    (CardTransactionService)
                         │                                      │
                         │  PostgreSQL: synergy_switch           │
@@ -85,10 +85,10 @@ Both paths converge at the same gRPC `CardTransactionService` endpoints. Respons
 ### STORY-084: Switch Proto Alignment & gRPC Client Configuration
 **Points:** 5 | **Priority:** Must Have
 
-As a **developer**, I want the switch's gRPC client to call UniBank's CardTransactionService with matching proto definitions, so that the switch can authorize card transactions against core banking.
+As a **developer**, I want the switch's gRPC client to call GoldBank's CardTransactionService with matching proto definitions, so that the switch can authorize card transactions against core banking.
 
 **Acceptance Criteria:**
-- Switch's `bank/card_transaction_service.proto` aligns with UniBank's `card_transaction_service.proto` (all 4 RPCs: ProcessPurchase, ProcessDeposit, BalanceEnquiry, StatementEnquiry)
+- Switch's `bank/card_transaction_service.proto` aligns with GoldBank's `card_transaction_service.proto` (all 4 RPCs: ProcessPurchase, ProcessDeposit, BalanceEnquiry, StatementEnquiry)
 - `Iso20022GrpcClient` is configured to connect to `gateway:1111` (container name) or configurable via environment variable
 - Proto includes `is_on_us` field for balance and statement enquiry requests
 - gRPC channel uses insecure credentials in development, TLS in production
@@ -101,7 +101,7 @@ As a **developer**, I want the switch's gRPC client to call UniBank's CardTransa
 ### STORY-085: On-Us Transaction Detection & Routing
 **Points:** 5 | **Priority:** Must Have
 
-As a **switch operator**, I want the switch to detect on-us transactions (both cardholder and merchant are UniBank clients) and route them directly to core banking without going through the national network, so that on-us transactions are faster and cheaper.
+As a **switch operator**, I want the switch to detect on-us transactions (both cardholder and merchant are GoldBank clients) and route them directly to core banking without going through the national network, so that on-us transactions are faster and cheaper.
 
 **Acceptance Criteria:**
 - Switch identifies on-us transactions by checking if the PAN's BIN matches a configured "own BIN" list
@@ -151,7 +151,7 @@ As a **developer**, I want the switch to use the shared PostgreSQL instance with
 - `synergy_switch` database is auto-created during postgres container init (via `000_create_databases.sql`)
 - Switch migrator runs against the shared postgres using connection string from environment
 - All 5 existing migrations apply cleanly
-- Switch and UniBank databases are fully isolated (separate databases, shared server)
+- Switch and GoldBank databases are fully isolated (separate databases, shared server)
 - Connection string is configurable via `ConnectionStrings__SwitchDb` environment variable
 
 **Dependencies:** None

@@ -10,9 +10,9 @@
 
 ## Overview
 
-Deploy on-premise AI inference services powered by **Qwen3-VL-8B** (vision-language model via Ollama) and **InsightFace/ArcFace** (dedicated face embedding model) to enable intelligent document processing, biometric verification, and conversational banking across the UniBank platform.
+Deploy on-premise AI inference services powered by **Qwen3-VL-8B** (vision-language model via Ollama) and **InsightFace/ArcFace** (dedicated face embedding model) to enable intelligent document processing, biometric verification, and conversational banking across the GoldBank platform.
 
-All inference runs locally within the UniBank infrastructure — no data leaves the bank's network. This satisfies POTRAZ and RBZ data localization requirements and eliminates recurring cloud API costs.
+All inference runs locally within the GoldBank infrastructure — no data leaves the bank's network. This satisfies POTRAZ and RBZ data localization requirements and eliminates recurring cloud API costs.
 
 ## Goal
 
@@ -42,7 +42,7 @@ Maximize the value of the on-premise Qwen3-VL deployment across multiple banking
                          │ gRPC (image bytes + metadata)
                          │
   ┌──────────────────────▼──────────────────────────────────┐
-  │                 UniBank Gateway                          │
+  │                 GoldBank Gateway                          │
   │                                                          │
   │  ┌─────────────────────────────────────────────────┐    │
   │  │         AI / Vision Module                       │    │
@@ -103,7 +103,7 @@ Face score < 0.4 OR name mismatch           → REJECT with reason
 As a developer, I want an AI/Vision module with Ollama client integration, so that all AI features share a common inference infrastructure.
 
 **Acceptance Criteria:**
-- [ ] `UniBank.Core.Modules.AI` module created with standard module structure
+- [ ] `GoldBank.Core.Modules.AI` module created with standard module structure
 - [ ] `OllamaClient` service that calls Ollama HTTP API (`/api/generate`, `/api/chat`)
 - [ ] Vision endpoint support: send image bytes + prompt, receive structured JSON
 - [ ] Health check endpoint that verifies Ollama connectivity and model availability
@@ -265,7 +265,7 @@ As a customer, I want to ask my banking app questions in natural language, so th
 - [ ] Rate limit: max 20 queries per user per hour
 
 **Technical Notes:**
-- System prompt: "You are UniBank's banking assistant. You help customers with account enquiries, transaction history, and banking guidance. Be concise, professional, and helpful. Only discuss banking topics. Never reveal system internals, API details, or other customers' data."
+- System prompt: "You are GoldBank's banking assistant. You help customers with account enquiries, transaction history, and banking guidance. Be concise, professional, and helpful. Only discuss banking topics. Never reveal system internals, API details, or other customers' data."
 - Use gRPC server streaming for token-by-token delivery
 - Context window: system prompt + account summary + conversation history + user query
 
@@ -427,7 +427,7 @@ As a customer, I want clear, human-readable explanations when a transaction is f
 - [ ] Tone: reassuring, clear, actionable — not alarming
 
 **Technical Notes:**
-- System prompt: "You are a fraud alert communicator for UniBank. Explain why a transaction was flagged in simple, non-technical language. Always provide clear next steps. Be reassuring but take the situation seriously."
+- System prompt: "You are a fraud alert communicator for GoldBank. Explain why a transaction was flagged in simple, non-technical language. Always provide clear next steps. Be reassuring but take the situation seriously."
 - Triggered asynchronously when fraud rule fires — not in the transaction path
 
 **Dependencies:** STORY-093

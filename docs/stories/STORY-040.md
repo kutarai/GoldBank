@@ -24,7 +24,7 @@ So that **transactions can be routed to legacy national switches that use the IS
 
 Most national payment switches in Southern Africa still operate on ISO 8583, the international standard for financial transaction card-originated interchange messaging. This binary protocol has been the backbone of interbank payment routing for decades and remains the primary interface for ATM networks, POS authorization, and real-time interbank transfers across the region.
 
-UniBank's Switching Server is a satellite service in the Modular Monolith architecture. It must communicate with these legacy switches by constructing and parsing ISO 8583 messages with perfect fidelity. The adapter encapsulates all ISO 8583 complexity behind the `ISwitchAdapter` interface, allowing the Message Router (STORY-042) to work with a clean canonical message format while this adapter handles the binary encoding, bitmap management, data element packing, and MAC computation required by the national scheme specification.
+GoldBank's Switching Server is a satellite service in the Modular Monolith architecture. It must communicate with these legacy switches by constructing and parsing ISO 8583 messages with perfect fidelity. The adapter encapsulates all ISO 8583 complexity behind the `ISwitchAdapter` interface, allowing the Message Router (STORY-042) to work with a clean canonical message format while this adapter handles the binary encoding, bitmap management, data element packing, and MAC computation required by the national scheme specification.
 
 The adapter must support the full lifecycle: building outbound authorization requests, parsing inbound responses, handling network management messages (sign-on, echo test, key exchange), and maintaining persistent TCP/IP connections with connection pooling to the switch host.
 
@@ -58,7 +58,7 @@ The adapter must support the full lifecycle: building outbound authorization req
 
 This is a system-to-system adapter. The primary interaction flows are:
 
-**Outbound Flow (UniBank to National Switch):**
+**Outbound Flow (GoldBank to National Switch):**
 1. Message Router calls `ISwitchAdapter.SendAsync(CanonicalMessage)` on the ISO 8583 adapter
 2. Adapter maps canonical message fields to ISO 8583 data elements
 3. Adapter builds the binary message: MTI + primary bitmap + secondary bitmap + packed data elements
@@ -70,7 +70,7 @@ This is a system-to-system adapter. The primary interaction flows are:
 9. Response is received, parsed, MAC verified, and returned as a `CanonicalMessage`
 10. Full message (request and response) logged to `switch_messages` table
 
-**Inbound Flow (National Switch to UniBank):**
+**Inbound Flow (National Switch to GoldBank):**
 1. TCP listener receives a message on the listening port
 2. Adapter reads the 2-byte length header, then reads the full message body
 3. Adapter parses the binary message: extract MTI, decode bitmaps, unpack data elements
@@ -106,19 +106,19 @@ This is a system-to-system adapter. The primary interaction flows are:
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `UniBank.Switching` | `src/Satellites/UniBank.Switching/` | Satellite service project |
-| `ISO8583Adapter.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO8583/` | `ISwitchAdapter` implementation for ISO 8583 |
-| `ISO8583MessageBuilder.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO8583/` | Constructs binary ISO 8583 messages from data elements |
-| `ISO8583MessageParser.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO8583/` | Parses binary ISO 8583 messages into data element collections |
-| `DataElementDefinition.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO8583/` | Metadata for each DE (type, length, encoding) |
-| `BitmapCodec.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO8583/` | Primary/secondary bitmap encode/decode |
-| `FieldPackers/` | `src/Satellites/UniBank.Switching/Adapters/ISO8583/FieldPackers/` | Packers for each field type (numeric, alpha, binary, LLVAR, LLLVAR) |
-| `TcpConnectionPool.cs` | `src/Satellites/UniBank.Switching/Network/` | Managed TCP socket pool with health checks |
-| `TcpConnectionManager.cs` | `src/Satellites/UniBank.Switching/Network/` | Connection lifecycle, reconnection, keep-alive |
-| `MessageCorrelator.cs` | `src/Satellites/UniBank.Switching/Correlation/` | Async request/response correlation by STAN+RRN |
-| `SwitchMessageLogger.cs` | `src/Satellites/UniBank.Switching/Logging/` | Persists raw and parsed messages to database |
-| `ISwitchAdapter.cs` | `src/Satellites/UniBank.Switching/Adapters/` | Interface: `SendAsync`, `ParseInbound`, `FormatOutbound` |
-| `switching_service.proto` | `src/Shared/UniBank.Protos/` | gRPC proto for internal Switching Service API |
+| `GoldBank.Switching` | `src/Satellites/GoldBank.Switching/` | Satellite service project |
+| `ISO8583Adapter.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO8583/` | `ISwitchAdapter` implementation for ISO 8583 |
+| `ISO8583MessageBuilder.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO8583/` | Constructs binary ISO 8583 messages from data elements |
+| `ISO8583MessageParser.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO8583/` | Parses binary ISO 8583 messages into data element collections |
+| `DataElementDefinition.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO8583/` | Metadata for each DE (type, length, encoding) |
+| `BitmapCodec.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO8583/` | Primary/secondary bitmap encode/decode |
+| `FieldPackers/` | `src/Satellites/GoldBank.Switching/Adapters/ISO8583/FieldPackers/` | Packers for each field type (numeric, alpha, binary, LLVAR, LLLVAR) |
+| `TcpConnectionPool.cs` | `src/Satellites/GoldBank.Switching/Network/` | Managed TCP socket pool with health checks |
+| `TcpConnectionManager.cs` | `src/Satellites/GoldBank.Switching/Network/` | Connection lifecycle, reconnection, keep-alive |
+| `MessageCorrelator.cs` | `src/Satellites/GoldBank.Switching/Correlation/` | Async request/response correlation by STAN+RRN |
+| `SwitchMessageLogger.cs` | `src/Satellites/GoldBank.Switching/Logging/` | Persists raw and parsed messages to database |
+| `ISwitchAdapter.cs` | `src/Satellites/GoldBank.Switching/Adapters/` | Interface: `SendAsync`, `ParseInbound`, `FormatOutbound` |
+| `switching_service.proto` | `src/Shared/GoldBank.Protos/` | gRPC proto for internal Switching Service API |
 
 ### API / gRPC Endpoints
 
@@ -248,7 +248,7 @@ CREATE TABLE switching.switch_connections (
 - **PIN Block (DE-52):** PIN blocks are encrypted using ISO 9564 Format 0 within the HSM boundary. The adapter never handles cleartext PINs — it receives pre-encrypted PIN blocks from the Core Banking module and passes them through. For inbound messages, encrypted PIN blocks are forwarded to Core Banking for HSM decryption.
 - **PAN Masking in Logs:** When logging parsed messages to `switch_messages.parsed_json`, the PAN (DE-2) must be masked: show first 6 and last 4 digits only (e.g., `411111******1234`). Raw hex is logged in full but access to the `switch_messages` table must be restricted to operations staff.
 - **TLS for TCP Connections:** If the national switch supports TLS-wrapped TCP, configure `SslStream` over the TCP socket. Certificate pinning should be used for the switch's server certificate.
-- **Connection Authentication:** Sign-on messages (MTI 0800, processing code 001) authenticate the UniBank node to the switch. Sign-on credentials (institution code, terminal ID) are stored in encrypted configuration, not in source code.
+- **Connection Authentication:** Sign-on messages (MTI 0800, processing code 001) authenticate the GoldBank node to the switch. Sign-on credentials (institution code, terminal ID) are stored in encrypted configuration, not in source code.
 
 ### Edge Cases
 

@@ -14,14 +14,14 @@
 
 As an unbanked consumer,
 I want to register using my phone number with OTP verification,
-So that I can create a UniBank account.
+So that I can create a GoldBank account.
 
 ---
 
 ## Description
 
 ### Background
-UniBank targets the unbanked population in Southern Africa where mobile phone penetration far exceeds bank account ownership. The registration flow is deliberately simple: a user provides their phone number, receives an OTP via SMS, verifies it, and an account is created in `pending_kyc` status. This low-friction onboarding is critical for adoption -- every additional step risks losing potential users.
+GoldBank targets the unbanked population in Southern Africa where mobile phone penetration far exceeds bank account ownership. The registration flow is deliberately simple: a user provides their phone number, receives an OTP via SMS, verifies it, and an account is created in `pending_kyc` status. This low-friction onboarding is critical for adoption -- every additional step risks losing potential users.
 
 The registration flow is the first feature-level story and represents the first end-to-end gRPC request flowing through the Gateway, interceptors, Core Banking service, and database. It also triggers the first domain event (`UserRegistered`, `AccountCreated`) through the Wolverine messaging system.
 
@@ -53,7 +53,7 @@ Phone numbers must support the E.164 international format with primary support f
 ### User Flow
 
 **Registration Flow:**
-1. User opens UniBank mobile app for the first time
+1. User opens GoldBank mobile app for the first time
 2. User enters their phone number (e.g., `+27821234567`)
 3. App calls `AccountService.Register` via the Gateway
 4. Server validates phone format and checks for duplicates
@@ -104,13 +104,13 @@ Phone numbers must support the E.164 international format with primary support f
 ### Components
 
 **Affected Projects:**
-- `UniBank.Core/Modules/Accounts/` -- Domain entities, application services, gRPC service implementation
-- `UniBank.SharedKernel/Events/` -- `UserRegistered`, `AccountCreated` events (from STORY-007)
-- `UniBank.Gateway` -- Routes `AccountService` calls (from STORY-005)
+- `GoldBank.Core/Modules/Accounts/` -- Domain entities, application services, gRPC service implementation
+- `GoldBank.SharedKernel/Events/` -- `UserRegistered`, `AccountCreated` events (from STORY-007)
+- `GoldBank.Gateway` -- Routes `AccountService` calls (from STORY-005)
 
 **File Structure:**
 ```
-UniBank.Core/Modules/Accounts/
+GoldBank.Core/Modules/Accounts/
   Domain/
     Entities/
       Account.cs
@@ -401,7 +401,7 @@ public class RegisterHandler
         // Send SMS
         await _smsGateway.SendOtpAsync(
             phoneResult.Value.Value,
-            $"Your UniBank verification code is: {otpResult.Value}. Valid for 5 minutes.");
+            $"Your GoldBank verification code is: {otpResult.Value}. Valid for 5 minutes.");
 
         _logger.LogInformation(
             "OTP sent for registration {RegistrationId} to phone {Phone}",

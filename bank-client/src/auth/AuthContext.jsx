@@ -3,7 +3,7 @@ import { SEED_ACCOUNTS } from './roles';
 
 const AuthContext = createContext(null);
 
-const STORAGE_KEY = 'unibank_admin_user';
+const STORAGE_KEY = 'goldbank_admin_user';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {

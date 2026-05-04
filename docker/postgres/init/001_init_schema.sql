@@ -1,5 +1,5 @@
 -- ============================================================================
--- UniBank Multi-Tenant Database Schema
+-- GoldBank Multi-Tenant Database Schema
 -- 001_init_schema.sql - Public schema tables
 -- ============================================================================
 

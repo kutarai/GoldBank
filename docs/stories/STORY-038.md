@@ -21,7 +21,7 @@ So that I can pay utilities digitally.
 ## Description
 
 ### Background
-Bill payments represent one of the most compelling reasons for unbanked users in Southern Africa to adopt digital financial services. Standing in long queues at utility offices, traveling to payment centers, or relying on informal agents to pay bills costs time and money. UniBank's digital bill payment capability allows users to pay electricity, water, telecom, internet, insurance, and government fees directly from their mobile phone.
+Bill payments represent one of the most compelling reasons for unbanked users in Southern Africa to adopt digital financial services. Standing in long queues at utility offices, traveling to payment centers, or relying on informal agents to pay bills costs time and money. GoldBank's digital bill payment capability allows users to pay electricity, water, telecom, internet, insurance, and government fees directly from their mobile phone.
 
 The bill payment flow involves provider selection (from the registry in STORY-037), account/reference number entry with validation, amount entry within provider limits, PIN authorization for amounts above a configurable threshold, and execution via a Wolverine saga that debits the user's account and routes the payment to the provider's API. Provider integration uses a configurable API adapter pattern, allowing each provider to have a custom integration while sharing common validation and orchestration logic.
 
@@ -60,7 +60,7 @@ Functional Requirements: **FR-025** (Bill Payment), **FR-026** (Provider Integra
 8. If amount exceeds PIN threshold (tenant-configurable, e.g., $50), user must enter PIN
 9. User confirms payment
 10. System executes Wolverine saga: DebitAccount -> RouteToProvider -> ConfirmPayment -> PublishTransactionCompleted
-11. On success, user sees receipt with UniBank reference number and provider reference number
+11. On success, user sees receipt with GoldBank reference number and provider reference number
 12. Transaction appears in user's payment history
 
 ---
@@ -94,7 +94,7 @@ Functional Requirements: **FR-025** (Bill Payment), **FR-026** (Provider Integra
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/BillPay/`
+**Module:** `GoldBank.Core/Modules/BillPay/`
 
 ```
 BillPay/

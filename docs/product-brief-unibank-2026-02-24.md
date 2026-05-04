@@ -1,4 +1,4 @@
-# Product Brief: UniBank
+# Product Brief: GoldBank
 
 **Date:** 2026-02-24
 **Author:** wmapundu
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-UniBank is a white-label banking platform targeting the Southern African region, comprising a mobile wallet app, account management backend, national network switching server, and EFT POS terminal manager with HSM. Its key differentiator is NFC-based contactless payments that turn capable smartphones into virtual payment cards, enabling card-present transactions without physical cards. The platform serves the unbanked mass market with zero-cost accounts while creating a self-sustaining merchant agent ecosystem.
+GoldBank is a white-label banking platform targeting the Southern African region, comprising a mobile wallet app, account management backend, national network switching server, and EFT POS terminal manager with HSM. Its key differentiator is NFC-based contactless payments that turn capable smartphones into virtual payment cards, enabling card-present transactions without physical cards. The platform serves the unbanked mass market with zero-cost accounts while creating a self-sustaining merchant agent ecosystem.
 
 ---
 

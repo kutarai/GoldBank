@@ -21,13 +21,13 @@ So that team members can manage the platform with appropriate permissions
 ## Description
 
 ### Background
-UniBank requires a centralised back-office portal that allows internal staff and tenant administrators to manage the platform. The portal must enforce strict role-based access control (RBAC) to ensure that each team member can only access functionality appropriate to their role. This is the foundational story for the entire Admin Portal epic -- every subsequent admin story depends on the authentication, authorisation, layout, and gRPC connectivity established here.
+GoldBank requires a centralised back-office portal that allows internal staff and tenant administrators to manage the platform. The portal must enforce strict role-based access control (RBAC) to ensure that each team member can only access functionality appropriate to their role. This is the foundational story for the entire Admin Portal epic -- every subsequent admin story depends on the authentication, authorisation, layout, and gRPC connectivity established here.
 
 The portal is implemented as a Blazor Server application. Blazor Server is the correct choice because the admin portal is an internal tool where latency to the server is low, and it allows us to keep sensitive logic server-side while still delivering a rich interactive UI. Communication with the Core Banking engine is via gRPC-Web (required for browser compatibility since browsers cannot use HTTP/2 trailers directly).
 
 ### Scope
 **In scope:**
-- Blazor Server project scaffolding (`UniBank.Admin`)
+- Blazor Server project scaffolding (`GoldBank.Admin`)
 - JWT-based authentication with cookie-based session management
 - Admin user table and seed data for initial super_admin account
 - Role definitions: `super_admin`, `operations`, `support`, `finance`, `compliance`, `tenant_admin`
@@ -46,7 +46,7 @@ The portal is implemented as a Blazor Server application. Blazor Server is the c
 - Admin API for external consumption
 
 ### User Flow
-1. Admin navigates to the admin portal URL (e.g., `https://admin.unibank.co.za`)
+1. Admin navigates to the admin portal URL (e.g., `https://admin.goldbank.co.za`)
 2. If not authenticated, the login page is presented
 3. Admin enters username and password
 4. System validates credentials against `admin_users` table (bcrypt password hash)
@@ -61,7 +61,7 @@ The portal is implemented as a Blazor Server application. Blazor Server is the c
 
 ## Acceptance Criteria
 
-- [ ] Blazor Server application is created as `UniBank.Admin` project within the solution
+- [ ] Blazor Server application is created as `GoldBank.Admin` project within the solution
 - [ ] Admin users can log in with username/email and password
 - [ ] Authentication uses JWT tokens stored in HTTP-only secure cookies
 - [ ] Six roles are supported: `super_admin`, `operations`, `support`, `finance`, `compliance`, `tenant_admin`
@@ -81,7 +81,7 @@ The portal is implemented as a Blazor Server application. Blazor Server is the c
 ## Technical Notes
 
 ### Components
-- **Project:** `src/UniBank.Admin/` -- Blazor Server application
+- **Project:** `src/GoldBank.Admin/` -- Blazor Server application
 - **Pages:**
   - `Pages/Login.razor` -- authentication page
   - `Pages/Dashboard.razor` -- landing page after login
@@ -187,7 +187,7 @@ CREATE INDEX idx_admin_audit_log_created ON admin.admin_audit_log(created_at);
 
 -- Seed initial super_admin (password: to be changed on first login)
 INSERT INTO admin.admin_users (username, email, password_hash, role, status)
-VALUES ('superadmin', 'admin@unibank.co.za',
+VALUES ('superadmin', 'admin@goldbank.co.za',
         '$2a$12$...', -- bcrypt hash of initial password
         'super_admin', 'active');
 ```

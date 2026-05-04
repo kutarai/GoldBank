@@ -9,7 +9,7 @@
 
 ## Business Context
 
-UniBank currently has a stub Loan Review screen in bank-client but no actual loan product. Loans are the bank's highest-margin asset class. This epic delivers end-to-end loan origination (application → scoring → approval → disbursement) and servicing (repayment schedule, arrears, write-off) for unsecured personal loans and salary-backed loans, with a designed extension path for SME and asset-backed lending.
+GoldBank currently has a stub Loan Review screen in bank-client but no actual loan product. Loans are the bank's highest-margin asset class. This epic delivers end-to-end loan origination (application → scoring → approval → disbursement) and servicing (repayment schedule, arrears, write-off) for unsecured personal loans and salary-backed loans, with a designed extension path for SME and asset-backed lending.
 
 ## User Personas
 

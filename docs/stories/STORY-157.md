@@ -38,7 +38,7 @@ The teller drawer is the heart of the cash workflow. Every deposit increases it;
 ### Header widget
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  UniBank Teller   |  Drawer: Open  USD $5,420 · ZWG ₣12,300 │
+│  GoldBank Teller   |  Drawer: Open  USD $5,420 · ZWG ₣12,300 │
 │  Mtsunga (TLR-042) · Kuwadzana Branch                      │
 └────────────────────────────────────────────────────────────┘
 ```

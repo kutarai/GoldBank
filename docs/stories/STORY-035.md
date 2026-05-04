@@ -23,7 +23,7 @@ So that I have funds for cash-in/cash-out transactions.
 ### Background
 In the agent banking model, "float" represents the pool of digital funds an agent has available for cash-in transactions. When a customer deposits cash (cash-in), the agent's float decreases (they give digital funds to the customer) and their physical cash increases. When a customer withdraws cash (cash-out), the reverse happens: the agent's float increases (they receive digital funds) and their physical cash decreases.
 
-Maintaining adequate float is critical for agent operations. An agent who runs out of float cannot process cash-in transactions, which directly impacts customer satisfaction and the agent's commission income. UniBank must provide agents with real-time float visibility, configurable low-float alerts, and convenient top-up mechanisms.
+Maintaining adequate float is critical for agent operations. An agent who runs out of float cannot process cash-in transactions, which directly impacts customer satisfaction and the agent's commission income. GoldBank must provide agents with real-time float visibility, configurable low-float alerts, and convenient top-up mechanisms.
 
 The float account is a special account type (`agent_float`) linked to the merchant entity. It is separate from the agent's personal account and their commission balance, providing clear separation of concerns for accounting and settlement purposes.
 
@@ -45,7 +45,7 @@ Functional Requirement: **FR-022**.
 
 **Out of scope:**
 - Agent registration and onboarding (STORY-050)
-- Float funding from UniBank treasury (operational process)
+- Float funding from GoldBank treasury (operational process)
 - Float lending/credit facility for agents
 - Automatic float rebalancing between agents
 - Multi-currency float management (single currency per tenant for MVP)
@@ -66,9 +66,9 @@ Functional Requirement: **FR-022**.
 **Float Top-Up via Bank Transfer:**
 1. Agent selects "Top Up Float" in the agent app
 2. Agent selects "Bank Transfer" as top-up method
-3. System displays UniBank's settlement bank account details and a unique reference code
+3. System displays GoldBank's settlement bank account details and a unique reference code
 4. Agent initiates a bank transfer from their personal bank account using the reference code
-5. UniBank reconciliation process matches the incoming bank transfer and credits the float (manual or automated)
+5. GoldBank reconciliation process matches the incoming bank transfer and credits the float (manual or automated)
 
 **Float Top-Up via Super-Agent:**
 1. Agent selects "Top Up Float" and chooses "From Super-Agent"
@@ -103,7 +103,7 @@ Functional Requirement: **FR-022**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Agents/`
+**Module:** `GoldBank.Core/Modules/Agents/`
 
 ```
 Agents/

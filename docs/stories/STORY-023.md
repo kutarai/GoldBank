@@ -22,9 +22,9 @@ So that **I can make contactless payments without a physical card**
 
 ### Background
 
-NFC contactless payments are UniBank's core differentiator for the unbanked population in Southern Africa. Many potential users do not have access to traditional banking cards, but a growing percentage own NFC-capable Android smartphones. By turning the phone into a contactless payment instrument via Host Card Emulation (HCE), UniBank eliminates the need for physical card issuance — a significant cost and logistics barrier for serving the unbanked.
+NFC contactless payments are GoldBank's core differentiator for the unbanked population in Southern Africa. Many potential users do not have access to traditional banking cards, but a growing percentage own NFC-capable Android smartphones. By turning the phone into a contactless payment instrument via Host Card Emulation (HCE), GoldBank eliminates the need for physical card issuance — a significant cost and logistics barrier for serving the unbanked.
 
-The NFC payment flow uses Android's `HostApduService` to emulate a contactless EMV card. When the user taps their phone on any standard contactless POS terminal, the terminal and phone exchange Application Protocol Data Units (APDUs) following the EMV contactless kernel specification. The phone presents the tokenized PAN (from STORY-022) rather than the real account number, signs the transaction data with a session key, and the payment flows through the acquirer/switch to UniBank's core for authorization.
+The NFC payment flow uses Android's `HostApduService` to emulate a contactless EMV card. When the user taps their phone on any standard contactless POS terminal, the terminal and phone exchange Application Protocol Data Units (APDUs) following the EMV contactless kernel specification. The phone presents the tokenized PAN (from STORY-022) rather than the real account number, signs the transaction data with a session key, and the payment flows through the acquirer/switch to GoldBank's core for authorization.
 
 The end-to-end target is under 2 seconds from tap to authorization response — this requires an optimized hot path with minimal latency at every stage.
 
@@ -57,12 +57,12 @@ The end-to-end target is under 2 seconds from tap to authorization response — 
 ### User Flow
 
 1. **Tap Initiation:** Consumer holds their phone near the POS terminal's contactless reader. The NFC field activates the phone's HCE service.
-2. **Application Selection:** POS sends a `SELECT` APDU with UniBank's registered AID. The HCE service responds with the File Control Information (FCI) confirming the payment application.
+2. **Application Selection:** POS sends a `SELECT` APDU with GoldBank's registered AID. The HCE service responds with the File Control Information (FCI) confirming the payment application.
 3. **Get Processing Options:** POS sends `GET PROCESSING OPTIONS` (GPO) with the terminal's Processing Data Object List (PDOL) data (amount, currency, terminal country, transaction type). HCE responds with the Application Interchange Profile (AIP) and Application File Locator (AFL).
 4. **Read Records:** POS reads payment records — HCE returns the token PAN, expiry date, and card risk management data from the AFL entries.
 5. **Transaction Signing:** POS sends `GENERATE APPLICATION CRYPTOGRAM` (GENERATE AC) with transaction data. The HCE service derives a session key from the stored seed (per STORY-022), computes an Application Cryptogram (AC) over the transaction data, and returns the cryptogram along with the Application Transaction Counter (ATC).
 6. **Terminal to Switch:** The POS terminal packages the EMV data into an ISO 8583 authorization message and sends it to the acquirer/switch.
-7. **Switch to UniBank:** The switch routes the authorization request to UniBank's `PaymentService.ProcessNFCPayment` endpoint.
+7. **Switch to GoldBank:** The switch routes the authorization request to GoldBank's `PaymentService.ProcessNFCPayment` endpoint.
 8. **Server Authorization:**
    a. Validate the token PAN status (active, not revoked/expired)
    b. De-tokenize: look up real PAN from token PAN
@@ -78,7 +78,7 @@ The end-to-end target is under 2 seconds from tap to authorization response — 
 ## Acceptance Criteria
 
 - [ ] Phone emulates a contactless payment card via Android HCE `HostApduService` when tapped on a standard EMV contactless POS terminal
-- [ ] Payment application is registered with UniBank's AID and is selectable by the terminal
+- [ ] Payment application is registered with GoldBank's AID and is selectable by the terminal
 - [ ] Token PAN (not real PAN) is presented in APDU responses to the terminal
 - [ ] Application Cryptogram is correctly computed using a session key derived from the provisioned seed
 - [ ] Transaction is initiated on tap and the complete end-to-end flow (tap to authorization response at POS) completes in under 2 seconds
@@ -98,15 +98,15 @@ The end-to-end target is under 2 seconds from tap to authorization response — 
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `UniBankHceService.kt` | `mobile/android/app/.../hce/` | Android HostApduService implementation |
+| `GoldBankHceService.kt` | `mobile/android/app/.../hce/` | Android HostApduService implementation |
 | `EmvApduProcessor.kt` | `mobile/shared/.../payment/nfc/` | APDU command parsing and response building (KMP) |
 | `CryptogramGenerator.kt` | `mobile/shared/.../payment/nfc/` | Session key derivation and AC computation (KMP) |
 | `NfcPaymentController.kt` | `mobile/shared/.../payment/` | Payment flow orchestrator (KMP) |
-| `PaymentGrpcService.cs` | `src/Modules/UniBank.Payment/Grpc/` | ProcessNFCPayment gRPC endpoint |
-| `NfcPaymentHandler.cs` | `src/Modules/UniBank.Payment/Handlers/` | Server-side NFC payment authorization logic |
-| `NfcPaymentSaga.cs` | `src/Modules/UniBank.Payment/Sagas/` | Wolverine saga: debit -> credit -> fee |
-| `TokenValidator.cs` | `src/Modules/UniBank.Payment/Services/` | Token status check and de-tokenization |
-| `CryptogramVerifier.cs` | `src/Modules/UniBank.Payment/Services/` | AC verification via HSM |
+| `PaymentGrpcService.cs` | `src/Modules/GoldBank.Payment/Grpc/` | ProcessNFCPayment gRPC endpoint |
+| `NfcPaymentHandler.cs` | `src/Modules/GoldBank.Payment/Handlers/` | Server-side NFC payment authorization logic |
+| `NfcPaymentSaga.cs` | `src/Modules/GoldBank.Payment/Sagas/` | Wolverine saga: debit -> credit -> fee |
+| `TokenValidator.cs` | `src/Modules/GoldBank.Payment/Services/` | Token status check and de-tokenization |
+| `CryptogramVerifier.cs` | `src/Modules/GoldBank.Payment/Services/` | AC verification via HSM |
 
 ### API / gRPC Endpoints
 
@@ -136,7 +136,7 @@ message ProcessNFCPaymentResponse {
   string response_code = 2;       // "00" = approved, "51" = insufficient funds, etc.
   string response_message = 3;
   bytes authorization_response_cryptogram = 4;  // ARPC for terminal
-  string transaction_id = 5;      // UniBank transaction reference
+  string transaction_id = 5;      // GoldBank transaction reference
   int64 available_balance_cents = 6;  // Post-transaction balance
   bool success = 7;
 }
@@ -161,7 +161,7 @@ Phone -> Terminal: Cryptogram (80 [Lc] [9F27 CID] [9F36 ATC] [9F26 AC] [9F10 IAD
 **AID Registration** (AndroidManifest.xml):
 ```xml
 <service
-    android:name=".hce.UniBankHceService"
+    android:name=".hce.GoldBankHceService"
     android:exported="true"
     android:permission="android.permission.BIND_NFC_SERVICE">
     <intent-filter>
@@ -176,13 +176,13 @@ Phone -> Terminal: Cryptogram (80 [Lc] [9F27 CID] [9F36 ATC] [9F26 AC] [9F10 IAD
 **AID resource** (`hce_payment_aid.xml`):
 ```xml
 <host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/unibank_hce_description"
-    android:apduServiceBanner="@drawable/unibank_card_banner"
+    android:description="@string/goldbank_hce_description"
+    android:apduServiceBanner="@drawable/goldbank_card_banner"
     android:requireDeviceUnlock="false">
     <aid-group
         android:category="payment"
-        android:description="@string/unibank_payment_aid">
-        <aid-filter android:name="A000000999010101" /> <!-- UniBank AID -->
+        android:description="@string/goldbank_payment_aid">
+        <aid-filter android:name="A000000999010101" /> <!-- GoldBank AID -->
     </aid-group>
 </host-apdu-service>
 ```
@@ -252,13 +252,13 @@ CREATE INDEX idx_nfc_txn_status ON nfc_transactions (status) WHERE status = 'pen
 - **HCE Response Time:** APDU processing must complete in <500ms total across all commands. Pre-compute responses where possible (token PAN, expiry are static per session). Only GENERATE AC requires computation.
 - **Session Key Derivation:** Pre-derive session key on app launch or on NFC field detection, not during APDU processing.
 - **Server Hot Path:** ProcessNFCPayment skips non-essential middleware. Token validation uses Redis cache (revocation blocklist). Cryptogram verification is a single HSM call. Balance check and debit are a single DB round-trip with SELECT FOR UPDATE.
-- **Connection Pooling:** Persistent gRPC channels between switch and UniBank core. No TLS handshake per transaction.
+- **Connection Pooling:** Persistent gRPC channels between switch and GoldBank core. No TLS handshake per transaction.
 - **Database:** Use prepared statements and connection pooling. The debit-credit saga uses a single database transaction where possible (same tenant schema).
 
 ### Edge Cases
 
 - **NFC Disabled on Phone:** The HCE service is not registered if NFC is disabled. The app shows a prompt to enable NFC in settings.
-- **Multiple Payment Apps:** If the user has another payment app (e.g., Google Pay), Android's NFC payment default selection applies. UniBank must be set as the default payment app, or the user chooses at tap time.
+- **Multiple Payment Apps:** If the user has another payment app (e.g., Google Pay), Android's NFC payment default selection applies. GoldBank must be set as the default payment app, or the user chooses at tap time.
 - **Transaction Timeout:** If the server does not respond within 1.5 seconds, the switch returns a timeout to the terminal. The terminal shows "declined." The server must handle the in-flight transaction correctly (either complete and reconcile later, or timeout and reverse).
 - **Partial Saga Failure:** If debit succeeds but credit fails, the compensating action reverses the debit. The consumer sees a declined transaction. An alert fires for the operations team.
 - **Duplicate Transaction:** Idempotency key (based on token_pan + ATC + merchant_id + amount) prevents double-charging if the switch retries.

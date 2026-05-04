@@ -24,7 +24,7 @@ So that **transactions can be routed to modern national switches that use the IS
 
 While ISO 8583 dominates legacy infrastructure, several national payment switches in the Southern African region are migrating to ISO 20022, the modern XML-based financial messaging standard. ISO 20022 offers richer data, better interoperability, and is the direction all major payment networks are heading (SWIFT has mandated full migration by 2025). Some national instant payment schemes already operate exclusively on ISO 20022.
 
-UniBank must support both protocols simultaneously because different switches and different transaction types may use different standards. The ISO 20022 adapter encapsulates all XML message construction, parsing, namespace management, and schema validation behind the same `ISwitchAdapter` interface used by the ISO 8583 adapter. This ensures the Message Router (STORY-042) can route to either protocol transparently.
+GoldBank must support both protocols simultaneously because different switches and different transaction types may use different standards. The ISO 20022 adapter encapsulates all XML message construction, parsing, namespace management, and schema validation behind the same `ISwitchAdapter` interface used by the ISO 8583 adapter. This ensures the Message Router (STORY-042) can route to either protocol transparently.
 
 The connectivity model for ISO 20022 switches is typically REST API or message queue (MQ) based, rather than raw TCP sockets. The adapter must support both connectivity modes, configurable per switch endpoint.
 
@@ -35,7 +35,7 @@ The connectivity model for ISO 20022 switches is typically REST API or message q
 **In scope:**
 - ISO 20022 XML message builder for supported message types
 - ISO 20022 XML message parser
-- Mapping service between UniBank canonical format and ISO 20022 message structures
+- Mapping service between GoldBank canonical format and ISO 20022 message structures
 - Message types: pacs.008 (FI to FI Customer Credit Transfer), pacs.002 (Payment Status Report), camt.053 (Bank to Customer Statement)
 - REST API client connectivity for API-based switches
 - MQ client connectivity for message queue-based switches (configurable per switch)
@@ -56,7 +56,7 @@ The connectivity model for ISO 20022 switches is typically REST API or message q
 
 This is a system-to-system adapter. The primary interaction flows are:
 
-**Outbound Flow (UniBank to National Switch via API):**
+**Outbound Flow (GoldBank to National Switch via API):**
 1. Message Router calls `ISwitchAdapter.SendAsync(CanonicalMessage)` on the ISO 20022 adapter
 2. Adapter maps canonical message fields to ISO 20022 XML elements using `CanonicalToISO20022Mapper`
 3. Adapter constructs the full XML document with correct namespaces, headers, and message body
@@ -67,14 +67,14 @@ This is a system-to-system adapter. The primary interaction flows are:
 8. Response is parsed back to canonical format using `ISO20022ToCanonicalMapper`
 9. Full message (request and response) logged to `switch_messages` table
 
-**Outbound Flow (UniBank to National Switch via MQ):**
+**Outbound Flow (GoldBank to National Switch via MQ):**
 1. Steps 1-4 same as API flow
 2. Adapter publishes the XML message to the outbound MQ queue with a unique correlation ID
 3. Adapter subscribes to the reply queue, filtering by correlation ID
 4. Await response with configurable timeout (default 30 seconds)
 5. Steps 8-9 same as API flow
 
-**Inbound Flow (National Switch to UniBank):**
+**Inbound Flow (National Switch to GoldBank):**
 1. API endpoint receives an HTTP POST with ISO 20022 XML, or MQ consumer receives a message
 2. Adapter validates the XML against the XSD schema
 3. Adapter parses the XML and maps to canonical format using `ISO20022ToCanonicalMapper`
@@ -108,23 +108,23 @@ This is a system-to-system adapter. The primary interaction flows are:
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `UniBank.Switching` | `src/Satellites/UniBank.Switching/` | Satellite service project |
-| `ISO20022Adapter.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO20022/` | `ISwitchAdapter` implementation for ISO 20022 |
-| `ISO20022MessageBuilder.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO20022/` | Constructs XML documents from canonical messages |
-| `ISO20022MessageParser.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO20022/` | Parses XML documents into structured data |
-| `CanonicalToISO20022Mapper.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO20022/Mapping/` | Maps canonical format to ISO 20022 elements |
-| `ISO20022ToCanonicalMapper.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO20022/Mapping/` | Maps ISO 20022 elements to canonical format |
-| `XsdValidator.cs` | `src/Satellites/UniBank.Switching/Adapters/ISO20022/Validation/` | Validates XML against ISO 20022 XSD schemas |
-| `RestSwitchClient.cs` | `src/Satellites/UniBank.Switching/Network/` | HTTP client for REST API-based switches |
-| `MqSwitchClient.cs` | `src/Satellites/UniBank.Switching/Network/` | MQ client for message queue-based switches |
-| `SwitchMessageLogger.cs` | `src/Satellites/UniBank.Switching/Logging/` | Shared logger (same as ISO 8583) |
-| `ISwitchAdapter.cs` | `src/Satellites/UniBank.Switching/Adapters/` | Shared interface |
+| `GoldBank.Switching` | `src/Satellites/GoldBank.Switching/` | Satellite service project |
+| `ISO20022Adapter.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO20022/` | `ISwitchAdapter` implementation for ISO 20022 |
+| `ISO20022MessageBuilder.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO20022/` | Constructs XML documents from canonical messages |
+| `ISO20022MessageParser.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO20022/` | Parses XML documents into structured data |
+| `CanonicalToISO20022Mapper.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO20022/Mapping/` | Maps canonical format to ISO 20022 elements |
+| `ISO20022ToCanonicalMapper.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO20022/Mapping/` | Maps ISO 20022 elements to canonical format |
+| `XsdValidator.cs` | `src/Satellites/GoldBank.Switching/Adapters/ISO20022/Validation/` | Validates XML against ISO 20022 XSD schemas |
+| `RestSwitchClient.cs` | `src/Satellites/GoldBank.Switching/Network/` | HTTP client for REST API-based switches |
+| `MqSwitchClient.cs` | `src/Satellites/GoldBank.Switching/Network/` | MQ client for message queue-based switches |
+| `SwitchMessageLogger.cs` | `src/Satellites/GoldBank.Switching/Logging/` | Shared logger (same as ISO 8583) |
+| `ISwitchAdapter.cs` | `src/Satellites/GoldBank.Switching/Adapters/` | Shared interface |
 
 ### API / gRPC Endpoints
 
 The ISO 20022 adapter implements the same `ISwitchAdapter` interface as the ISO 8583 adapter (see STORY-040).
 
-**Inbound Webhook Endpoint** (for switches that push messages to UniBank):
+**Inbound Webhook Endpoint** (for switches that push messages to GoldBank):
 
 ```
 POST /api/v1/switch/iso20022/inbound

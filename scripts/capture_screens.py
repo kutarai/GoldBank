@@ -43,8 +43,8 @@ def inject_session(page, token, user):
     """Set the SPA's sessionStorage so it boots authenticated."""
     page.add_init_script(
         f"""
-        sessionStorage.setItem('unibank_teller_token', {json.dumps(token)});
-        sessionStorage.setItem('unibank_teller_user',  {json.dumps(json.dumps(user))});
+        sessionStorage.setItem('goldbank_teller_token', {json.dumps(token)});
+        sessionStorage.setItem('goldbank_teller_user',  {json.dumps(json.dumps(user))});
         """
     )
 
@@ -204,8 +204,8 @@ def main():
         page2 = ctx2.new_page()
         page2.add_init_script(
             f"""
-            sessionStorage.setItem('unibank_teller_token', {json.dumps(branch_token)});
-            sessionStorage.setItem('unibank_teller_user',  {json.dumps(json.dumps(branch_user))});
+            sessionStorage.setItem('goldbank_teller_token', {json.dumps(branch_token)});
+            sessionStorage.setItem('goldbank_teller_user',  {json.dumps(json.dumps(branch_user))});
             """
         )
 

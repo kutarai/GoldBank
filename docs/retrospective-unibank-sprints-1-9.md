@@ -1,4 +1,4 @@
-# Retrospective: UniBank Sprints 1-9
+# Retrospective: GoldBank Sprints 1-9
 
 **Date:** 2026-03-24
 **Facilitator:** SM (Scrum Master)
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-The team delivered **all 83 stories (396 points)** across **9 three-week sprints**, completing the original UniBank scope on schedule by end of August 2026. The system went from zero to a production-ready multi-tenant banking platform with mobile payments, NFC, QR, P2P transfers, agent network, payment switch integration, admin portal, and issuer-side card processing.
+The team delivered **all 83 stories (396 points)** across **9 three-week sprints**, completing the original GoldBank scope on schedule by end of August 2026. The system went from zero to a production-ready multi-tenant banking platform with mobile payments, NFC, QR, P2P transfers, agent network, payment switch integration, admin portal, and issuer-side card processing.
 
 Post-plan development has continued with 4 new epics (EPIC-016 through EPIC-019), indicating the platform is now in a growth/enhancement phase.
 

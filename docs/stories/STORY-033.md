@@ -21,7 +21,7 @@ So that I can access physical cash when needed.
 ## Description
 
 ### Background
-While the goal of UniBank is to promote digital transactions, cash-out capability is essential for user adoption in Southern Africa. Users need confidence that they can convert their digital balance back to physical cash at any time. Agent cash-out is the reverse of cash-in: the customer's digital account is debited, and the agent hands over physical cash. The agent's float balance increases (they received digital funds) while their physical cash decreases.
+While the goal of GoldBank is to promote digital transactions, cash-out capability is essential for user adoption in Southern Africa. Users need confidence that they can convert their digital balance back to physical cash at any time. Agent cash-out is the reverse of cash-in: the customer's digital account is debited, and the agent hands over physical cash. The agent's float balance increases (they received digital funds) while their physical cash decreases.
 
 Cash-out is the highest-risk agent transaction from a fraud perspective. Unlike cash-in (where the customer confirms receiving digital funds), cash-out involves the agent disbursing physical cash that cannot be recalled. Therefore, this flow requires PIN authorization from the customer and explicit agent confirmation of cash disbursement.
 
@@ -102,7 +102,7 @@ Functional Requirement: **FR-020**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Agents/`
+**Module:** `GoldBank.Core/Modules/Agents/`
 
 ```
 Agents/

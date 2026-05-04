@@ -22,9 +22,9 @@ So that **money moves from my account to the acquiring bank's suspense account f
 
 ### Background
 
-An off-us purchase occurs when a bank client uses their card at a POS terminal belonging to a merchant at another bank (the acquiring bank). The national switch routes the ISO 20022 transaction to the issuing bank (UniBank). Since the merchant is not a UniBank client, the bank cannot credit the merchant directly. Instead, the transaction amount is moved from the client's account to the acquiring bank's suspense/settlement account held at UniBank.
+An off-us purchase occurs when a bank client uses their card at a POS terminal belonging to a merchant at another bank (the acquiring bank). The national switch routes the ISO 20022 transaction to the issuing bank (GoldBank). Since the merchant is not a GoldBank client, the bank cannot credit the merchant directly. Instead, the transaction amount is moved from the client's account to the acquiring bank's suspense/settlement account held at GoldBank.
 
-The acquiring bank's suspense account is a nostro-style account that UniBank maintains for inter-bank settlement. At end of day, the net position between banks is settled through the national clearing system. The suspense account accumulates all off-us purchase debits throughout the day.
+The acquiring bank's suspense account is a nostro-style account that GoldBank maintains for inter-bank settlement. At end of day, the net position between banks is settled through the national clearing system. The suspense account accumulates all off-us purchase debits throughout the day.
 
 This is the most common card transaction type in practice, as clients frequently transact at merchants belonging to other banks.
 
@@ -51,8 +51,8 @@ This is the most common card transaction type in practice, as clients frequently
 ### User Flow
 
 1. **Card Tap/Insert:** Bank client presents card at off-us merchant's POS terminal
-2. **Switch Receives:** National switch routes ISO 20022 message to UniBank switch
-3. **Switch Translates:** Switch identifies as off-us (merchant does not belong to UniBank)
+2. **Switch Receives:** National switch routes ISO 20022 message to GoldBank switch
+3. **Switch Translates:** Switch identifies as off-us (merchant does not belong to GoldBank)
 4. **gRPC Call:** Switch calls `CardTransactionService.ProcessPurchase` with `is_on_us = false`
 5. **Validate Cardholder:** Check account exists, active, balance >= amount + fee, currency = ZWG
 6. **Resolve Suspense Account:** Look up acquiring bank's suspense account by institution code

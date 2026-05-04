@@ -13,7 +13,7 @@
 ## User Story
 
 As a consumer,
-I want to send money to another UniBank user,
+I want to send money to another GoldBank user,
 So that I can pay people remotely.
 
 ---
@@ -21,9 +21,9 @@ So that I can pay people remotely.
 ## Description
 
 ### Background
-Peer-to-peer (P2P) domestic transfers are a foundational capability for any mobile money platform targeting the unbanked in Southern Africa. Many users rely on remittances within the same country to support family, pay for services, or settle informal debts. Unlike traditional bank transfers that can take hours or days, UniBank's P2P transfers must be real-time to match user expectations set by existing mobile money services (M-Pesa, EcoCash, etc.).
+Peer-to-peer (P2P) domestic transfers are a foundational capability for any mobile money platform targeting the unbanked in Southern Africa. Many users rely on remittances within the same country to support family, pay for services, or settle informal debts. Unlike traditional bank transfers that can take hours or days, GoldBank's P2P transfers must be real-time to match user expectations set by existing mobile money services (M-Pesa, EcoCash, etc.).
 
-This story implements intra-tenant P2P transfers where both sender and receiver hold accounts within the same UniBank tenant deployment. Because both accounts reside in the same tenant schema, the transaction can be completed atomically using a Wolverine saga that orchestrates debit, credit, and fee recording steps with full compensation support on failure.
+This story implements intra-tenant P2P transfers where both sender and receiver hold accounts within the same GoldBank tenant deployment. Because both accounts reside in the same tenant schema, the transaction can be completed atomically using a Wolverine saga that orchestrates debit, credit, and fee recording steps with full compensation support on failure.
 
 Functional Requirement: **FR-015**.
 
@@ -41,7 +41,7 @@ Functional Requirement: **FR-015**.
 
 **Out of scope:**
 - Cross-border transfers to users in different country deployments (STORY-030)
-- Transfers to non-UniBank accounts or external bank accounts
+- Transfers to non-GoldBank accounts or external bank accounts
 - Scheduled/recurring transfers (future sprint)
 - Bulk/batch transfers
 - Transfer to unregistered phone numbers (future: invite flow)
@@ -64,7 +64,7 @@ Functional Requirement: **FR-015**.
 
 - [ ] Consumer can enter a recipient phone number manually to initiate a transfer
 - [ ] Consumer can select a recipient from device contacts (phone number matched)
-- [ ] System validates that the recipient phone number belongs to an active UniBank account in the same tenant
+- [ ] System validates that the recipient phone number belongs to an active GoldBank account in the same tenant
 - [ ] System displays an appropriate error if recipient is not found, inactive, or in a different tenant
 - [ ] Consumer can enter a transfer amount within configured limits (per-transaction and daily)
 - [ ] System displays clear error messages when amount exceeds per-transaction limit or daily cumulative limit
@@ -87,7 +87,7 @@ Functional Requirement: **FR-015**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Transfers/`
+**Module:** `GoldBank.Core/Modules/Transfers/`
 
 ```
 Transfers/

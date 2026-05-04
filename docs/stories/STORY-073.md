@@ -23,7 +23,7 @@ So that users receive timely transaction alerts.
 ### Background
 In mobile money and digital banking for the unbanked, notifications are not just a convenience feature -- they are a critical trust mechanism. Users who cannot check balances frequently rely on transaction notifications to confirm that their money moved correctly. Missed notifications erode trust and drive users back to cash.
 
-The UniBank Notification Service is a standalone service that subscribes to domain events published via Wolverine and delivers notifications through multiple channels: Firebase Cloud Messaging (FCM) for push notifications and configurable SMS gateways for text messages. Each event type maps to a notification template, and the service tracks delivery status for every notification sent.
+The GoldBank Notification Service is a standalone service that subscribes to domain events published via Wolverine and delivers notifications through multiple channels: Firebase Cloud Messaging (FCM) for push notifications and configurable SMS gateways for text messages. Each event type maps to a notification template, and the service tracks delivery status for every notification sent.
 
 The service must be resilient: if FCM is temporarily unavailable, push notifications are retried with exponential backoff. If SMS delivery fails, the system retries and eventually falls back to an alternative channel. Rate limiting per account prevents notification spam.
 
@@ -65,7 +65,7 @@ The service must be resilient: if FCM is temporarily unavailable, push notificat
 
 **Example -- Transaction Completed:**
 - Push notification: "You received ZAR 500.00 from John D. New balance: ZAR 1,500.00"
-- SMS: "UniBank: Received R500.00 from John D. Bal: R1,500.00. Ref: TXN-ABC123"
+- SMS: "GoldBank: Received R500.00 from John D. Bal: R1,500.00. Ref: TXN-ABC123"
 
 ---
 
@@ -92,11 +92,11 @@ The service must be resilient: if FCM is temporarily unavailable, push notificat
 
 ### Components
 
-**Project:** `UniBank.Notifications`
+**Project:** `GoldBank.Notifications`
 
 **File Structure:**
 ```
-UniBank.Notifications/
+GoldBank.Notifications/
   Program.cs
   appsettings.json
   Handlers/
@@ -551,19 +551,19 @@ CREATE INDEX idx_notification_log_status ON {schema}.notification_log (status) W
 | event_type | channel | title_template | body_template |
 |---|---|---|---|
 | TransactionCompleted | push | `{transaction_type} {currency} {amount}` | `You {transaction_type} {amount} {counterparty_name}. Balance: {balance}. Ref: {reference}` |
-| TransactionCompleted | sms | (none) | `UniBank: {transaction_type} {amount} {counterparty_name}. Bal: {balance}. Ref: {reference}` |
+| TransactionCompleted | sms | (none) | `GoldBank: {transaction_type} {amount} {counterparty_name}. Bal: {balance}. Ref: {reference}` |
 | TransactionFailed | push | `Transaction Failed` | `Your {transaction_type} of {amount} failed. Reason: {failure_reason}. Ref: {reference}` |
-| TransactionFailed | sms | (none) | `UniBank: {transaction_type} {amount} failed. {failure_reason}. Ref: {reference}` |
-| AccountCreated | push | `Welcome to UniBank` | `Your account has been created. Complete KYC to unlock all features.` |
-| AccountCreated | sms | (none) | `Welcome to UniBank! Your account is ready. Complete KYC to unlock all features.` |
+| TransactionFailed | sms | (none) | `GoldBank: {transaction_type} {amount} failed. {failure_reason}. Ref: {reference}` |
+| AccountCreated | push | `Welcome to GoldBank` | `Your account has been created. Complete KYC to unlock all features.` |
+| AccountCreated | sms | (none) | `Welcome to GoldBank! Your account is ready. Complete KYC to unlock all features.` |
 | KYCApproved | push | `KYC Approved` | `Your identity has been verified. You now have Level {kyc_level} access.` |
-| KYCApproved | sms | (none) | `UniBank: KYC approved. Level {kyc_level} access granted.` |
+| KYCApproved | sms | (none) | `GoldBank: KYC approved. Level {kyc_level} access granted.` |
 | KYCRejected | push | `KYC Review Update` | `Your {document_type} was not accepted. Reason: {rejection_reason}. Please resubmit.` |
-| KYCRejected | sms | (none) | `UniBank: Your {document_type} was not accepted. Please resubmit in the app.` |
+| KYCRejected | sms | (none) | `GoldBank: Your {document_type} was not accepted. Please resubmit in the app.` |
 | FraudAlertRaised | push | `Security Alert` | `Unusual activity detected on your account. {description}. Contact support if unauthorized.` |
-| FraudAlertRaised | sms | (none) | `ALERT: Unusual activity on your UniBank account. {description}. Call support immediately if not you.` |
+| FraudAlertRaised | sms | (none) | `ALERT: Unusual activity on your GoldBank account. {description}. Call support immediately if not you.` |
 | LowFloatAlert | push | `Low Float Warning` | `Your float balance is {current_float}. Limit: {float_limit}. Please top up.` |
-| LowFloatAlert | sms | (none) | `UniBank Agent: Low float ({current_float}/{float_limit}). Please top up.` |
+| LowFloatAlert | sms | (none) | `GoldBank Agent: Low float ({current_float}/{float_limit}). Please top up.` |
 
 ### Security Considerations
 - FCM server key must be stored as a secret (not in appsettings)

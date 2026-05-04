@@ -26,7 +26,7 @@
       "id": 1,
       "targets": [
         {
-          "expr": "sum by (type) (rate(unibank_transactions_total[5m]))",
+          "expr": "sum by (type) (rate(goldbank_transactions_total[5m]))",
           "legendFormat": "{{ type }}",
           "refId": "A"
         }
@@ -59,7 +59,7 @@
       "id": 2,
       "targets": [
         {
-          "expr": "sum by (status) (increase(unibank_transactions_total[1h]))",
+          "expr": "sum by (status) (increase(goldbank_transactions_total[1h]))",
           "legendFormat": "{{ status }}",
           "refId": "A"
         }
@@ -102,7 +102,7 @@
       "id": 3,
       "targets": [
         {
-          "expr": "sum by (type) (increase(unibank_transactions_total[5m]))",
+          "expr": "sum by (type) (increase(goldbank_transactions_total[5m]))",
           "legendFormat": "{{ type }}",
           "refId": "A"
         }
@@ -134,12 +134,12 @@
       "id": 4,
       "targets": [
         {
-          "expr": "sum(rate(unibank_transactions_total{status=\"declined\"}[5m])) / sum(rate(unibank_transactions_total[5m])) * 100",
+          "expr": "sum(rate(goldbank_transactions_total{status=\"declined\"}[5m])) / sum(rate(goldbank_transactions_total[5m])) * 100",
           "legendFormat": "Decline %",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(unibank_transactions_total{status=\"error\"}[5m])) / sum(rate(unibank_transactions_total[5m])) * 100",
+          "expr": "sum(rate(goldbank_transactions_total{status=\"error\"}[5m])) / sum(rate(goldbank_transactions_total[5m])) * 100",
           "legendFormat": "Error %",
           "refId": "B"
         }
@@ -180,7 +180,7 @@
       "id": 5,
       "targets": [
         {
-          "expr": "sum(rate(unibank_redis_cache_hits_total[5m])) / (sum(rate(unibank_redis_cache_hits_total[5m])) + sum(rate(unibank_redis_cache_misses_total[5m]))) * 100",
+          "expr": "sum(rate(goldbank_redis_cache_hits_total[5m])) / (sum(rate(goldbank_redis_cache_hits_total[5m])) + sum(rate(goldbank_redis_cache_misses_total[5m]))) * 100",
           "legendFormat": "Cache Hit %",
           "refId": "A"
         }
@@ -220,7 +220,7 @@
       "id": 6,
       "targets": [
         {
-          "expr": "sum(unibank_mqtt_connected_terminals)",
+          "expr": "sum(goldbank_mqtt_connected_terminals)",
           "legendFormat": "Terminals",
           "refId": "A"
         }
@@ -260,7 +260,7 @@
       "id": 7,
       "targets": [
         {
-          "expr": "unibank_message_queue_depth",
+          "expr": "goldbank_message_queue_depth",
           "legendFormat": "{{ queue_name }}",
           "refId": "A"
         }
@@ -297,12 +297,12 @@
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["unibank", "transactions"],
+  "tags": ["goldbank", "transactions"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "UniBank - Transaction Overview",
-  "uid": "unibank-transaction-overview",
+  "title": "GoldBank - Transaction Overview",
+  "uid": "goldbank-transaction-overview",
   "version": 1
 }

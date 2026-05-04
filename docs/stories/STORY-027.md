@@ -22,7 +22,7 @@ So that **I can pay without NFC**
 
 ### Background
 
-QR code scanning is the payer-side complement to STORY-026 (QR generation). Together, they form UniBank's second payment rail — designed for merchants without NFC terminals, street vendors with printed QR codes, and peer-to-peer payments between individuals.
+QR code scanning is the payer-side complement to STORY-026 (QR generation). Together, they form GoldBank's second payment rail — designed for merchants without NFC terminals, street vendors with printed QR codes, and peer-to-peer payments between individuals.
 
 The flow is consumer-initiated: the payer opens their phone camera (or the in-app scanner), scans the merchant's EMV QR code, confirms the payment details, authorizes with PIN or biometric, and the payment is processed. The entire flow targets sub-2-second processing after authorization.
 
@@ -56,7 +56,7 @@ The scanning flow must handle both static QR codes (payer enters amount) and dyn
 
 ### User Flow
 
-1. **Open Scanner:** Consumer taps "Pay" or "Scan QR" in the UniBank app. The camera opens with a QR scanning overlay.
+1. **Open Scanner:** Consumer taps "Pay" or "Scan QR" in the GoldBank app. The camera opens with a QR scanning overlay.
 2. **Scan QR Code:** Consumer points the camera at the merchant's QR code (screen or printed). The scanner detects and decodes the QR in real-time.
 3. **Parse EMV Data:** The app parses the EMV QRCPS data string, extracting merchant info, amount (if dynamic), and currency. Validates CRC-16 checksum.
 4. **Display Confirmation:** The app shows a confirmation screen:
@@ -112,11 +112,11 @@ The scanning flow must handle both static QR codes (payer enters amount) and dyn
 | `CameraQrScanner.kt` | `mobile/android/app/.../camera/` | Android CameraX + ML Kit QR scanner |
 | `BiometricAuthenticator.kt` | `mobile/shared/.../auth/` | Biometric prompt wrapper (KMP) |
 | `SecurePinInput.kt` | `mobile/shared/.../auth/` | Scrambled PIN input (KMP) |
-| `PaymentGrpcService.cs` | `src/Modules/UniBank.Payment/Grpc/` | ProcessQRPayment endpoint |
-| `QrPaymentHandler.cs` | `src/Modules/UniBank.Payment/Handlers/` | Server-side QR payment logic |
-| `QrPaymentSaga.cs` | `src/Modules/UniBank.Payment/Sagas/` | Wolverine saga: debit -> credit -> fee |
-| `QrCodeValidator.cs` | `src/Modules/UniBank.Payment/Services/` | QR reference validation (expiry, used) |
-| `FeeCalculator.cs` | `src/Modules/UniBank.Payment/Services/` | Transaction fee computation |
+| `PaymentGrpcService.cs` | `src/Modules/GoldBank.Payment/Grpc/` | ProcessQRPayment endpoint |
+| `QrPaymentHandler.cs` | `src/Modules/GoldBank.Payment/Handlers/` | Server-side QR payment logic |
+| `QrPaymentSaga.cs` | `src/Modules/GoldBank.Payment/Sagas/` | Wolverine saga: debit -> credit -> fee |
+| `QrCodeValidator.cs` | `src/Modules/GoldBank.Payment/Services/` | QR reference validation (expiry, used) |
+| `FeeCalculator.cs` | `src/Modules/GoldBank.Payment/Services/` | Transaction fee computation |
 
 ### EMV QRCPS Parsing
 
@@ -136,7 +136,7 @@ data class EmvQrData(
 )
 
 data class MerchantAccountInfo(
-    val globallyUniqueIdentifier: String,     // "com.unibank"
+    val globallyUniqueIdentifier: String,     // "com.goldbank"
     val merchantId: String,
     val accountId: String?
 )
@@ -325,7 +325,7 @@ CREATE INDEX idx_qr_txn_idempotency ON qr_transactions (idempotency_key);
 ### Edge Cases
 
 - **Camera Permission Denied:** If the user denies camera permission, the scanner cannot open. Display a message explaining why camera access is needed and a button to open app settings.
-- **QR Code Not UniBank:** If the scanned QR code is not an EMV QRCPS code or does not contain "com.unibank" as the Globally Unique Identifier, display "Unsupported QR code." Do not attempt to process non-UniBank QR codes.
+- **QR Code Not GoldBank:** If the scanned QR code is not an EMV QRCPS code or does not contain "com.goldbank" as the Globally Unique Identifier, display "Unsupported QR code." Do not attempt to process non-GoldBank QR codes.
 - **Merchant Not Found:** If the merchant_id from the QR does not exist in the system, display "Unknown merchant. This QR code may be invalid."
 - **Merchant Suspended:** If the merchant account is suspended, decline the payment with "This merchant cannot currently accept payments."
 - **Self-Payment:** If the payer and merchant are the same account, reject with "You cannot pay yourself."

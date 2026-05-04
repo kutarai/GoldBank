@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add biometric auth with inactivity lock, AI gRPC client, floating chat assistant, and spending insights to the UniBank mobile app.
+**Goal:** Add biometric auth with inactivity lock, AI gRPC client, floating chat assistant, and spending insights to the GoldBank mobile app.
 
 **Architecture:** Builds on existing Koin DI + StateFlow patterns. SecurityViewModel wraps Android BiometricPrompt and manages inactivity timer. AiGrpcClient wraps all 13 AIService RPCs. ChatFAB is a Scaffold overlay in MainNavHost. All new screens follow existing Compose + ViewModel conventions.
 
@@ -57,12 +57,12 @@
 ## Task 1: Security Preferences (STORY-107 foundation)
 
 **Files:**
-- Create: `mobile/shared/src/androidMain/kotlin/com/unibank/shared/data/local/SecurityPreferences.kt`
+- Create: `mobile/shared/src/androidMain/kotlin/com/goldbank/shared/data/local/SecurityPreferences.kt`
 
 - [ ] **Step 1: Create SecurityPreferences**
 
 ```kotlin
-package com.unibank.shared.data.local
+package com.goldbank.shared.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -76,7 +76,7 @@ class SecurityPreferences(context: Context) {
 
     private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
         context,
-        "unibank_security_prefs",
+        "goldbank_security_prefs",
         masterKey,
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
@@ -98,7 +98,7 @@ class SecurityPreferences(context: Context) {
 
 - [ ] **Step 2: Register in DI**
 
-In `mobile/shared/src/androidMain/kotlin/com/unibank/shared/di/AndroidDataModule.kt`, add:
+In `mobile/shared/src/androidMain/kotlin/com/goldbank/shared/di/AndroidDataModule.kt`, add:
 
 ```kotlin
 single { SecurityPreferences(androidContext()) }
@@ -112,8 +112,8 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mobile/shared/src/androidMain/kotlin/com/unibank/shared/data/local/SecurityPreferences.kt
-git add mobile/shared/src/androidMain/kotlin/com/unibank/shared/di/AndroidDataModule.kt
+git add mobile/shared/src/androidMain/kotlin/com/goldbank/shared/data/local/SecurityPreferences.kt
+git add mobile/shared/src/androidMain/kotlin/com/goldbank/shared/di/AndroidDataModule.kt
 git commit -m "feat(mobile): add encrypted security preferences for biometric and timeout settings"
 ```
 
@@ -122,17 +122,17 @@ git commit -m "feat(mobile): add encrypted security preferences for biometric an
 ## Task 2: SecurityViewModel (STORY-107)
 
 **Files:**
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/viewmodel/SecurityViewModel.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/viewmodel/SecurityViewModel.kt`
 
 - [ ] **Step 1: Create SecurityViewModel**
 
 ```kotlin
-package com.unibank.app.viewmodel
+package com.goldbank.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.unibank.shared.data.local.SecurityPreferences
-import com.unibank.shared.data.local.SessionManager
+import com.goldbank.shared.data.local.SecurityPreferences
+import com.goldbank.shared.data.local.SessionManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -258,7 +258,7 @@ class SecurityViewModel(
 
 - [ ] **Step 2: Register in PresentationModule**
 
-In `mobile/androidApp/src/main/kotlin/com/unibank/app/di/PresentationModule.kt`, add:
+In `mobile/androidApp/src/main/kotlin/com/goldbank/app/di/PresentationModule.kt`, add:
 
 ```kotlin
 viewModel { SecurityViewModel(get(), get()) }
@@ -272,8 +272,8 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/viewmodel/SecurityViewModel.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/di/PresentationModule.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/viewmodel/SecurityViewModel.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/di/PresentationModule.kt
 git commit -m "feat(mobile): add SecurityViewModel with biometric auth and inactivity timer"
 ```
 
@@ -282,13 +282,13 @@ git commit -m "feat(mobile): add SecurityViewModel with biometric auth and inact
 ## Task 3: BiometricPromptScreen + SessionLockScreen (STORY-107)
 
 **Files:**
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/auth/BiometricPromptScreen.kt`
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/auth/SessionLockScreen.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/auth/BiometricPromptScreen.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/auth/SessionLockScreen.kt`
 
 - [ ] **Step 1: Create BiometricPromptScreen**
 
 ```kotlin
-package com.unibank.app.ui.auth
+package com.goldbank.app.ui.auth
 
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -303,7 +303,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import com.unibank.app.viewmodel.SecurityViewModel
+import com.goldbank.app.viewmodel.SecurityViewModel
 
 @Composable
 fun BiometricPromptScreen(
@@ -331,7 +331,7 @@ fun BiometricPromptScreen(
                 }
             }
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("UniBank")
+                .setTitle("GoldBank")
                 .setSubtitle("Verify your identity")
                 .setNegativeButtonText("Use PIN instead")
                 .build()
@@ -369,7 +369,7 @@ fun BiometricPromptScreen(
 - [ ] **Step 2: Create SessionLockScreen**
 
 ```kotlin
-package com.unibank.app.ui.auth
+package com.goldbank.app.ui.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -378,8 +378,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.unibank.app.ui.components.PinInput
-import com.unibank.app.viewmodel.SecurityViewModel
+import com.goldbank.app.ui.components.PinInput
+import com.goldbank.app.viewmodel.SecurityViewModel
 
 @Composable
 fun SessionLockScreen(
@@ -441,8 +441,8 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/auth/BiometricPromptScreen.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/auth/SessionLockScreen.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/auth/BiometricPromptScreen.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/auth/SessionLockScreen.kt
 git commit -m "feat(mobile): add BiometricPromptScreen and SessionLockScreen"
 ```
 
@@ -451,8 +451,8 @@ git commit -m "feat(mobile): add BiometricPromptScreen and SessionLockScreen"
 ## Task 4: Routes + NavGraph integration (STORY-107)
 
 **Files:**
-- Modify: `mobile/androidApp/src/main/kotlin/com/unibank/app/navigation/Routes.kt`
-- Modify: `mobile/androidApp/src/main/kotlin/com/unibank/app/navigation/NavGraph.kt`
+- Modify: `mobile/androidApp/src/main/kotlin/com/goldbank/app/navigation/Routes.kt`
+- Modify: `mobile/androidApp/src/main/kotlin/com/goldbank/app/navigation/NavGraph.kt`
 
 - [ ] **Step 1: Add new routes to Routes.kt**
 
@@ -521,10 +521,10 @@ SessionState.Authenticated -> {
 Add imports at top of NavGraph.kt:
 ```kotlin
 import androidx.biometric.BiometricManager
-import com.unibank.app.ui.auth.BiometricPromptScreen
-import com.unibank.app.ui.auth.SessionLockScreen
-import com.unibank.app.viewmodel.SecurityViewModel
-import com.unibank.app.viewmodel.SecurityState
+import com.goldbank.app.ui.auth.BiometricPromptScreen
+import com.goldbank.app.ui.auth.SessionLockScreen
+import com.goldbank.app.viewmodel.SecurityViewModel
+import com.goldbank.app.viewmodel.SecurityState
 ```
 
 - [ ] **Step 3: Add onUserActivity parameter to MainNavHost**
@@ -555,8 +555,8 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/navigation/Routes.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/navigation/NavGraph.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/navigation/Routes.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/navigation/NavGraph.kt
 git commit -m "feat(mobile): integrate biometric gate and inactivity lock into navigation"
 ```
 
@@ -565,13 +565,13 @@ git commit -m "feat(mobile): integrate biometric gate and inactivity lock into n
 ## Task 5: SecuritySettingsScreen (STORY-108)
 
 **Files:**
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/profile/SecuritySettingsScreen.kt`
-- Modify: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/profile/ProfileScreen.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/profile/SecuritySettingsScreen.kt`
+- Modify: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/profile/ProfileScreen.kt`
 
 - [ ] **Step 1: Create SecuritySettingsScreen**
 
 ```kotlin
-package com.unibank.app.ui.profile
+package com.goldbank.app.ui.profile
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -580,7 +580,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.unibank.app.viewmodel.SecurityViewModel
+import com.goldbank.app.viewmodel.SecurityViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -705,9 +705,9 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/profile/SecuritySettingsScreen.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/profile/ProfileScreen.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/navigation/NavGraph.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/profile/SecuritySettingsScreen.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/profile/ProfileScreen.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/navigation/NavGraph.kt
 git commit -m "feat(mobile): add SecuritySettingsScreen with biometric toggle and timeout picker"
 ```
 
@@ -716,12 +716,12 @@ git commit -m "feat(mobile): add SecuritySettingsScreen with biometric toggle an
 ## Task 6: AI Domain Models (STORY-109)
 
 **Files:**
-- Create: `mobile/shared/src/commonMain/kotlin/com/unibank/shared/domain/model/Ai.kt`
+- Create: `mobile/shared/src/commonMain/kotlin/com/goldbank/shared/domain/model/Ai.kt`
 
 - [ ] **Step 1: Create AI domain models**
 
 ```kotlin
-package com.unibank.shared.domain.model
+package com.goldbank.shared.domain.model
 
 data class ChatMessage(
     val role: String, // "user" or "assistant"
@@ -842,7 +842,7 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 3: Commit**
 
 ```bash
-git add mobile/shared/src/commonMain/kotlin/com/unibank/shared/domain/model/Ai.kt
+git add mobile/shared/src/commonMain/kotlin/com/goldbank/shared/domain/model/Ai.kt
 git commit -m "feat(mobile): add AI domain models for all EPIC-017 use cases"
 ```
 
@@ -851,16 +851,16 @@ git commit -m "feat(mobile): add AI domain models for all EPIC-017 use cases"
 ## Task 7: AI Mapper + AiGrpcClient (STORY-109)
 
 **Files:**
-- Create: `mobile/shared/src/androidMain/kotlin/com/unibank/shared/data/mapper/AiMapper.kt`
-- Create: `mobile/shared/src/androidMain/kotlin/com/unibank/shared/data/remote/grpc/AiGrpcClient.kt`
+- Create: `mobile/shared/src/androidMain/kotlin/com/goldbank/shared/data/mapper/AiMapper.kt`
+- Create: `mobile/shared/src/androidMain/kotlin/com/goldbank/shared/data/remote/grpc/AiGrpcClient.kt`
 
 - [ ] **Step 1: Create AiMapper**
 
 ```kotlin
-package com.unibank.shared.data.mapper
+package com.goldbank.shared.data.mapper
 
-import com.unibank.shared.domain.model.*
-import unibank.v1.ai.AiServiceOuterClass as Proto
+import com.goldbank.shared.domain.model.*
+import goldbank.v1.ai.AiServiceOuterClass as Proto
 
 object AiMapper {
     fun toSpendingInsightsResult(response: Proto.SpendingInsightsResponse): SpendingInsightsResult {
@@ -996,18 +996,18 @@ object AiMapper {
 - [ ] **Step 2: Create AiGrpcClient**
 
 ```kotlin
-package com.unibank.shared.data.remote.grpc
+package com.goldbank.shared.data.remote.grpc
 
 import com.google.protobuf.ByteString
-import com.unibank.shared.data.mapper.AiMapper
-import com.unibank.shared.data.remote.GrpcCall
-import com.unibank.shared.domain.model.*
+import com.goldbank.shared.data.mapper.AiMapper
+import com.goldbank.shared.data.remote.GrpcCall
+import com.goldbank.shared.domain.model.*
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import unibank.v1.ai.AIServiceGrpc
-import unibank.v1.ai.AIServiceGrpcKt
-import unibank.v1.ai.AiServiceOuterClass as Proto
+import goldbank.v1.ai.AIServiceGrpc
+import goldbank.v1.ai.AIServiceGrpcKt
+import goldbank.v1.ai.AiServiceOuterClass as Proto
 
 class AiGrpcClient(channel: ManagedChannel) {
     private val stub = AIServiceGrpcKt.AIServiceCoroutineStub(channel)
@@ -1166,7 +1166,7 @@ class AiGrpcClient(channel: ManagedChannel) {
 
 - [ ] **Step 3: Register AiGrpcClient in DI**
 
-In `mobile/shared/src/androidMain/kotlin/com/unibank/shared/di/AndroidDataModule.kt`, add:
+In `mobile/shared/src/androidMain/kotlin/com/goldbank/shared/di/AndroidDataModule.kt`, add:
 
 ```kotlin
 single { AiGrpcClient(get()) }
@@ -1180,9 +1180,9 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mobile/shared/src/androidMain/kotlin/com/unibank/shared/data/mapper/AiMapper.kt
-git add mobile/shared/src/androidMain/kotlin/com/unibank/shared/data/remote/grpc/AiGrpcClient.kt
-git add mobile/shared/src/androidMain/kotlin/com/unibank/shared/di/AndroidDataModule.kt
+git add mobile/shared/src/androidMain/kotlin/com/goldbank/shared/data/mapper/AiMapper.kt
+git add mobile/shared/src/androidMain/kotlin/com/goldbank/shared/data/remote/grpc/AiGrpcClient.kt
+git add mobile/shared/src/androidMain/kotlin/com/goldbank/shared/di/AndroidDataModule.kt
 git commit -m "feat(mobile): add AiGrpcClient wrapping all 13 AIService RPCs with mapper"
 ```
 
@@ -1191,18 +1191,18 @@ git commit -m "feat(mobile): add AiGrpcClient wrapping all 13 AIService RPCs wit
 ## Task 8: ChatViewModel (STORY-110)
 
 **Files:**
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/viewmodel/ChatViewModel.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/viewmodel/ChatViewModel.kt`
 
 - [ ] **Step 1: Create ChatViewModel**
 
 ```kotlin
-package com.unibank.app.viewmodel
+package com.goldbank.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.unibank.shared.data.local.SessionManager
-import com.unibank.shared.data.remote.grpc.AiGrpcClient
-import com.unibank.shared.domain.model.ChatMessage
+import com.goldbank.shared.data.local.SessionManager
+import com.goldbank.shared.data.remote.grpc.AiGrpcClient
+import com.goldbank.shared.domain.model.ChatMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -1316,8 +1316,8 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/viewmodel/ChatViewModel.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/di/PresentationModule.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/viewmodel/ChatViewModel.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/di/PresentationModule.kt
 git commit -m "feat(mobile): add ChatViewModel with streaming, rate limiting, conversation history"
 ```
 
@@ -1326,13 +1326,13 @@ git commit -m "feat(mobile): add ChatViewModel with streaming, rate limiting, co
 ## Task 9: ChatFAB + ChatScreen (STORY-110)
 
 **Files:**
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/components/ChatFAB.kt`
-- Create: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/chat/ChatScreen.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/components/ChatFAB.kt`
+- Create: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/chat/ChatScreen.kt`
 
 - [ ] **Step 1: Create ChatFAB**
 
 ```kotlin
-package com.unibank.app.ui.components
+package com.goldbank.app.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
@@ -1369,7 +1369,7 @@ fun ChatFAB(
 - [ ] **Step 2: Create ChatScreen**
 
 ```kotlin
-package com.unibank.app.ui.chat
+package com.goldbank.app.ui.chat
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
@@ -1388,8 +1388,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.unibank.app.viewmodel.ChatViewModel
-import com.unibank.shared.domain.model.ChatMessage
+import com.goldbank.app.viewmodel.ChatViewModel
+import com.goldbank.shared.domain.model.ChatMessage
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1626,9 +1626,9 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/components/ChatFAB.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/chat/ChatScreen.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/navigation/NavGraph.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/components/ChatFAB.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/chat/ChatScreen.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/navigation/NavGraph.kt
 git commit -m "feat(mobile): add ChatFAB overlay and ChatScreen with streaming message display"
 ```
 
@@ -1637,8 +1637,8 @@ git commit -m "feat(mobile): add ChatFAB overlay and ChatScreen with streaming m
 ## Task 10: Spending Insights on HomeScreen (STORY-111)
 
 **Files:**
-- Modify: `mobile/androidApp/src/main/kotlin/com/unibank/app/viewmodel/HomeViewModel.kt`
-- Modify: `mobile/androidApp/src/main/kotlin/com/unibank/app/ui/home/HomeScreen.kt`
+- Modify: `mobile/androidApp/src/main/kotlin/com/goldbank/app/viewmodel/HomeViewModel.kt`
+- Modify: `mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/home/HomeScreen.kt`
 
 - [ ] **Step 1: Add spending insights to HomeViewModel**
 
@@ -1751,9 +1751,9 @@ Expected: BUILD SUCCESSFUL
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/viewmodel/HomeViewModel.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/ui/home/HomeScreen.kt
-git add mobile/androidApp/src/main/kotlin/com/unibank/app/di/PresentationModule.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/viewmodel/HomeViewModel.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/ui/home/HomeScreen.kt
+git add mobile/androidApp/src/main/kotlin/com/goldbank/app/di/PresentationModule.kt
 git commit -m "feat(mobile): add AI spending insights card to HomeScreen"
 ```
 
@@ -1773,7 +1773,7 @@ Expected: Success
 
 - [ ] **Step 3: Launch and test**
 
-Run: `adb -s emulator-5554 shell am start -n com.unibank.app/.MainActivity`
+Run: `adb -s emulator-5554 shell am start -n com.goldbank.app/.MainActivity`
 
 Test checklist:
 - [ ] App opens → biometric prompt (if enabled) or goes straight to home

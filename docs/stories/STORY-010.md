@@ -21,7 +21,7 @@ So that I can secure my account.
 ## Description
 
 ### Background
-After successful phone verification (STORY-009), the user must create a PIN to secure their account. The PIN is the primary authentication mechanism for all financial transactions in UniBank -- payments, transfers, cash-out, and bill payments all require PIN confirmation. Given the target demographic (unbanked consumers in Southern Africa), PINs are preferred over passwords because they are simpler to remember and faster to enter on mobile devices and POS terminals.
+After successful phone verification (STORY-009), the user must create a PIN to secure their account. The PIN is the primary authentication mechanism for all financial transactions in GoldBank -- payments, transfers, cash-out, and bill payments all require PIN confirmation. Given the target demographic (unbanked consumers in Southern Africa), PINs are preferred over passwords because they are simpler to remember and faster to enter on mobile devices and POS terminals.
 
 PIN security is critical. The PIN must be hashed with bcrypt (cost factor 12) before storage, and common weak patterns (sequential digits like `1234`, repeated digits like `1111`) must be rejected. The user must enter the PIN twice for confirmation to prevent typos.
 
@@ -92,12 +92,12 @@ This story completes the registration flow. After PIN creation, the account tran
 ### Components
 
 **Affected Projects:**
-- `UniBank.Core/Modules/Accounts/` -- PIN creation handler and validation
-- `UniBank.SharedKernel/Events/` -- `PINCreated` event (from STORY-007)
+- `GoldBank.Core/Modules/Accounts/` -- PIN creation handler and validation
+- `GoldBank.SharedKernel/Events/` -- `PINCreated` event (from STORY-007)
 
 **File Structure:**
 ```
-UniBank.Core/Modules/Accounts/
+GoldBank.Core/Modules/Accounts/
   Application/
     Commands/
       CreatePINCommand.cs
@@ -128,7 +128,7 @@ Request:
 Response (success):
   CreatePINResponse {
     success: true
-    message: "PIN created successfully. Welcome to UniBank!"
+    message: "PIN created successfully. Welcome to GoldBank!"
     auth_token: "eyJhbGciOiJIUzI1NiIs..."    // Full JWT
     refresh_token: "rt_xxxxxxxxxxxxxxxxxxxx"  // Refresh token
   }
@@ -304,7 +304,7 @@ public class CreatePINHandler
         return new CreatePINResponse
         {
             Success = true,
-            Message = "PIN created successfully. Welcome to UniBank!",
+            Message = "PIN created successfully. Welcome to GoldBank!",
             AuthToken = accessToken,
             RefreshToken = refreshToken
         };

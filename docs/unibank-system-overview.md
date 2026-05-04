@@ -1,4 +1,4 @@
-# UniBank Digital Banking Platform — System Overview
+# GoldBank Digital Banking Platform — System Overview
 
 **Prepared for:** Executive Leadership & Board of Directors
 **Date:** 24 March 2026
@@ -23,9 +23,9 @@
 
 ## 1. Executive Summary
 
-### What UniBank Is
+### What GoldBank Is
 
-UniBank is a full-stack digital banking platform built to deliver modern financial services across Southern Africa. It provides a mobile-first banking experience covering account management, payments, transfers, lending, bill payments, merchant services, and agent banking — all from a single integrated platform.
+GoldBank is a full-stack digital banking platform built to deliver modern financial services across Southern Africa. It provides a mobile-first banking experience covering account management, payments, transfers, lending, bill payments, merchant services, and agent banking — all from a single integrated platform.
 
 ### Key Differentiators
 
@@ -66,7 +66,7 @@ Zimbabwe and the broader Southern African region. The platform is designed for m
         |                                      |
         v                                      v
   +-----------+                       +------------------+
-  |  UniBank  |<--- gRPC ----------->|  SynergySwitch   |
+  |  GoldBank  |<--- gRPC ----------->|  SynergySwitch   |
   |  Gateway  |                      |  (EFT Switch)    |
   |  :5000    |                      |  :3333 / :8080   |
   +-----+-----+                      +------------------+
@@ -185,7 +185,7 @@ Instead of manually entering bill details, customers can photograph a physical b
 ### 3.5 Transfers
 
 **Person-to-Person (Domestic):**
-Send money to any UniBank customer by phone number. The system verifies both parties, validates the sender's PIN, calculates a 1% fee, debits the sender (amount + fee), and instantly credits the recipient. Both parties receive transaction records and notifications.
+Send money to any GoldBank customer by phone number. The system verifies both parties, validates the sender's PIN, calculates a 1% fee, debits the sender (amount + fee), and instantly credits the recipient. Both parties receive transaction records and notifications.
 
 **Cross-Border:**
 Send money to recipients in other countries across 11 SADC corridors. The system obtains the current exchange rate, calculates a 2.5% fee, debits the sender, and initiates the outbound transfer. Estimated delivery is 1 business day for neighboring SADC countries (Zambia, Mozambique, Botswana, South Africa, and others) or 3 business days for other corridors.
@@ -321,7 +321,7 @@ All AI features run on-premise using two models:
 
 Traditional credit scoring relies heavily on credit bureau data — payment histories across multiple lenders, credit utilization ratios, and established credit accounts. In Zimbabwe and much of Southern Africa, credit bureau coverage is limited. Many potential borrowers have no formal credit history despite being financially responsible.
 
-UniBank's credit scoring model addresses this gap by scoring customers based on their **observed behavior within the banking platform** — how they use their account, how actively they transact, and how they manage existing obligations. This approach:
+GoldBank's credit scoring model addresses this gap by scoring customers based on their **observed behavior within the banking platform** — how they use their account, how actively they transact, and how they manage existing obligations. This approach:
 
 - Includes the unbanked and underbanked population
 - Rewards consistent banking behavior
@@ -461,7 +461,7 @@ PATH A — National Network (Legacy):
         |
         v
   +------------------+        +------------------+
-  |  SynergySwitch   |------->|  UniBank Gateway |
+  |  SynergySwitch   |------->|  GoldBank Gateway |
   |                  |  gRPC  |                  |
   |  - Parse ISO 8583|        | CardTransactions |
   |  - BIN Routing   |        |    Module        |
@@ -477,7 +477,7 @@ PATH B — Modern POS Terminals:
         |
         v
   +------------------+        +------------------+
-  |  SynergySwitch   |------->|  UniBank Gateway |
+  |  SynergySwitch   |------->|  GoldBank Gateway |
   |                  |  gRPC  |                  |
   |  - Parse ISO20022|        | CardTransactions |
   |  - BIN Routing   |        |    Module        |
@@ -499,9 +499,9 @@ This routing table is cached in memory for sub-millisecond lookups and refreshed
 
 ### On-Us vs. Off-Us Transactions
 
-- **On-Us:** Both the cardholder and the merchant are UniBank customers. The system debits the cardholder's account and credits the merchant's account directly — no external settlement required. This is the most profitable transaction type.
+- **On-Us:** Both the cardholder and the merchant are GoldBank customers. The system debits the cardholder's account and credits the merchant's account directly — no external settlement required. This is the most profitable transaction type.
 
-- **Off-Us:** The cardholder is a UniBank customer but the merchant banks elsewhere. The system debits the cardholder and credits the acquiring bank's suspense account for later interbank settlement.
+- **Off-Us:** The cardholder is a GoldBank customer but the merchant banks elsewhere. The system debits the cardholder and credits the acquiring bank's suspense account for later interbank settlement.
 
 ### Supported Transaction Types
 
@@ -518,7 +518,7 @@ Every transaction includes a STAN (System Trace Audit Number) that is checked fo
 
 ### Connection Monitoring
 
-The switch maintains persistent gRPC channels to the UniBank gateway with:
+The switch maintains persistent gRPC channels to the GoldBank gateway with:
 - Continuous state monitoring (Ready, Connecting, Idle, TransientFailure)
 - Automatic reconnection on connection drops
 - Keep-alive pings every 15 seconds with 5-second timeout
@@ -531,7 +531,7 @@ The switch maintains persistent gRPC channels to the UniBank gateway with:
 
 ### Authentication Layers
 
-UniBank employs multiple authentication layers:
+GoldBank employs multiple authentication layers:
 
 1. **Phone + OTP:** Registration requires SMS verification of phone number ownership.
 2. **PIN:** A 4-digit PIN, hashed with BCrypt, is required for all sensitive operations (login, payments, transfers, loan applications, bill payments).
@@ -688,7 +688,7 @@ Reports can be exported in configurable formats with streamed delivery for large
 
 ### Dual-Currency Accounts
 
-Zimbabwe's economy operates with two currencies — ZWG (Zimbabwe Gold) and USD. UniBank addresses this directly:
+Zimbabwe's economy operates with two currencies — ZWG (Zimbabwe Gold) and USD. GoldBank addresses this directly:
 
 - **Automatic dual-account creation:** When a customer verifies their phone number, the system creates two accounts — one ZWG and one USD — in a single atomic operation.
 - **Virtual card PANs:** Each currency account receives its own virtual card PAN with BIN prefix as defined, enabling card-based transactions in either currency.
@@ -700,7 +700,7 @@ Zimbabwe's economy operates with two currencies — ZWG (Zimbabwe Gold) and USD.
 The multi-tenant architecture uses PostgreSQL schema isolation:
 
 ```
-PostgreSQL Database: unibank
+PostgreSQL Database: goldbank
   |
   +-- public schema (shared functions, tenant registry)
   |
@@ -850,4 +850,4 @@ The architecture is designed for horizontal scaling:
 
 ---
 
-*This document provides a comprehensive overview of the UniBank platform as of March 2026. For technical implementation details, API specifications, or deployment procedures, please consult the engineering team.*
+*This document provides a comprehensive overview of the GoldBank platform as of March 2026. For technical implementation details, API specifications, or deployment procedures, please consult the engineering team.*

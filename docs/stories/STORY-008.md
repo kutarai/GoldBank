@@ -21,7 +21,7 @@ So that we can monitor system health and search logs.
 ## Description
 
 ### Background
-Operating a financial platform serving the unbanked population in Southern Africa demands comprehensive observability. Service outages, slow transactions, and security incidents must be detected and resolved rapidly. This story establishes the three pillars of observability for UniBank:
+Operating a financial platform serving the unbanked population in Southern Africa demands comprehensive observability. Service outages, slow transactions, and security incidents must be detected and resolved rapidly. This story establishes the three pillars of observability for GoldBank:
 
 1. **Metrics (Prometheus + Grafana):** Collects and visualizes quantitative data -- request rates, error rates, latency percentiles, active connections, Redis cache hit rates, transaction throughput.
 2. **Logging (Serilog + Elasticsearch + Kibana):** Structured JSON logs from all services, centrally aggregated and searchable. Enables root cause analysis across services.
@@ -55,7 +55,7 @@ All monitoring infrastructure runs as Docker containers alongside the applicatio
 **Developer Monitoring Flow:**
 1. Developer starts the full stack via `docker compose up`
 2. Developer opens Grafana at `http://localhost:3000` (admin/admin)
-3. Developer views the "UniBank Service Health" dashboard showing all services
+3. Developer views the "GoldBank Service Health" dashboard showing all services
 4. Developer views the "gRPC Metrics" dashboard showing request rates and latencies
 5. Developer opens Kibana at `http://localhost:5601`
 6. Developer searches logs by service name, tenant ID, or correlation ID
@@ -74,14 +74,14 @@ All monitoring infrastructure runs as Docker containers alongside the applicatio
 - [ ] Prometheus scrapes metrics from all .NET services at 15-second intervals
 - [ ] All .NET services expose Prometheus metrics endpoint at `/metrics`
 - [ ] `prometheus-net` is integrated in all ASP.NET Core services exposing: process metrics, .NET runtime metrics, HTTP/gRPC request metrics
-- [ ] Custom metrics are defined: `unibank_transactions_total` (counter), `unibank_grpc_duration_seconds` (histogram), `unibank_redis_cache_hits_total` (counter), `unibank_redis_cache_misses_total` (counter), `unibank_active_connections` (gauge)
+- [ ] Custom metrics are defined: `goldbank_transactions_total` (counter), `goldbank_grpc_duration_seconds` (histogram), `goldbank_redis_cache_hits_total` (counter), `goldbank_redis_cache_misses_total` (counter), `goldbank_active_connections` (gauge)
 - [ ] Grafana is provisioned with at least 3 pre-built dashboards: Service Health, gRPC Metrics, Transaction Overview
 - [ ] Grafana datasource for Prometheus is pre-configured via provisioning
 - [ ] Serilog is configured in all .NET services with structured JSON format
 - [ ] Serilog writes to Console sink (development) and Elasticsearch sink
 - [ ] All log entries include: `Timestamp`, `Level`, `MessageTemplate`, `ServiceName`, `TenantId`, `CorrelationId`, `MachineName`
 - [ ] Elasticsearch receives logs from all services within 30 seconds of emission
-- [ ] Kibana index pattern `unibank-logs-*` is pre-configured
+- [ ] Kibana index pattern `goldbank-logs-*` is pre-configured
 - [ ] Prometheus alert rules fire when: error rate > 1% for 5min, p95 latency > 2s for 5min, service health check fails for 1min
 - [ ] Grafana displays active alerts from Prometheus
 - [ ] All monitoring containers are healthy in Docker Compose
@@ -93,7 +93,7 @@ All monitoring infrastructure runs as Docker containers alongside the applicatio
 ### Components
 
 **Affected Projects (Application-Side Instrumentation):**
-- All .NET service projects: UniBank.Gateway, UniBank.Core, UniBank.Switching, UniBank.TerminalManager, UniBank.HSM, UniBank.Admin, UniBank.Reporting, UniBank.Notifications
+- All .NET service projects: GoldBank.Gateway, GoldBank.Core, GoldBank.Switching, GoldBank.TerminalManager, GoldBank.HSM, GoldBank.Admin, GoldBank.Reporting, GoldBank.Notifications
 
 **Configuration Files:**
 ```
@@ -129,42 +129,42 @@ rule_files:
   - "alert-rules.yml"
 
 scrape_configs:
-  - job_name: 'unibank-gateway'
+  - job_name: 'goldbank-gateway'
     static_configs:
       - targets: ['gateway:5000']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-core'
+  - job_name: 'goldbank-core'
     static_configs:
       - targets: ['core:5002']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-switching'
+  - job_name: 'goldbank-switching'
     static_configs:
       - targets: ['switching:5003']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-terminal-manager'
+  - job_name: 'goldbank-terminal-manager'
     static_configs:
       - targets: ['terminal-manager:5004']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-hsm'
+  - job_name: 'goldbank-hsm'
     static_configs:
       - targets: ['hsm:5005']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-admin'
+  - job_name: 'goldbank-admin'
     static_configs:
       - targets: ['admin:5010']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-reporting'
+  - job_name: 'goldbank-reporting'
     static_configs:
       - targets: ['reporting:5006']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-notifications'
+  - job_name: 'goldbank-notifications'
     static_configs:
       - targets: ['notifications:5007']
     metrics_path: '/metrics'
@@ -183,7 +183,7 @@ scrape_configs:
 **alert-rules.yml:**
 ```yaml
 groups:
-  - name: unibank-service-alerts
+  - name: goldbank-service-alerts
     rules:
       - alert: HighErrorRate
         expr: |
@@ -252,10 +252,10 @@ groups:
 
 **Shared Serilog Configuration (via extension method):**
 ```csharp
-// UniBank.SharedKernel/Logging/SerilogExtensions.cs
+// GoldBank.SharedKernel/Logging/SerilogExtensions.cs
 public static class SerilogExtensions
 {
-    public static IHostBuilder UseUniBankSerilog(
+    public static IHostBuilder UseGoldBankSerilog(
         this IHostBuilder hostBuilder, string serviceName)
     {
         return hostBuilder.UseSerilog((context, services, config) =>
@@ -275,7 +275,7 @@ public static class SerilogExtensions
                 {
                     AutoRegisterTemplate = true,
                     AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv8,
-                    IndexFormat = $"unibank-logs-{serviceName.ToLower()}-{{0:yyyy.MM.dd}}",
+                    IndexFormat = $"goldbank-logs-{serviceName.ToLower()}-{{0:yyyy.MM.dd}}",
                     NumberOfShards = 1,
                     NumberOfReplicas = 0, // Dev setting
                     BatchPostingLimit = 50,
@@ -293,7 +293,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add Prometheus metrics
 builder.Services.AddSingleton<MetricReporter>(); // Custom metrics
-builder.Host.UseUniBankSerilog("UniBank.Gateway");
+builder.Host.UseGoldBankSerilog("GoldBank.Gateway");
 
 var app = builder.Build();
 
@@ -306,12 +306,12 @@ app.Run();
 
 **Custom Metrics Reporter:**
 ```csharp
-// UniBank.SharedKernel/Metrics/MetricReporter.cs
+// GoldBank.SharedKernel/Metrics/MetricReporter.cs
 public class MetricReporter
 {
     // Transaction counters
     public static readonly Counter TransactionsTotal = Metrics.CreateCounter(
-        "unibank_transactions_total",
+        "goldbank_transactions_total",
         "Total number of transactions processed",
         new CounterConfiguration
         {
@@ -320,7 +320,7 @@ public class MetricReporter
 
     // gRPC request duration
     public static readonly Histogram GrpcDuration = Metrics.CreateHistogram(
-        "unibank_grpc_duration_seconds",
+        "goldbank_grpc_duration_seconds",
         "Duration of gRPC calls in seconds",
         new HistogramConfiguration
         {
@@ -330,7 +330,7 @@ public class MetricReporter
 
     // Active connections
     public static readonly Gauge ActiveConnections = Metrics.CreateGauge(
-        "unibank_active_connections",
+        "goldbank_active_connections",
         "Number of active connections",
         new GaugeConfiguration
         {
@@ -339,7 +339,7 @@ public class MetricReporter
 
     // Redis cache metrics
     public static readonly Counter RedisCacheHits = Metrics.CreateCounter(
-        "unibank_redis_cache_hits_total",
+        "goldbank_redis_cache_hits_total",
         "Total Redis cache hits",
         new CounterConfiguration
         {
@@ -347,7 +347,7 @@ public class MetricReporter
         });
 
     public static readonly Counter RedisCacheMisses = Metrics.CreateCounter(
-        "unibank_redis_cache_misses_total",
+        "goldbank_redis_cache_misses_total",
         "Total Redis cache misses",
         new CounterConfiguration
         {
@@ -356,7 +356,7 @@ public class MetricReporter
 
     // Wolverine message queue depth
     public static readonly Gauge MessageQueueDepth = Metrics.CreateGauge(
-        "unibank_message_queue_depth",
+        "goldbank_message_queue_depth",
         "Current message queue depth",
         new GaugeConfiguration
         {
@@ -365,7 +365,7 @@ public class MetricReporter
 
     // MQTT connected terminals
     public static readonly Gauge MqttConnectedTerminals = Metrics.CreateGauge(
-        "unibank_mqtt_connected_terminals",
+        "goldbank_mqtt_connected_terminals",
         "Number of MQTT-connected terminals");
 }
 ```
@@ -386,7 +386,7 @@ datasources:
     type: elasticsearch
     access: proxy
     url: http://elasticsearch:9200
-    database: "unibank-logs-*"
+    database: "goldbank-logs-*"
     jsonData:
       timeField: "@timestamp"
       esVersion: "8.0.0"
@@ -397,9 +397,9 @@ datasources:
 ```yaml
 apiVersion: 1
 providers:
-  - name: 'UniBank Dashboards'
+  - name: 'GoldBank Dashboards'
     orgId: 1
-    folder: 'UniBank'
+    folder: 'GoldBank'
     type: file
     disableDeletion: false
     editable: true
@@ -423,24 +423,24 @@ Key panels for the Service Health dashboard:
 - **CPU & Memory per Service:** `process_cpu_seconds_total`, `process_resident_memory_bytes`
 
 Key panels for the Transaction Overview dashboard:
-- **Transactions Per Second:** `rate(unibank_transactions_total[1m])`
-- **Transaction Volume by Type:** `unibank_transactions_total` grouped by `type`
-- **Failed Transactions:** `unibank_transactions_total{status="failed"}`
-- **Average Transaction Duration:** `unibank_grpc_duration_seconds` for payment methods
-- **Cache Hit Rate:** `unibank_redis_cache_hits_total / (unibank_redis_cache_hits_total + unibank_redis_cache_misses_total)`
-- **Message Queue Depth:** `unibank_message_queue_depth`
+- **Transactions Per Second:** `rate(goldbank_transactions_total[1m])`
+- **Transaction Volume by Type:** `goldbank_transactions_total` grouped by `type`
+- **Failed Transactions:** `goldbank_transactions_total{status="failed"}`
+- **Average Transaction Duration:** `goldbank_grpc_duration_seconds` for payment methods
+- **Cache Hit Rate:** `goldbank_redis_cache_hits_total / (goldbank_redis_cache_hits_total + goldbank_redis_cache_misses_total)`
+- **Message Queue Depth:** `goldbank_message_queue_depth`
 
 ### Elasticsearch Index Template
 
 ```json
 {
-  "index_patterns": ["unibank-logs-*"],
+  "index_patterns": ["goldbank-logs-*"],
   "template": {
     "settings": {
       "number_of_shards": 1,
       "number_of_replicas": 0,
-      "index.lifecycle.name": "unibank-log-retention",
-      "index.lifecycle.rollover_alias": "unibank-logs"
+      "index.lifecycle.name": "goldbank-log-retention",
+      "index.lifecycle.rollover_alias": "goldbank-logs"
     },
     "mappings": {
       "properties": {
@@ -477,7 +477,7 @@ Key panels for the Transaction Overview dashboard:
     },
     "Enrich": ["FromLogContext", "WithMachineName", "WithEnvironmentName"],
     "Properties": {
-      "Application": "UniBank"
+      "Application": "GoldBank"
     }
   },
   "Elasticsearch": {

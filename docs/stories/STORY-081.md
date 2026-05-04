@@ -22,9 +22,9 @@ So that **money moves from the acquiring bank's account to my account**
 
 ### Background
 
-An off-us deposit occurs when a bank client requests a cash deposit at a merchant belonging to another bank (the acquiring bank). The merchant accepts cash and initiates the transaction through their POS terminal. The acquiring bank's switch routes the ISO 20022 message through the national switch to UniBank (the issuing bank). Since the merchant is not a UniBank client, the bank cannot debit the merchant directly. Instead, the acquiring bank's suspense account at UniBank is debited, and the client's account is credited.
+An off-us deposit occurs when a bank client requests a cash deposit at a merchant belonging to another bank (the acquiring bank). The merchant accepts cash and initiates the transaction through their POS terminal. The acquiring bank's switch routes the ISO 20022 message through the national switch to GoldBank (the issuing bank). Since the merchant is not a GoldBank client, the bank cannot debit the merchant directly. Instead, the acquiring bank's suspense account at GoldBank is debited, and the client's account is credited.
 
-The acquiring bank is responsible for debiting their own merchant. UniBank's role is simply to credit the client's account and debit the acquiring bank's suspense account. The inter-bank settlement at end of day ensures the acquiring bank is made whole.
+The acquiring bank is responsible for debiting their own merchant. GoldBank's role is simply to credit the client's account and debit the acquiring bank's suspense account. The inter-bank settlement at end of day ensures the acquiring bank is made whole.
 
 ### Scope
 
@@ -51,7 +51,7 @@ The acquiring bank is responsible for debiting their own merchant. UniBank's rol
 1. **Client requests deposit:** Client presents card and cash to off-us merchant
 2. **Merchant initiates:** Merchant enters deposit amount on POS terminal
 3. **Acquiring bank switch:** Transaction flows through acquiring bank to national switch
-4. **Switch routes to UniBank:** National switch delivers ISO 20022 message to UniBank switch
+4. **Switch routes to GoldBank:** National switch delivers ISO 20022 message to GoldBank switch
 5. **Switch translates:** Switch identifies as off-us deposit, calls `ProcessDeposit` with `is_on_us = false`
 6. **Validate cardholder:** Check account exists, active, currency = ZWG
 7. **Resolve suspense account:** Look up acquiring bank's suspense account
@@ -90,7 +90,7 @@ The acquiring bank is responsible for debiting their own merchant. UniBank's rol
 
 ### Key Difference from On-Us
 
-For off-us deposits, the suspense account may go negative. This is expected behavior — a negative balance on the suspense account means the acquiring bank owes UniBank money, which will be settled at end of day through the national clearing system. Therefore, **no balance check is performed on the suspense account** for off-us deposits.
+For off-us deposits, the suspense account may go negative. This is expected behavior — a negative balance on the suspense account means the acquiring bank owes GoldBank money, which will be settled at end of day through the national clearing system. Therefore, **no balance check is performed on the suspense account** for off-us deposits.
 
 ```csharp
 // Off-us deposit: suspense account can go negative

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UniBank - Stop All Services with Podman
+# GoldBank - Stop All Services with Podman
 #
 # Usage:
 #   ./scripts/podman-down.sh            # Stop all services, keep volumes
@@ -45,7 +45,7 @@ fi
 
 cd "${PROJECT_ROOT}"
 
-echo -e "${BLUE}[INFO]${NC} Stopping UniBank services..."
+echo -e "${BLUE}[INFO]${NC} Stopping GoldBank services..."
 
 ${COMPOSE_CMD} \
     --profile infra \
@@ -53,7 +53,7 @@ ${COMPOSE_CMD} \
     --profile monitoring \
     down ${VOLUME_FLAG}
 
-echo -e "${GREEN}[PASS]${NC} All UniBank services stopped."
+echo -e "${GREEN}[PASS]${NC} All GoldBank services stopped."
 
 if [ -n "${VOLUME_FLAG}" ]; then
     echo -e "${BLUE}[INFO]${NC} Volumes removed."

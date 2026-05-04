@@ -21,7 +21,7 @@ So that I can identify top and underperforming agents and make informed decision
 ## Description
 
 ### Background
-The merchant and agent network is UniBank's primary distribution channel for reaching the unbanked population. Understanding which merchants and agents are performing well (high transaction volume, reliable service) versus underperforming (low activity, high failure rates) is critical for network management. Operations staff use these reports to identify agents who need additional training or support, recognise top performers for incentive programs, and make strategic decisions about agent deployment and coverage. Agent commission tracking is also essential for financial reconciliation and ensuring agents are compensated correctly.
+The merchant and agent network is GoldBank's primary distribution channel for reaching the unbanked population. Understanding which merchants and agents are performing well (high transaction volume, reliable service) versus underperforming (low activity, high failure rates) is critical for network management. Operations staff use these reports to identify agents who need additional training or support, recognise top performers for incentive programs, and make strategic decisions about agent deployment and coverage. Agent commission tracking is also essential for financial reconciliation and ensuring agents are compensated correctly.
 
 ### Scope
 **In scope:**

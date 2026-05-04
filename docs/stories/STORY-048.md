@@ -22,7 +22,7 @@ So that **I can identify offline or faulty terminals and ensure merchant payment
 
 ### Background
 
-In UniBank's target market — Southern Africa — terminal connectivity is often unreliable. Power outages, network instability, and remote merchant locations mean that terminals can go offline without warning. For a deploying institution, an offline terminal is lost revenue: merchants cannot accept digital payments, and customers revert to cash. The operations team needs real-time visibility into the health of their terminal fleet to proactively address issues before merchants call support.
+In GoldBank's target market — Southern Africa — terminal connectivity is often unreliable. Power outages, network instability, and remote merchant locations mean that terminals can go offline without warning. For a deploying institution, an offline terminal is lost revenue: merchants cannot accept digital payments, and customers revert to cash. The operations team needs real-time visibility into the health of their terminal fleet to proactively address issues before merchants call support.
 
 Terminal status monitoring uses MQTT as the heartbeat channel. Each active terminal publishes a heartbeat message every 60 seconds to its status topic. The Terminal Manager satellite service subscribes to all terminal status topics via a wildcard subscription, processes incoming heartbeats, and maintains the current state of every terminal. When a terminal goes silent beyond a configurable threshold, the system raises an alert.
 
@@ -94,12 +94,12 @@ This monitoring data feeds into a Grafana dashboard providing a fleet-wide overv
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `HeartbeatProcessor.cs` | `src/Satellites/UniBank.TerminalManager/Mqtt/` | Processes incoming MQTT heartbeat messages |
-| `OfflineDetectionJob.cs` | `src/Satellites/UniBank.TerminalManager/Jobs/` | Background job that detects offline terminals |
-| `TerminalOfflineAlert.cs` | `src/Shared/UniBank.Events/Terminal/` | Wolverine event for offline alert |
-| `TerminalBackOnlineEvent.cs` | `src/Shared/UniBank.Events/Terminal/` | Wolverine event for terminal recovery |
-| `TerminalStatusHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Wolverine handler for alert routing |
-| `TerminalDashboardQueries.cs` | `src/Satellites/UniBank.TerminalManager/Queries/` | Read-model queries for dashboard data |
+| `HeartbeatProcessor.cs` | `src/Satellites/GoldBank.TerminalManager/Mqtt/` | Processes incoming MQTT heartbeat messages |
+| `OfflineDetectionJob.cs` | `src/Satellites/GoldBank.TerminalManager/Jobs/` | Background job that detects offline terminals |
+| `TerminalOfflineAlert.cs` | `src/Shared/GoldBank.Events/Terminal/` | Wolverine event for offline alert |
+| `TerminalBackOnlineEvent.cs` | `src/Shared/GoldBank.Events/Terminal/` | Wolverine event for terminal recovery |
+| `TerminalStatusHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Wolverine handler for alert routing |
+| `TerminalDashboardQueries.cs` | `src/Satellites/GoldBank.TerminalManager/Queries/` | Read-model queries for dashboard data |
 | `terminal-fleet-dashboard.json` | `infrastructure/grafana/dashboards/` | Grafana dashboard definition |
 
 ### API / gRPC Endpoints

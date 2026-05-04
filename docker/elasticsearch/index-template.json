@@ -1,10 +1,10 @@
 {
-  "index_patterns": ["unibank-logs-*"],
+  "index_patterns": ["goldbank-logs-*"],
   "template": {
     "settings": {
       "number_of_shards": 1,
       "number_of_replicas": 0,
-      "index.lifecycle.name": "unibank-logs-policy",
+      "index.lifecycle.name": "goldbank-logs-policy",
       "index.refresh_interval": "5s"
     },
     "mappings": {
@@ -112,6 +112,6 @@
   "composed_of": [],
   "version": 1,
   "_meta": {
-    "description": "Index template for UniBank structured logs shipped via Serilog Elasticsearch sink."
+    "description": "Index template for GoldBank structured logs shipped via Serilog Elasticsearch sink."
   }
 }

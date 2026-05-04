@@ -23,7 +23,7 @@ So that my identity is confirmed
 ### Background
 After uploading their national ID document (STORY-011), users must complete a selfie-based identity verification step. This is a critical security measure that confirms the person registering is the same individual depicted on the national ID document. The system must perform liveness detection to prevent spoofing attacks (e.g., holding up a printed photo or showing a screen) and then compare the selfie against the photo extracted from the ID document.
 
-Given UniBank's target market of unbanked users across Southern Africa, the solution must work reliably on low-end Android devices with varying camera quality and in diverse lighting conditions. The photo matching system should support a configurable confidence threshold per tenant, allowing operators in different countries to balance security against user experience based on local conditions and regulatory requirements.
+Given GoldBank's target market of unbanked users across Southern Africa, the solution must work reliably on low-end Android devices with varying camera quality and in diverse lighting conditions. The photo matching system should support a configurable confidence threshold per tenant, allowing operators in different countries to balance security against user experience based on local conditions and regulatory requirements.
 
 This is the highest-pointed story in Sprint 2 (8 points) due to the complexity of integrating liveness detection, photo comparison logic, and the multiple possible outcomes (auto-approve, manual review, rejection).
 

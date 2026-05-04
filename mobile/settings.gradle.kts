@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "UniBank"
+rootProject.name = "GoldBank"
 
 include(":shared")
 include(":androidApp")

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UniBank - Run Tests with Coverage
+# GoldBank - Run Tests with Coverage
 # Runs unit and integration tests, generates coverage reports, and enforces
 # the minimum coverage threshold.
 #
@@ -24,7 +24,7 @@ RUN_UNIT=true
 RUN_INTEGRATION=true
 COVERAGE_THRESHOLD="${COVERAGE_THRESHOLD:-80}"
 CONFIGURATION="Release"
-SOLUTION_FILE="UniBank.slnx"
+SOLUTION_FILE="GoldBank.slnx"
 TEST_RESULTS_DIR="${PROJECT_ROOT}/test-results"
 
 # Colors for output
@@ -85,7 +85,7 @@ log_error() {
 
 cd "${PROJECT_ROOT}"
 
-log_info "UniBank Test Runner"
+log_info "GoldBank Test Runner"
 log_info "Solution: ${SOLUTION_FILE}"
 log_info "Configuration: ${CONFIGURATION}"
 log_info "Coverage threshold: ${COVERAGE_THRESHOLD}%"
@@ -102,7 +102,7 @@ EXIT_CODE=0
 if [ "${RUN_UNIT}" = true ]; then
     log_info "Running unit tests..."
 
-    dotnet test tests/UniBank.Tests/UniBank.Tests.csproj \
+    dotnet test tests/GoldBank.Tests/GoldBank.Tests.csproj \
         --configuration "${CONFIGURATION}" \
         --logger "junit;LogFilePath=${TEST_RESULTS_DIR}/unit-tests.xml" \
         --collect:"XPlat Code Coverage" \
@@ -122,7 +122,7 @@ fi
 if [ "${RUN_INTEGRATION}" = true ]; then
     log_info "Running integration tests..."
 
-    dotnet test tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj \
+    dotnet test tests/GoldBank.IntegrationTests/GoldBank.IntegrationTests.csproj \
         --configuration "${CONFIGURATION}" \
         --logger "junit;LogFilePath=${TEST_RESULTS_DIR}/integration-tests.xml" \
         --collect:"XPlat Code Coverage" \

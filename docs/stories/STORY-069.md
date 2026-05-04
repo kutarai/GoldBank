@@ -22,7 +22,7 @@ So that **white-label deployments are fully separated and no institution can acc
 
 ### Background
 
-Multi-tenant data isolation is the single most critical security requirement for a white-label banking platform. If Tenant A (a Zambian bank) can accidentally or deliberately access Tenant B's (a Malawian bank's) customer data, the consequences are catastrophic: regulatory violations, loss of banking licenses, customer harm, and platform-wide trust destruction. UniBank's schema-per-tenant architecture provides structural isolation, but structural design alone is insufficient — it must be verified, tested, and continuously enforced.
+Multi-tenant data isolation is the single most critical security requirement for a white-label banking platform. If Tenant A (a Zambian bank) can accidentally or deliberately access Tenant B's (a Malawian bank's) customer data, the consequences are catastrophic: regulatory violations, loss of banking licenses, customer harm, and platform-wide trust destruction. GoldBank's schema-per-tenant architecture provides structural isolation, but structural design alone is insufficient — it must be verified, tested, and continuously enforced.
 
 This story implements a comprehensive verification framework that validates tenant data isolation at every layer of the stack:
 1. **Application layer:** EF Core `TenantDbContext` always resolves to the correct schema via `ITenantProvider`
@@ -102,14 +102,14 @@ This is a system verification story. The "user flows" are verification procedure
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `TenantDbContext.cs` | `src/Shared/UniBank.SharedKernel/Tenancy/` | EF Core DbContext with tenant schema resolution |
-| `ITenantProvider.cs` | `src/Shared/UniBank.SharedKernel/Tenancy/` | Interface for current tenant resolution |
-| `TenantGrpcInterceptor.cs` | `src/Gateway/UniBank.Gateway/Interceptors/` | gRPC interceptor for tenant ID extraction from JWT |
-| `RlsMigration.cs` | `src/Shared/UniBank.SharedKernel/Migrations/` | EF Core migration applying RLS policies |
-| `TenantIsolationTests.cs` | `tests/UniBank.IntegrationTests/Tenancy/` | Cross-tenant access integration tests |
-| `TenantIsolationReport.cs` | `src/Modules/UniBank.Admin/Reports/` | Generates tenant isolation verification report |
-| `CrossTenantAccessAlert.cs` | `src/Shared/UniBank.Events/Security/` | Wolverine alert event for cross-tenant access attempts |
-| `TenantIsolationMiddleware.cs` | `src/Shared/UniBank.SharedKernel/Tenancy/` | Middleware that sets PostgreSQL session variable |
+| `TenantDbContext.cs` | `src/Shared/GoldBank.SharedKernel/Tenancy/` | EF Core DbContext with tenant schema resolution |
+| `ITenantProvider.cs` | `src/Shared/GoldBank.SharedKernel/Tenancy/` | Interface for current tenant resolution |
+| `TenantGrpcInterceptor.cs` | `src/Gateway/GoldBank.Gateway/Interceptors/` | gRPC interceptor for tenant ID extraction from JWT |
+| `RlsMigration.cs` | `src/Shared/GoldBank.SharedKernel/Migrations/` | EF Core migration applying RLS policies |
+| `TenantIsolationTests.cs` | `tests/GoldBank.IntegrationTests/Tenancy/` | Cross-tenant access integration tests |
+| `TenantIsolationReport.cs` | `src/Modules/GoldBank.Admin/Reports/` | Generates tenant isolation verification report |
+| `CrossTenantAccessAlert.cs` | `src/Shared/GoldBank.Events/Security/` | Wolverine alert event for cross-tenant access attempts |
+| `TenantIsolationMiddleware.cs` | `src/Shared/GoldBank.SharedKernel/Tenancy/` | Middleware that sets PostgreSQL session variable |
 
 ### Application Layer Isolation
 

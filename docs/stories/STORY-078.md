@@ -49,8 +49,8 @@ On-us transactions are the simplest and fastest card transaction type. No inter-
 ### User Flow
 
 1. **Card Tap/Insert:** Bank client presents card at on-us merchant's POS terminal
-2. **Switch Receives:** National switch routes ISO 20022 `pacs.008` to UniBank switch
-3. **Switch Translates:** Switch converts to canonical format, identifies as on-us (merchant belongs to UniBank)
+2. **Switch Receives:** National switch routes ISO 20022 `pacs.008` to GoldBank switch
+3. **Switch Translates:** Switch converts to canonical format, identifies as on-us (merchant belongs to GoldBank)
 4. **gRPC Call:** Switch calls `CardTransactionService.ProcessPurchase` with `is_on_us = true`
 5. **Validate Cardholder:** Check account exists, active, balance >= amount + fee, currency = ZWG
 6. **Validate Merchant:** Look up merchant by merchant_id, check active and accepting payments

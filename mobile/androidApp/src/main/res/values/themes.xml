@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.UniBank" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.GoldBank" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Splash screen theme (Android 12+ SplashScreen API).
+         MainActivity.onCreate calls setTheme(R.style.Theme_GoldBank) so the splash
+         visuals only apply during launch, not the rest of the activity lifecycle. -->
+    <style name="Theme.GoldBank.Splash" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+    </style>
 </resources>

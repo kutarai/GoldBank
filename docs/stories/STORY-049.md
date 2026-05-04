@@ -24,11 +24,11 @@ So that **terminals stay current without requiring physical visits to merchant l
 
 Maintaining a fleet of EFT POS terminals across Southern Africa presents a significant logistical challenge. Many terminals are deployed in remote locations — rural shops, informal markets, township businesses — where sending a technician for a firmware update is costly and time-consuming. Remote update capability transforms terminal fleet management from a field service operation to a centralized one.
 
-UniBank's remote update system uses MQTT as the delivery notification channel. When an admin initiates an update, the system publishes an update manifest to the terminal's MQTT topic. The terminal downloads the update package from a secure URL, verifies its integrity via SHA-256 checksum, and applies it according to the specified policy (immediately, on next idle period, or at a scheduled time). The terminal reports update progress back through its status topic, giving the operations team real-time visibility into the rollout.
+GoldBank's remote update system uses MQTT as the delivery notification channel. When an admin initiates an update, the system publishes an update manifest to the terminal's MQTT topic. The terminal downloads the update package from a secure URL, verifies its integrity via SHA-256 checksum, and applies it according to the specified policy (immediately, on next idle period, or at a scheduled time). The terminal reports update progress back through its status topic, giving the operations team real-time visibility into the rollout.
 
 Three types of updates are supported:
 - **Firmware updates:** Low-level device firmware from the terminal vendor. These typically require a terminal reboot.
-- **Application updates:** The UniBank terminal application that handles payment processing, UI, and MQTT communication.
+- **Application updates:** The GoldBank terminal application that handles payment processing, UI, and MQTT communication.
 - **Configuration updates:** Runtime configuration changes that do not require a restart (e.g., transaction limits, supported payment types, UI themes).
 
 **Functional Requirement:** FR-036
@@ -99,13 +99,13 @@ Three types of updates are supported:
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `TerminalUpdateService.cs` | `src/Satellites/UniBank.TerminalManager/Services/` | gRPC service for update management |
-| `UpdateDistributionHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Wolverine handler for MQTT update publication |
-| `UpdateStatusHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Processes update status reports from terminals |
-| `BatchRolloutOrchestrator.cs` | `src/Satellites/UniBank.TerminalManager/Jobs/` | Manages staged batch rollouts |
-| `UpdateRetryHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Retry logic for failed updates |
-| `TerminalUpdateFailedAlert.cs` | `src/Shared/UniBank.Events/Terminal/` | Wolverine event for update failure alerting |
-| `BatchRolloutPausedAlert.cs` | `src/Shared/UniBank.Events/Terminal/` | Wolverine event for paused rollout |
+| `TerminalUpdateService.cs` | `src/Satellites/GoldBank.TerminalManager/Services/` | gRPC service for update management |
+| `UpdateDistributionHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Wolverine handler for MQTT update publication |
+| `UpdateStatusHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Processes update status reports from terminals |
+| `BatchRolloutOrchestrator.cs` | `src/Satellites/GoldBank.TerminalManager/Jobs/` | Manages staged batch rollouts |
+| `UpdateRetryHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Retry logic for failed updates |
+| `TerminalUpdateFailedAlert.cs` | `src/Shared/GoldBank.Events/Terminal/` | Wolverine event for update failure alerting |
+| `BatchRolloutPausedAlert.cs` | `src/Shared/GoldBank.Events/Terminal/` | Wolverine event for paused rollout |
 
 ### API / gRPC Endpoints
 
@@ -208,7 +208,7 @@ message GetUpdateHistoryResponse {
   "update_id": 5001,
   "update_type": "firmware",
   "version": "3.3.0",
-  "download_url": "https://updates.unibank.internal/packages/pax-a920/firmware-3.3.0.bin?sig=SIGNED_TOKEN",
+  "download_url": "https://updates.goldbank.internal/packages/pax-a920/firmware-3.3.0.bin?sig=SIGNED_TOKEN",
   "checksum_sha256": "a1b2c3d4e5f6...64_hex_chars",
   "apply_policy": "next_idle",
   "scheduled_at": null,

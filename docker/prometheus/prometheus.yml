@@ -10,27 +10,27 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'unibank-gateway'
+  - job_name: 'goldbank-gateway'
     static_configs:
       - targets: ['gateway:1112']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-admin'
+  - job_name: 'goldbank-admin'
     static_configs:
       - targets: ['admin:5010']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-terminal-manager'
+  - job_name: 'goldbank-terminal-manager'
     static_configs:
       - targets: ['terminal-manager:5004']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-hsm'
+  - job_name: 'goldbank-hsm'
     static_configs:
       - targets: ['hsm:5005']
     metrics_path: '/metrics'
 
-  - job_name: 'unibank-notifications'
+  - job_name: 'goldbank-notifications'
     static_configs:
       - targets: ['notifications:5007']
     metrics_path: '/metrics'

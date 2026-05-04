@@ -1,0 +1,359 @@
+@page "/branches"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.UserManagement)]
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Branch Management - GoldBank Admin</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h4" Style="flex:1">Branch Management</MudText>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.AddBusiness"
+               OnClick="OpenCreateDialog">
+        Create Branch
+    </MudButton>
+</MudStack>
+
+@* Data Grid *@
+<MudTable Items="_branches"
+          Dense="true"
+          Hover="true"
+          Striped="true"
+          Loading="_loading"
+          LoadingProgressColor="Color.Primary"
+          Breakpoint="Breakpoint.Sm"
+          Elevation="2">
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Code</MudTh>
+        <MudTh>Address</MudTh>
+        <MudTh>City</MudTh>
+        <MudTh>Phone</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Code">
+            <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Outlined">
+                @context.Code
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Address">@context.Address</MudTd>
+        <MudTd DataLabel="City">@context.City</MudTd>
+        <MudTd DataLabel="Phone">@context.Phone</MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string"
+                     Color="@(context.IsActive ? Color.Success : Color.Default)"
+                     Size="Size.Small">
+                @(context.IsActive ? "Active" : "Inactive")
+            </MudChip>
+        </MudTd>
+        <MudTd DataLabel="Actions">
+            <MudTooltip Text="Edit">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small"
+                               Color="Color.Primary"
+                               OnClick="@(() => OpenEditDialog(context))" />
+            </MudTooltip>
+        </MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No branches found.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new[] { 10, 25, 50 }" />
+    </PagerContent>
+</MudTable>
+
+@* Create / Edit Branch Dialog *@
+<MudDialog @bind-Visible="_branchDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @(_isEditMode ? "Edit Branch" : "Create Branch")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="8">
+                <MudTextField @bind-Value="_form.Name"
+                              Label="Branch Name"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Class="mb-3" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="_form.Code"
+                              Label="Branch Code"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Disabled="_isEditMode"
+                              Class="mb-3" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_form.Address"
+                              Label="Address"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Class="mb-3" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_form.City"
+                              Label="City"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Class="mb-3" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_form.Phone"
+                              Label="Phone"
+                              Variant="Variant.Outlined"
+                              Class="mb-3" />
+            </MudItem>
+            @if (_isEditMode)
+            {
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="_form.IsActive"
+                               Label="Active"
+                               Color="Color.Success" />
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseBranchDialog">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(_submitting || !IsFormValid())"
+                   OnClick="SubmitBranchAsync">
+            @if (_submitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(_isEditMode ? "Save Changes" : "Create Branch")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // -------------------------------------------------------------------------
+    // State
+    // -------------------------------------------------------------------------
+
+    private bool _loading;
+    private bool _submitting;
+
+    private List<BranchResponse> _branches = [];
+
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth         = MaxWidth.Medium,
+        FullWidth        = true,
+    };
+
+    private bool _branchDialogVisible;
+    private bool _isEditMode;
+    private string _editingBranchId = string.Empty;
+    private BranchFormModel _form = new();
+
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBranchesAsync();
+    }
+
+    // -------------------------------------------------------------------------
+    // Data loading
+    // -------------------------------------------------------------------------
+
+    private async Task LoadBranchesAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await AdminClient.ListBranchesAsync(new ListBranchesRequest
+            {
+                ActiveOnly = false,
+                Pagination = new PaginationRequest { Page = 1, PageSize = 200 }
+            });
+
+            _branches = response.Branches.ToList();
+        }
+        catch (RpcException ex) when (
+            ex.StatusCode == StatusCode.Unimplemented ||
+            ex.StatusCode == StatusCode.Unavailable)
+        {
+            Snackbar.Add("Branch management RPC not yet implemented — showing stub data.", Severity.Info);
+            _branches = GetStubBranches();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load branches: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Create dialog
+    // -------------------------------------------------------------------------
+
+    private void OpenCreateDialog()
+    {
+        _isEditMode       = false;
+        _editingBranchId  = string.Empty;
+        _form             = new BranchFormModel();
+        _branchDialogVisible = true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Edit dialog
+    // -------------------------------------------------------------------------
+
+    private void OpenEditDialog(BranchResponse branch)
+    {
+        _isEditMode      = true;
+        _editingBranchId = branch.Id;
+        _form = new BranchFormModel
+        {
+            Name     = branch.Name,
+            Code     = branch.Code,
+            Address  = branch.Address,
+            City     = branch.City,
+            Phone    = branch.Phone,
+            IsActive = branch.IsActive,
+        };
+        _branchDialogVisible = true;
+    }
+
+    private void CloseBranchDialog() => _branchDialogVisible = false;
+
+    private async Task SubmitBranchAsync()
+    {
+        if (!IsFormValid()) return;
+
+        _submitting = true;
+
+        try
+        {
+            if (_isEditMode)
+            {
+                var req = new UpdateBranchRequest
+                {
+                    Id       = _editingBranchId,
+                    Name     = _form.Name,
+                    Address  = _form.Address,
+                    City     = _form.City,
+                    Phone    = _form.Phone,
+                    IsActive = _form.IsActive,
+                };
+                await AdminClient.UpdateBranchAsync(req);
+                Snackbar.Add($"Branch '{_form.Name}' updated successfully.", Severity.Success);
+            }
+            else
+            {
+                var req = new CreateBranchRequest
+                {
+                    Name    = _form.Name,
+                    Code    = _form.Code,
+                    Address = _form.Address,
+                    City    = _form.City,
+                    Phone   = _form.Phone,
+                };
+                await AdminClient.CreateBranchAsync(req);
+                Snackbar.Add($"Branch '{_form.Name}' created successfully.", Severity.Success);
+            }
+
+            _branchDialogVisible = false;
+            await LoadBranchesAsync();
+        }
+        catch (RpcException ex) when (
+            ex.StatusCode == StatusCode.Unimplemented ||
+            ex.StatusCode == StatusCode.Unavailable)
+        {
+            Snackbar.Add("Save RPC not yet implemented on the server.", Severity.Warning);
+            _branchDialogVisible = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving branch: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private bool IsFormValid()
+    {
+        return !string.IsNullOrWhiteSpace(_form.Name)
+            && !string.IsNullOrWhiteSpace(_form.Code)
+            && !string.IsNullOrWhiteSpace(_form.Address)
+            && !string.IsNullOrWhiteSpace(_form.City);
+    }
+
+    // Stub data used when the gRPC handler is not yet implemented.
+    private static List<BranchResponse> GetStubBranches() =>
+    [
+        new BranchResponse
+        {
+            Id       = "stub-001",
+            Name     = "Head Office",
+            Code     = "HQ001",
+            Address  = "1 Finance Street",
+            City     = "Nairobi",
+            Phone    = "+254 20 000 0001",
+            IsActive = true,
+        },
+        new BranchResponse
+        {
+            Id       = "stub-002",
+            Name     = "Westlands Branch",
+            Code     = "WLD002",
+            Address  = "45 Waiyaki Way",
+            City     = "Nairobi",
+            Phone    = "+254 20 000 0002",
+            IsActive = true,
+        },
+        new BranchResponse
+        {
+            Id       = "stub-003",
+            Name     = "Mombasa Branch",
+            Code     = "MSA003",
+            Address  = "10 Moi Avenue",
+            City     = "Mombasa",
+            Phone    = "+254 41 000 0003",
+            IsActive = false,
+        },
+    ];
+
+    // -------------------------------------------------------------------------
+    // Form model
+    // -------------------------------------------------------------------------
+
+    private sealed class BranchFormModel
+    {
+        public string Name     { get; set; } = string.Empty;
+        public string Code     { get; set; } = string.Empty;
+        public string Address  { get; set; } = string.Empty;
+        public string City     { get; set; } = string.Empty;
+        public string Phone    { get; set; } = string.Empty;
+        public bool   IsActive { get; set; } = true;
+    }
+}

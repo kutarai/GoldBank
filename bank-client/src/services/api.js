@@ -1,4 +1,4 @@
-// Real API calls to the UniBank Gateway REST endpoints.
+// Real API calls to the GoldBank Gateway REST endpoints.
 // Base URL: gateway HTTP port (mapped to 5101 in docker-compose)
 
 import dayjs from 'dayjs';
@@ -243,6 +243,46 @@ export async function generateBranches() {
     ...b,
     active: b.isActive,
   }));
+}
+
+// ─── Assets (custody + valuation) ────────────────────────────────────────────
+// GET /api/admin/assets — flat list shaped for AssetValuation.jsx Asset Registry tab.
+// Fields: id, customer, type, description, quantity, depositHouse, currentValue,
+// currency, status, verification, registeredDate, lastValued, assignedValuer.
+
+export async function generateAssets() {
+  const items = await fetchApi('/assets');
+  return items || [];
+}
+
+// GET /api/admin/asset-valuations — flat list for the Valuation History tab.
+// Fields: id, valuationUuid, date, asset, assetUuid, customer, description,
+// valuer, licenseNo, prevValue, newValue, currency, notes.
+
+export async function generateAssetValuations() {
+  const items = await fetchApi('/asset-valuations');
+  return items || [];
+}
+
+// POST /api/admin/asset-valuations — submit a new valuation for an asset.
+// Body { assetId (uuid), amount, currency, valuerName, licenseNo, notes }.
+// Returns the newly-created valuation, or null on error.
+export async function submitAssetValuation(payload) {
+  try {
+    const res = await fetch(`${API_BASE}/asset-valuations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      console.warn(`[api] submitAssetValuation responded ${res.status} ${res.statusText}`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('[api] submitAssetValuation failed:', err);
+    return null;
+  }
 }
 
 // ─── Audit Trail ─────────────────────────────────────────────────────────────

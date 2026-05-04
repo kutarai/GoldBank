@@ -21,9 +21,9 @@ So that I can accept payments and act as agent
 ## Description
 
 ### Background
-Merchants are a vital part of UniBank's ecosystem in Southern Africa. They serve a dual purpose: accepting digital payments for goods and services, and optionally acting as agents who facilitate cash-in and cash-out for other users. In many parts of the region, agent networks are the primary way unbanked and underbanked populations access financial services -- agents are often small shop owners, market vendors, or mobile money kiosks.
+Merchants are a vital part of GoldBank's ecosystem in Southern Africa. They serve a dual purpose: accepting digital payments for goods and services, and optionally acting as agents who facilitate cash-in and cash-out for other users. In many parts of the region, agent networks are the primary way unbanked and underbanked populations access financial services -- agents are often small shop owners, market vendors, or mobile money kiosks.
 
-Merchant registration requires the business owner to already have an active personal UniBank account (completed personal KYC). The merchant registration process adds business-level KYC, including business name, type, location (GPS coordinates for the agent/merchant locator), and business registration document verification. The `is_agent` flag determines whether the merchant can perform cash-in/cash-out operations on behalf of other users, which is a regulated activity requiring additional compliance checks in most Southern African markets.
+Merchant registration requires the business owner to already have an active personal GoldBank account (completed personal KYC). The merchant registration process adds business-level KYC, including business name, type, location (GPS coordinates for the agent/merchant locator), and business registration document verification. The `is_agent` flag determines whether the merchant can perform cash-in/cash-out operations on behalf of other users, which is a regulated activity requiring additional compliance checks in most Southern African markets.
 
 Each merchant receives a unique merchant ID that is used for payment acceptance, agent operations, and merchant-to-merchant transactions.
 

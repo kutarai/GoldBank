@@ -21,7 +21,7 @@ So that my identity can be verified
 ## Description
 
 ### Background
-UniBank serves the unbanked population across Southern Africa, where Know Your Customer (KYC) compliance is a regulatory requirement for all financial services. National ID document upload is the first step in the identity verification pipeline. Users must submit a clear image of their government-issued national identification document (e.g., Malawian National ID, Zambian NRC, Mozambican BI) before their account can be activated. This document will later be cross-referenced against a selfie photograph for identity confirmation (STORY-012).
+GoldBank serves the unbanked population across Southern Africa, where Know Your Customer (KYC) compliance is a regulatory requirement for all financial services. National ID document upload is the first step in the identity verification pipeline. Users must submit a clear image of their government-issued national identification document (e.g., Malawian National ID, Zambian NRC, Mozambican BI) before their account can be activated. This document will later be cross-referenced against a selfie photograph for identity confirmation (STORY-012).
 
 The upload must handle the realities of the target market: users may be on low-bandwidth connections, using entry-level Android devices, and photographing documents in suboptimal lighting conditions. The system must securely store these sensitive documents with AES-256 encryption at rest, complying with data protection regulations such as Malawi's Data Protection Act and similar frameworks across the region.
 

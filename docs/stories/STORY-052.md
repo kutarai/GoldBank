@@ -22,11 +22,11 @@ So that **I receive my earnings regularly without manual intervention**
 
 ### Background
 
-Merchants in UniBank's ecosystem — corner shops, informal traders, mobile money agents — depend on timely settlement of their sales proceeds. When a customer pays a merchant via UniBank (QR payment, NFC tap, USSD transfer), the transaction amount (minus fees) must eventually land in the merchant's designated bank account. This is the settlement and payout process.
+Merchants in GoldBank's ecosystem — corner shops, informal traders, mobile money agents — depend on timely settlement of their sales proceeds. When a customer pays a merchant via GoldBank (QR payment, NFC tap, USSD transfer), the transaction amount (minus fees) must eventually land in the merchant's designated bank account. This is the settlement and payout process.
 
-Settlement is not instantaneous. Transactions accumulate throughout the business day (or week, depending on the merchant's configured schedule). At the end of the settlement period, the system aggregates all completed transactions for the merchant, calculates the gross amount, deducts transaction fees, adds any agent commissions earned, and computes the net settlement amount. A payout is then initiated to the merchant's designated bank account — either as an internal UniBank transfer (if the merchant banks with UniBank) or as an external transfer via the Switching Server (if the merchant banks elsewhere).
+Settlement is not instantaneous. Transactions accumulate throughout the business day (or week, depending on the merchant's configured schedule). At the end of the settlement period, the system aggregates all completed transactions for the merchant, calculates the gross amount, deducts transaction fees, adds any agent commissions earned, and computes the net settlement amount. A payout is then initiated to the merchant's designated bank account — either as an internal GoldBank transfer (if the merchant banks with GoldBank) or as an external transfer via the Switching Server (if the merchant banks elsewhere).
 
-For the unbanked merchants who are UniBank's primary market, this automated settlement replaces the manual cash collection that is common in informal economies. It is a key value proposition of the platform.
+For the unbanked merchants who are GoldBank's primary market, this automated settlement replaces the manual cash collection that is common in informal economies. It is a key value proposition of the platform.
 
 **Functional Requirements:** FR-039 (Merchant Settlement & Payout)
 
@@ -39,7 +39,7 @@ For the unbanked merchants who are UniBank's primary market, this automated sett
 - Commission calculation for merchant agents (cash-in/cash-out commissions)
 - Net settlement computation: pre-commission amount + agent commissions earned = net payout
 - Settlement record creation with full breakdown
-- Payout initiation: internal transfer (UniBank account) or external transfer (via Switching Server)
+- Payout initiation: internal transfer (GoldBank account) or external transfer (via Switching Server)
 - Settlement notification to merchant (settlement ready, payout initiated, payout completed)
 - Per-merchant schedule configuration (daily or weekly)
 - Settlement approval workflow for amounts above a configurable threshold
@@ -73,7 +73,7 @@ For the unbanked merchants who are UniBank's primary market, this automated sett
    - If net amount >= auto-approval threshold: queue for manual approval
    - If net amount <= 0: no payout (fees exceeded sales), flag for review
 8. **Payout Initiation:**
-   - **Internal (UniBank account):** Create an internal transfer from the merchant settlement pool account to the merchant's UniBank account
+   - **Internal (GoldBank account):** Create an internal transfer from the merchant settlement pool account to the merchant's GoldBank account
    - **External (other bank):** Publish `RouteOutboundTransaction` command to the Switching Server with the merchant's external bank details
 9. **Notification:** Send notification to merchant:
    - "Your daily settlement of ZAR X,XXX.XX has been processed. Payout initiated to account ending in XXXX."
@@ -93,7 +93,7 @@ For the unbanked merchants who are UniBank's primary market, this automated sett
 - [ ] Settlement calculation includes: gross amount, transaction fees deducted, agent commissions added, net payout amount
 - [ ] Settlement record is created with full breakdown (gross_amount, fees, commissions, net_amount, period_start, period_end)
 - [ ] Payout is initiated to the merchant's designated bank account:
-  - Internal UniBank transfer if the merchant's payout account is a UniBank account
+  - Internal GoldBank transfer if the merchant's payout account is a GoldBank account
   - External transfer via Switching Server if the merchant's payout account is at another bank
 - [ ] Merchants with weekly settlement schedule receive settlement only on the configured day (default: Monday)
 - [ ] Settlement schedule is configurable per merchant (daily or weekly)
@@ -110,14 +110,14 @@ For the unbanked merchants who are UniBank's primary market, this automated sett
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `SettlementJob.cs` | `src/Core/UniBank.Core/Modules/Merchants/Jobs/` | Scheduled settlement job orchestrator |
-| `MerchantSettlementService.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Services/` | Settlement calculation logic |
-| `SettlementCalculator.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Services/` | Gross, fees, commissions, net computation |
-| `PayoutService.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Services/` | Initiates payouts (internal or external) |
-| `SettlementApprovalHandler.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Handlers/` | Handles manual approval workflow |
-| `SettlementNotificationHandler.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Handlers/` | Sends settlement notifications |
-| `Settlement.cs` | `src/Core/UniBank.Core/Modules/Merchants/Domain/Entities/` | Settlement domain entity |
-| `SettlementStatus.cs` | `src/Core/UniBank.Core/Modules/Merchants/Domain/ValueObjects/` | Settlement status value object |
+| `SettlementJob.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Jobs/` | Scheduled settlement job orchestrator |
+| `MerchantSettlementService.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Services/` | Settlement calculation logic |
+| `SettlementCalculator.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Services/` | Gross, fees, commissions, net computation |
+| `PayoutService.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Services/` | Initiates payouts (internal or external) |
+| `SettlementApprovalHandler.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Handlers/` | Handles manual approval workflow |
+| `SettlementNotificationHandler.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Handlers/` | Sends settlement notifications |
+| `Settlement.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Domain/Entities/` | Settlement domain entity |
+| `SettlementStatus.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Domain/ValueObjects/` | Settlement status value object |
 
 ### API / gRPC Endpoints
 
@@ -244,7 +244,7 @@ public class PayoutService
     {
         if (config.PayoutAccountIsInternal)
         {
-            // Internal UniBank transfer
+            // Internal GoldBank transfer
             var transferCommand = new CreateInternalTransfer(
                 SourceAccountId: _settlementPoolAccountId,
                 DestAccountId: config.PayoutAccountId,
@@ -260,7 +260,7 @@ public class PayoutService
             // External transfer via Switching Server
             var switchCommand = new RouteOutboundTransaction(
                 TenantId: settlement.TenantId,
-                SourceInstitution: _unibankInstitutionCode,
+                SourceInstitution: _goldbankInstitutionCode,
                 DestinationInstitution: config.PayoutBankCode,
                 SourceAccount: _settlementPoolAccount,
                 DestinationAccount: config.PayoutAccountNumber,
@@ -346,7 +346,7 @@ CREATE TABLE merchant_payout_config (
     settlement_day      INT,  -- 1=Monday, 7=Sunday (only for weekly)
     settlement_time     TIME NOT NULL DEFAULT '23:00',
     payout_account_type VARCHAR(10) NOT NULL CHECK (payout_account_type IN ('internal', 'external')),
-    payout_account_id   UUID,                -- UniBank account ID (if internal)
+    payout_account_id   UUID,                -- GoldBank account ID (if internal)
     payout_account_number VARCHAR(34),       -- Account number (if external)
     payout_bank_code    VARCHAR(20),         -- Bank institution code (if external)
     payout_bank_name    VARCHAR(100),        -- Bank name for display
@@ -360,7 +360,7 @@ CREATE TABLE merchant_payout_config (
 
 ### Security Considerations
 
-- **Settlement Pool Account:** All merchant settlements are funded from a settlement pool account (a UniBank internal ledger account). This account must have controls: only the settlement service can debit it, and the balance is monitored for adequacy.
+- **Settlement Pool Account:** All merchant settlements are funded from a settlement pool account (a GoldBank internal ledger account). This account must have controls: only the settlement service can debit it, and the balance is monitored for adequacy.
 - **Payout Authorization:** Payouts above the `auto_approval_limit` require manual approval by an authorized operations team member. The approval is recorded with the approver's identity and timestamp.
 - **External Payout Verification:** When initiating an external payout via the Switching Server, the merchant's payout bank details (account number, bank code) must be verified during merchant onboarding (STORY-050). Changes to payout details require re-verification and a cooling-off period.
 - **Reconciliation:** Every settlement must be reconcilable. The `settlement_line_items` table links each settlement to its constituent transactions, enabling full audit trail.
@@ -391,7 +391,7 @@ CREATE TABLE merchant_payout_config (
 - None directly. Settlement is a downstream process.
 
 **External Dependencies:**
-- Switching Server (STORY-043) for external payouts to non-UniBank bank accounts
+- Switching Server (STORY-043) for external payouts to non-GoldBank bank accounts
 - Notification service for settlement notifications to merchants
 - Scheduler infrastructure (Wolverine scheduled commands or Hangfire)
 

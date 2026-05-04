@@ -76,7 +76,7 @@ CREATE TABLE bank.currency_denominations (
 After admin edits, publish a `CurrencyDenominationsUpdated` event; the validation service handler invalidates its cache.
 
 ### EF entity location
-`server/UniBank.Core/Modules/BranchCash/Domain/Entities/CurrencyDenomination.cs`
+`server/GoldBank.Core/Modules/BranchCash/Domain/Entities/CurrencyDenomination.cs`
 
 ---
 

@@ -1,8 +1,8 @@
 ---
-title: "UniBank White-Label Banking Platform"
+title: "GoldBank White-Label Banking Platform"
 subtitle: "Executive Summary"
 date: "February 2026"
-author: "UniBank Engineering"
+author: "GoldBank Engineering"
 geometry: "margin=2.5cm"
 fontsize: 11pt
 toc: true
@@ -18,7 +18,7 @@ header-includes:
   - \definecolor{ubgray}{RGB}{100,100,100}
   - \pagestyle{fancy}
   - \fancyhf{}
-  - \fancyhead[L]{\textcolor{ubgray}{\small UniBank White-Label Banking Platform}}
+  - \fancyhead[L]{\textcolor{ubgray}{\small GoldBank White-Label Banking Platform}}
   - \fancyhead[R]{\textcolor{ubgray}{\small Executive Summary}}
   - \fancyfoot[C]{\textcolor{ubgray}{\small Confidential --- \thepage}}
   - \renewcommand{\headrulewidth}{0.4pt}
@@ -32,7 +32,7 @@ header-includes:
 
 # Platform Overview
 
-UniBank is an enterprise-grade **white-label digital banking platform** purpose-built for the Southern African market. Designed to serve the unbanked and underbanked population, the platform transforms smartphones into full-featured banking instruments, enabling contactless NFC payments, peer-to-peer transfers, bill payments, and agent-assisted cash services --- all without requiring physical bank cards or branch visits.
+GoldBank is an enterprise-grade **white-label digital banking platform** purpose-built for the Southern African market. Designed to serve the unbanked and underbanked population, the platform transforms smartphones into full-featured banking instruments, enabling contactless NFC payments, peer-to-peer transfers, bill payments, and agent-assisted cash services --- all without requiring physical bank cards or branch visits.
 
 The platform supports **multi-tenant white-label deployments**, allowing financial institutions, mobile network operators, and fintech companies to launch their own branded banking services rapidly, with complete data isolation, configurable fee structures, and independent branding.
 
@@ -59,7 +59,7 @@ The platform supports **multi-tenant white-label deployments**, allowing financi
 
 # Architecture Overview
 
-UniBank uses a **Modular Monolith with Satellite Services** architecture, balancing operational simplicity with enterprise-grade security and compliance requirements.
+GoldBank uses a **Modular Monolith with Satellite Services** architecture, balancing operational simplicity with enterprise-grade security and compliance requirements.
 
 ## Design Philosophy
 
@@ -180,7 +180,7 @@ The Bill Payments module connects users to utility and service providers for bil
 
 ## 7. Merchants Module
 
-The Merchants module supports onboarding and ongoing management of businesses accepting UniBank payments.
+The Merchants module supports onboarding and ongoing management of businesses accepting GoldBank payments.
 
 **Capabilities:**
 
@@ -430,7 +430,7 @@ The platform was delivered across **8 development sprints**, comprising **76 use
 
 # Conclusion
 
-UniBank delivers a **complete digital banking ecosystem** addressing the specific needs of the Southern African market:
+GoldBank delivers a **complete digital banking ecosystem** addressing the specific needs of the Southern African market:
 
 1. **Financial Inclusion** --- zero-cost accounts and agent networks reach the unbanked population where traditional banking infrastructure does not exist.
 

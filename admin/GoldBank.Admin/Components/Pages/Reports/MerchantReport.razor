@@ -1,0 +1,135 @@
+@page "/reports/merchants"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.ReportAccess)]
+@inject ReportingService.ReportingServiceClient ReportingClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Merchant Report</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">Merchant Report</MudText>
+
+<MudPaper Class="pa-4 mb-4" Elevation="2">
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudDateRangePicker @bind-DateRange="_dateRange"
+                                Label="Date Range"
+                                Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_merchantId"
+                          Label="Merchant ID (optional)"
+                          Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="12" md="4" Class="d-flex align-end">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="GenerateReportAsync"
+                       Disabled="_loading"
+                       StartIcon="@Icons.Material.Filled.Store">
+                @if (_loading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Generating...</span>
+                }
+                else
+                {
+                    <span>Generate</span>
+                }
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_response is not null)
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="6">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Volume</MudText>
+                    <MudText Typo="Typo.h5">@FormatMoney(_response.TotalVolume)</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Transactions</MudText>
+                    <MudText Typo="Typo.h5">@_response.TotalTransactions.ToString("N0")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Class="pa-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-2">Merchant Breakdown</MudText>
+        <MudTable Items="_response.Merchants" Dense="true" Hover="true" Striped="true" Bordered="true">
+            <HeaderContent>
+                <MudTh>Merchant ID</MudTh>
+                <MudTh>Business Name</MudTh>
+                <MudTh>Transaction Count</MudTh>
+                <MudTh>Volume</MudTh>
+                <MudTh>Commission</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Merchant ID">@context.MerchantId</MudTd>
+                <MudTd DataLabel="Business Name">@context.BusinessName</MudTd>
+                <MudTd DataLabel="Transaction Count">@context.TransactionCount.ToString("N0")</MudTd>
+                <MudTd DataLabel="Volume">@FormatMoney(context.Volume)</MudTd>
+                <MudTd DataLabel="Commission">@FormatMoney(context.Commission)</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+}
+
+@code {
+    private MudBlazor.DateRange? _dateRange = new(DateTime.Now.AddMonths(-1), DateTime.Now);
+    private string _merchantId = string.Empty;
+    private bool _loading;
+    private MerchantReportResponse? _response;
+
+    private async Task GenerateReportAsync()
+    {
+        if (_dateRange?.Start is null || _dateRange?.End is null)
+        {
+            Snackbar.Add("Please select a valid date range.", Severity.Warning);
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            var request = new MerchantReportRequest
+            {
+                DateRange = new GoldBank.Protos.Common.DateRange
+                {
+                    From = Timestamp.FromDateTime(_dateRange.Start.Value.ToUniversalTime()),
+                    To = Timestamp.FromDateTime(_dateRange.End.Value.ToUniversalTime())
+                },
+                MerchantId = _merchantId ?? string.Empty
+            };
+
+            _response = await ReportingClient.GetMerchantReportAsync(request);
+            Snackbar.Add("Report generated successfully.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to generate report: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string FormatMoney(Money? money)
+    {
+        if (money is null || string.IsNullOrWhiteSpace(money.Amount))
+            return "$0.00";
+
+        var amount = decimal.Parse(money.Amount);
+        return $"${amount:N2}";
+    }
+}

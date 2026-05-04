@@ -22,9 +22,9 @@ So that **PIN encryption, key management, and tokenization are secure and compli
 
 ### Background
 
-The Hardware Security Module (HSM) Interface Service is the cryptographic foundation for all secure payment operations in UniBank. Every NFC tap, every QR payment, every PIN verification ultimately depends on keys managed by this service. Southern African banking regulations and PCI-DSS compliance require that cryptographic key material never exist in plaintext outside of a certified HSM boundary. This service wraps the physical HSM via PKCS#11, exposing a clean gRPC API that the rest of the platform consumes.
+The Hardware Security Module (HSM) Interface Service is the cryptographic foundation for all secure payment operations in GoldBank. Every NFC tap, every QR payment, every PIN verification ultimately depends on keys managed by this service. Southern African banking regulations and PCI-DSS compliance require that cryptographic key material never exist in plaintext outside of a certified HSM boundary. This service wraps the physical HSM via PKCS#11, exposing a clean gRPC API that the rest of the platform consumes.
 
-This is a **satellite service** in UniBank's Modular Monolith architecture — it runs as a separate process with its own lifecycle, connected to the core via gRPC with mandatory mTLS. The satellite design isolates HSM driver dependencies (native PKCS#11 libraries) from the main application and allows independent scaling and hardware affinity (the service must run on hosts with physical or network HSM access).
+This is a **satellite service** in GoldBank's Modular Monolith architecture — it runs as a separate process with its own lifecycle, connected to the core via gRPC with mandatory mTLS. The satellite design isolates HSM driver dependencies (native PKCS#11 libraries) from the main application and allows independent scaling and hardware affinity (the service must run on hosts with physical or network HSM access).
 
 **Functional Requirements:** FR-033 (HSM Integration), FR-034 (Key Management)
 
@@ -85,15 +85,15 @@ This is a system-to-system service. The primary interaction flow is:
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `UniBank.HSM` | `src/Satellites/UniBank.HSM/` | Satellite service project |
-| `HSMService.cs` | `src/Satellites/UniBank.HSM/Services/` | gRPC service implementation |
-| `Pkcs11Provider.cs` | `src/Satellites/UniBank.HSM/Crypto/` | PKCS#11 interop wrapper |
-| `KeyHierarchy.cs` | `src/Satellites/UniBank.HSM/Crypto/` | Key derivation logic |
-| `PinBlockCodec.cs` | `src/Satellites/UniBank.HSM/Crypto/` | ISO 9564 PIN block encoding/decoding |
-| `MacGenerator.cs` | `src/Satellites/UniBank.HSM/Crypto/` | ISO 9797-1 MAC operations |
-| `HsmCircuitBreaker.cs` | `src/Satellites/UniBank.HSM/Resilience/` | Polly circuit breaker for HSM |
-| `AuditLogger.cs` | `src/Satellites/UniBank.HSM/Audit/` | Structured audit log writer |
-| `hsm_service.proto` | `src/Shared/UniBank.Protos/` | gRPC proto definition |
+| `GoldBank.HSM` | `src/Satellites/GoldBank.HSM/` | Satellite service project |
+| `HSMService.cs` | `src/Satellites/GoldBank.HSM/Services/` | gRPC service implementation |
+| `Pkcs11Provider.cs` | `src/Satellites/GoldBank.HSM/Crypto/` | PKCS#11 interop wrapper |
+| `KeyHierarchy.cs` | `src/Satellites/GoldBank.HSM/Crypto/` | Key derivation logic |
+| `PinBlockCodec.cs` | `src/Satellites/GoldBank.HSM/Crypto/` | ISO 9564 PIN block encoding/decoding |
+| `MacGenerator.cs` | `src/Satellites/GoldBank.HSM/Crypto/` | ISO 9797-1 MAC operations |
+| `HsmCircuitBreaker.cs` | `src/Satellites/GoldBank.HSM/Resilience/` | Polly circuit breaker for HSM |
+| `AuditLogger.cs` | `src/Satellites/GoldBank.HSM/Audit/` | Structured audit log writer |
+| `hsm_service.proto` | `src/Shared/GoldBank.Protos/` | gRPC proto definition |
 
 ### API / gRPC Endpoints
 
@@ -101,7 +101,7 @@ This is a system-to-system service. The primary interaction flow is:
 
 ```protobuf
 syntax = "proto3";
-package unibank.hsm.v1;
+package goldbank.hsm.v1;
 
 service HSMService {
   rpc GenerateKey (GenerateKeyRequest) returns (GenerateKeyResponse);

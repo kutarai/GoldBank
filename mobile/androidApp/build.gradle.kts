@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.unibank.app"
+    namespace = "com.goldbank.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.unibank.app"
+        applicationId = "com.goldbank.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -24,16 +24,17 @@ android {
             buildConfigField("String", "GRPC_HOST", "\"10.0.2.2\"")
             buildConfigField("int", "GRPC_PORT", "5000")
             buildConfigField("boolean", "GRPC_USE_TLS", "false")
-            buildConfigField("String", "DEFAULT_TENANT_ID", "\"default\"")
+            // Match the server-side demo seed and the bank-teller JWT tenant.
+            buildConfigField("String", "DEFAULT_TENANT_ID", "\"goldbank\"")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "GRPC_HOST", "\"api.unibank.co.zw\"")
+            buildConfigField("String", "GRPC_HOST", "\"api.goldbank.co.zw\"")
             buildConfigField("int", "GRPC_PORT", "443")
             buildConfigField("boolean", "GRPC_USE_TLS", "true")
-            buildConfigField("String", "DEFAULT_TENANT_ID", "\"\"")
+            buildConfigField("String", "DEFAULT_TENANT_ID", "\"goldbank\"")
         }
     }
 

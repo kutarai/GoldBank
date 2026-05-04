@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UniBank - Build Container Images (Podman)
+# GoldBank - Build Container Images (Podman)
 # Builds all service container images with proper tagging (commit SHA + latest).
 #
 # Usage:
@@ -22,7 +22,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 # Default settings
 DOCKER_REGISTRY="${CONTAINER_REGISTRY:-${DOCKER_REGISTRY:-localhost:5000}}"
-IMAGE_PREFIX="${IMAGE_PREFIX:-unibank}"
+IMAGE_PREFIX="${IMAGE_PREFIX:-goldbank}"
 DOCKER_TAG="${CONTAINER_TAG:-${DOCKER_TAG:-$(git -C "${PROJECT_ROOT}" rev-parse --short HEAD 2>/dev/null || echo 'latest')}}"
 PUSH_IMAGES=false
 PARALLEL_BUILD=false
@@ -37,11 +37,11 @@ NC='\033[0m'
 
 # Service definitions: name -> Dockerfile path
 declare -A SERVICES=(
-    ["gateway"]="server/UniBank.Gateway/Dockerfile"
-    ["terminal-manager"]="terminal/UniBank.TerminalManager/Dockerfile"
-    ["hsm"]="hsm/UniBank.HSM/Dockerfile"
-    ["admin"]="admin/UniBank.Admin/Dockerfile"
-    ["notifications"]="server/UniBank.Notifications/Dockerfile"
+    ["gateway"]="server/GoldBank.Gateway/Dockerfile"
+    ["terminal-manager"]="terminal/GoldBank.TerminalManager/Dockerfile"
+    ["hsm"]="hsm/GoldBank.HSM/Dockerfile"
+    ["admin"]="admin/GoldBank.Admin/Dockerfile"
+    ["notifications"]="server/GoldBank.Notifications/Dockerfile"
 )
 
 # ─── Parse Arguments ─────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ build_service() {
         -t "${full_image}:latest" \
         -f "${dockerfile}" \
         --label "org.opencontainers.image.revision=${DOCKER_TAG}" \
-        --label "org.opencontainers.image.source=unibank" \
+        --label "org.opencontainers.image.source=goldbank" \
         --label "org.opencontainers.image.title=${service_name}" \
         "${PROJECT_ROOT}"
 
@@ -136,7 +136,7 @@ cd "${PROJECT_ROOT}"
 
 echo ""
 log_info "=============================================="
-log_info "UniBank Container Image Builder (Podman)"
+log_info "GoldBank Container Image Builder (Podman)"
 log_info "=============================================="
 log_info "Registry:  ${DOCKER_REGISTRY}"
 log_info "Prefix:    ${IMAGE_PREFIX}"

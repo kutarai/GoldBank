@@ -22,9 +22,9 @@ So that **others can pay me by scanning**
 
 ### Background
 
-EMV QR Code payments are UniBank's second core payment method alongside NFC. While NFC requires a contactless POS terminal, QR codes work with any smartphone camera — making them ideal for informal merchants, street vendors, and peer-to-peer payments common in Southern Africa's informal economy. A vendor can simply print a static QR code and tape it to their stall, or generate a dynamic QR with a specific amount for each transaction.
+EMV QR Code payments are GoldBank's second core payment method alongside NFC. While NFC requires a contactless POS terminal, QR codes work with any smartphone camera — making them ideal for informal merchants, street vendors, and peer-to-peer payments common in Southern Africa's informal economy. A vendor can simply print a static QR code and tape it to their stall, or generate a dynamic QR with a specific amount for each transaction.
 
-The QR code follows the **EMV QR Code Payment Specification (QRCPS)** — the global standard maintained by EMVCo for interoperable QR payments. This ensures UniBank's QR codes could eventually interoperate with other QRCPS-compliant systems in the region.
+The QR code follows the **EMV QR Code Payment Specification (QRCPS)** — the global standard maintained by EMVCo for interoperable QR payments. This ensures GoldBank's QR codes could eventually interoperate with other QRCPS-compliant systems in the region.
 
 There are two modes:
 - **Static QR:** Fixed merchant identification, no amount. The payer enters the amount when scanning. Ideal for printed QR codes displayed at the point of sale.
@@ -56,7 +56,7 @@ There are two modes:
 ### User Flow
 
 **Static QR Generation (Merchant):**
-1. Merchant opens UniBank app and navigates to "Receive Payment" / "My QR Code"
+1. Merchant opens GoldBank app and navigates to "Receive Payment" / "My QR Code"
 2. App calls `PaymentService.GenerateQRCode` with merchant's account info, point_of_initiation = "static"
 3. Server builds EMV QRCPS data string with merchant identification and no amount
 4. Server renders QR code as PNG/SVG
@@ -65,7 +65,7 @@ There are two modes:
 7. Customers scan this same QR code for every payment — they enter the amount themselves
 
 **Dynamic QR Generation (Merchant or User):**
-1. Merchant/user opens UniBank app and navigates to "Request Payment"
+1. Merchant/user opens GoldBank app and navigates to "Request Payment"
 2. Enters the amount to receive
 3. App calls `PaymentService.GenerateQRCode` with account info, amount, point_of_initiation = "dynamic"
 4. Server builds EMV QRCPS data string with merchant identification and the specific amount
@@ -96,11 +96,11 @@ There are two modes:
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `QrCodeGenerator.cs` | `src/Modules/UniBank.Payment/Services/` | EMV QRCPS data builder |
-| `EmvQrDataBuilder.cs` | `src/Modules/UniBank.Payment/Services/` | TLV encoder for EMV data elements |
-| `QrImageRenderer.cs` | `src/Modules/UniBank.Payment/Services/` | PNG/SVG QR image generation |
-| `Crc16Calculator.cs` | `src/Modules/UniBank.Payment/Utilities/` | CRC-16/CCITT-FALSE checksum |
-| `PaymentGrpcService.cs` | `src/Modules/UniBank.Payment/Grpc/` | GenerateQRCode endpoint |
+| `QrCodeGenerator.cs` | `src/Modules/GoldBank.Payment/Services/` | EMV QRCPS data builder |
+| `EmvQrDataBuilder.cs` | `src/Modules/GoldBank.Payment/Services/` | TLV encoder for EMV data elements |
+| `QrImageRenderer.cs` | `src/Modules/GoldBank.Payment/Services/` | PNG/SVG QR image generation |
+| `Crc16Calculator.cs` | `src/Modules/GoldBank.Payment/Utilities/` | CRC-16/CCITT-FALSE checksum |
+| `PaymentGrpcService.cs` | `src/Modules/GoldBank.Payment/Grpc/` | GenerateQRCode endpoint |
 | `QrCodeScreen.kt` | `mobile/shared/.../payment/qr/` | KMP QR display screen |
 
 ### EMV QRCPS Data Structure
@@ -123,14 +123,14 @@ ID  Name                           Format  Length  Required  Value
 
 Sub-TLV for Merchant Account Information (ID 26):
 ──────────────────────────────────────────────────────────────────────
-00  Globally Unique Identifier     ans     var     M         "com.unibank" (reverse domain)
-01  Merchant ID                    ans     var     M         UniBank merchant identifier
+00  Globally Unique Identifier     ans     var     M         "com.goldbank" (reverse domain)
+01  Merchant ID                    ans     var     M         GoldBank merchant identifier
 02  Account ID                     ans     var     O         Account for crediting
 ```
 
 **Example Static QR Payload:**
 ```
-00020101021126430014com.unibank0115MERCH00012345670210ACC001234553037105802ZA5913ShopRite Main6012Johannesburg6304A1B2
+00020101021126430014com.goldbank0115MERCH00012345670210ACC001234553037105802ZA5913ShopRite Main6012Johannesburg6304A1B2
 ```
 
 **Breakdown:**
@@ -138,7 +138,7 @@ Sub-TLV for Merchant Account Information (ID 26):
 00 02 01           -> Payload Format Indicator: "01"
 01 02 11           -> Point of Initiation: "11" (static)
 26 43              -> Merchant Account Info (length 43)
-  00 14 com.unibank      -> GUID
+  00 14 com.goldbank      -> GUID
   01 15 MERCH0001234567   -> Merchant ID
   02 10 ACC0012345        -> Account ID
 53 03 710          -> Currency: ZAR (710)
@@ -260,7 +260,7 @@ Error correction level M (15%) provides good readability even if the QR is sligh
 
 - **No Sensitive Data in QR:** The QR code contains only the merchant identifier and (optionally) the amount. It does not contain account numbers, PINs, or tokens. The QR is a payment invitation, not a credential.
 - **Dynamic QR Expiry:** Dynamic QR codes expire after the configured period (default 15 minutes). Expired QR codes are rejected during the scan-and-pay flow (STORY-027). This prevents replay of old payment requests.
-- **QR Reference Tracking:** Each dynamic QR is tracked by a `qr_reference` so the server can verify it was genuinely issued by UniBank and has not been tampered with. The reference is embedded in the Merchant Account Information sub-TLV.
+- **QR Reference Tracking:** Each dynamic QR is tracked by a `qr_reference` so the server can verify it was genuinely issued by GoldBank and has not been tampered with. The reference is embedded in the Merchant Account Information sub-TLV.
 - **Merchant Verification:** The merchant_id in the QR must correspond to an active, verified merchant in the system. Unverified or suspended merchants cannot generate QR codes.
 - **Static QR Fraud Risk:** Static QR codes can be photographed and replicated. This is acceptable because the payer always sees the merchant name and must confirm before payment. Additionally, the real merchant still receives the funds, so QR cloning does not benefit the attacker (unlike card skimming).
 

@@ -8,7 +8,7 @@ Detection: any fenced code block whose body contains a `+--` border row.
 
 For each screen we render:
   * a window-chrome bar with three traffic-light dots
-  * a UniBank-blue MUI AppBar at the top
+  * a GoldBank-blue MUI AppBar at the top
   * a white card with the screen content laid out in Segoe UI
   * `[ Button Text ]` tokens drawn as filled MUI-blue pill buttons over the text
   * `[___]` / `[       ]` tokens drawn as outlined input boxes
@@ -43,7 +43,7 @@ F_TINY    = font("segoeui.ttf", 11)
 BG          = (244, 246, 248)         # MUI default background
 CHROME      = (240, 240, 240)
 CHROME_LINE = (210, 210, 210)
-APPBAR      = (13, 58, 122)           # UniBank brand blue
+APPBAR      = (13, 58, 122)           # GoldBank brand blue
 APPBAR_TEXT = (255, 255, 255)
 CARD_BG     = (255, 255, 255)
 CARD_BORDER = (220, 222, 226)
@@ -113,11 +113,11 @@ def render_screen(ascii_text, idx):
     for i, c in enumerate([(255, 95, 86), (255, 189, 46), (39, 201, 63)]):
         cx = 16 + i * 18
         d.ellipse([cx, 9, cx + 11, 20], fill=c)
-    d.text((width // 2 - 60, 7), "UniBank Teller — Branch", font=F_TINY, fill=(110, 116, 130))
+    d.text((width // 2 - 60, 7), "GoldBank Teller — Branch", font=F_TINY, fill=(110, 116, 130))
 
     # ----- MUI AppBar -----
     d.rectangle([0, chrome_h, width, chrome_h + appbar_h], fill=APPBAR)
-    d.text((22, chrome_h + 14), "UniBank Teller", font=F_BAR, fill=APPBAR_TEXT)
+    d.text((22, chrome_h + 14), "GoldBank Teller", font=F_BAR, fill=APPBAR_TEXT)
     nav_x = 200
     for label in ("Customers", "Drawer", "Vault"):
         d.text((nav_x, chrome_h + 16), label, font=F_NAV, fill=APPBAR_TEXT)

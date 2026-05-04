@@ -256,7 +256,7 @@ The teller client also produces an authoritative cash audit trail per teller per
   - **Disable switch:** if `cash.signed_doc_hot_days = 0` the tiering policy is **completely disabled** — the nightly archival job exits immediately on each run, all documents stay in the hot bytea tier forever, and `document_storage_tier` remains `Hot` for every row. The disable switch is the supported way to opt out of cold-tiering for tenants with abundant PG storage or compliance requirements that mandate everything stay in the primary database.
 - A bank-client admin endpoint (`GET /api/admin/cash-transactions/{id}/signed-document`) returns the bytes for back-office review (transparent across hot/cold tiers)
 
-**Why no cash counter integration:** the deployment uses **standalone cash counters** (Glory, Talaris, Magner, etc.) that are not networked to UniBank. Tellers and vault managers count physically using these machines, then enter the totals + denomination breakdown into the UI manually. The signed receipt is the legal record bridging the physical count and the digital ledger.
+**Why no cash counter integration:** the deployment uses **standalone cash counters** (Glory, Talaris, Magner, etc.) that are not networked to GoldBank. Tellers and vault managers count physically using these machines, then enter the totals + denomination breakdown into the UI manually. The signed receipt is the legal record bridging the physical count and the digital ledger.
 
 ---
 
@@ -472,7 +472,7 @@ VaultSpotCheck
 ## Receipt Format
 
 ```
-        UNIBANK — KUWADZANA BRANCH
+        GOLDBANK — KUWADZANA BRANCH
         ─────────────────────────────
         DEPOSIT RECEIPT
 

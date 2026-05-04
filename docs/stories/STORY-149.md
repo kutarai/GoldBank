@@ -25,7 +25,7 @@ With the schema in place (STORY-148), the front-end needs server endpoints to dr
 ### Scope
 **In scope:**
 - REST endpoints under `/api/teller/*`
-- Equivalent gRPC service `unibank.v1.teller.TellerService` (for future typed clients)
+- Equivalent gRPC service `goldbank.v1.teller.TellerService` (for future typed clients)
 - Command handlers behind each endpoint
 - DTOs for request/response
 - JWT auth requiring role `teller`, `branch_manager`, or `super_admin`
@@ -70,7 +70,7 @@ With the schema in place (STORY-148), the front-end needs server endpoints to dr
 ## Technical Notes
 
 ### Controller location
-`server/UniBank.Gateway/Controllers/TellerApiController.cs` — separate file from `AdminApiController` to keep concerns clean.
+`server/GoldBank.Gateway/Controllers/TellerApiController.cs` — separate file from `AdminApiController` to keep concerns clean.
 
 ### Authorization
 ```csharp
@@ -93,7 +93,7 @@ Use `_db.Database.BeginTransactionAsync()` and roll back on any failure. Idempot
 Publish a `CashTransactionRecorded` domain event so notification service / reporting engine can react.
 
 ### gRPC service definition
-`server/UniBank.Protos/Protos/teller_service.proto` — RPCs mirror the REST endpoints. Generate Kotlin/C# stubs as part of the build.
+`server/GoldBank.Protos/Protos/teller_service.proto` — RPCs mirror the REST endpoints. Generate Kotlin/C# stubs as part of the build.
 
 ---
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# UniBank CI/CD Pipeline - GitLab CI
+# GoldBank CI/CD Pipeline - GitLab CI
 # .NET 10 Preview | Docker Compose v2 | Multi-service Build
 # =============================================================================
 
@@ -7,7 +7,7 @@ variables:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_NOLOGO: "true"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
-  SOLUTION_FILE: "UniBank.slnx"
+  SOLUTION_FILE: "GoldBank.slnx"
   DOCKER_REGISTRY: "${CI_REGISTRY}"
   DOCKER_IMAGE_PREFIX: "${CI_REGISTRY_IMAGE}"
   DOCKER_TAG: "${CI_COMMIT_SHORT_SHA}"
@@ -65,7 +65,7 @@ unit-tests:
   stage: test
   needs: ["build"]
   script:
-    - dotnet test tests/UniBank.Tests/UniBank.Tests.csproj
+    - dotnet test tests/GoldBank.Tests/GoldBank.Tests.csproj
         --configuration Release
         --no-build
         --logger "junit;LogFilePath=../../test-results/unit-tests.xml"
@@ -73,7 +73,7 @@ unit-tests:
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
     - |
       # Extract line coverage percentage and enforce threshold
-      COVERAGE_FILE=$(find . -name "coverage.cobertura.xml" -path "*/UniBank.Tests/*" | head -1)
+      COVERAGE_FILE=$(find . -name "coverage.cobertura.xml" -path "*/GoldBank.Tests/*" | head -1)
       if [ -n "$COVERAGE_FILE" ]; then
         LINE_RATE=$(grep -oP 'line-rate="\K[^"]+' "$COVERAGE_FILE" | head -1)
         COVERAGE_PCT=$(echo "$LINE_RATE * 100" | bc -l | xargs printf "%.2f")
@@ -111,16 +111,16 @@ integration-tests:
     - name: postgres:18
       alias: postgres
       variables:
-        POSTGRES_USER: unibank
-        POSTGRES_PASSWORD: unibank_test_password
-        POSTGRES_DB: unibank_test
+        POSTGRES_USER: goldbank
+        POSTGRES_PASSWORD: goldbank_test_password
+        POSTGRES_DB: goldbank_test
     - name: redis:7-alpine
       alias: redis
   variables:
-    ConnectionStrings__DefaultConnection: "Host=postgres;Database=unibank_test;Username=unibank;Password=unibank_test_password"
+    ConnectionStrings__DefaultConnection: "Host=postgres;Database=goldbank_test;Username=goldbank;Password=goldbank_test_password"
     Redis__ConnectionString: "redis:6379"
   script:
-    - dotnet test tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj
+    - dotnet test tests/GoldBank.IntegrationTests/GoldBank.IntegrationTests.csproj
         --configuration Release
         --no-build
         --logger "junit;LogFilePath=../../test-results/integration-tests.xml"
@@ -160,35 +160,35 @@ integration-tests:
 docker-build-gateway:
   <<: *docker-build-template
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG} -f server/UniBank.Gateway/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG} -f server/GoldBank.Gateway/Dockerfile .
   rules:
     - if: $CI_COMMIT_BRANCH
 
 docker-build-terminal-manager:
   <<: *docker-build-template
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG} -f terminal/UniBank.TerminalManager/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG} -f terminal/GoldBank.TerminalManager/Dockerfile .
   rules:
     - if: $CI_COMMIT_BRANCH
 
 docker-build-hsm:
   <<: *docker-build-template
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG} -f hsm/UniBank.HSM/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG} -f hsm/GoldBank.HSM/Dockerfile .
   rules:
     - if: $CI_COMMIT_BRANCH
 
 docker-build-admin:
   <<: *docker-build-template
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG} -f admin/UniBank.Admin/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG} -f admin/GoldBank.Admin/Dockerfile .
   rules:
     - if: $CI_COMMIT_BRANCH
 
 docker-build-notifications:
   <<: *docker-build-template
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG} -f server/UniBank.Notifications/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG} -f server/GoldBank.Notifications/Dockerfile .
   rules:
     - if: $CI_COMMIT_BRANCH
 
@@ -211,7 +211,7 @@ docker-push-gateway:
   <<: *docker-push-template
   needs: ["docker-build-gateway"]
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/gateway:latest -f server/UniBank.Gateway/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/gateway:latest -f server/GoldBank.Gateway/Dockerfile .
     - docker push ${DOCKER_IMAGE_PREFIX}/gateway:${DOCKER_TAG}
     - docker push ${DOCKER_IMAGE_PREFIX}/gateway:latest
 
@@ -219,7 +219,7 @@ docker-push-terminal-manager:
   <<: *docker-push-template
   needs: ["docker-build-terminal-manager"]
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:latest -f terminal/UniBank.TerminalManager/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/terminal-manager:latest -f terminal/GoldBank.TerminalManager/Dockerfile .
     - docker push ${DOCKER_IMAGE_PREFIX}/terminal-manager:${DOCKER_TAG}
     - docker push ${DOCKER_IMAGE_PREFIX}/terminal-manager:latest
 
@@ -227,7 +227,7 @@ docker-push-hsm:
   <<: *docker-push-template
   needs: ["docker-build-hsm"]
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/hsm:latest -f hsm/UniBank.HSM/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/hsm:latest -f hsm/GoldBank.HSM/Dockerfile .
     - docker push ${DOCKER_IMAGE_PREFIX}/hsm:${DOCKER_TAG}
     - docker push ${DOCKER_IMAGE_PREFIX}/hsm:latest
 
@@ -235,7 +235,7 @@ docker-push-admin:
   <<: *docker-push-template
   needs: ["docker-build-admin"]
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/admin:latest -f admin/UniBank.Admin/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/admin:latest -f admin/GoldBank.Admin/Dockerfile .
     - docker push ${DOCKER_IMAGE_PREFIX}/admin:${DOCKER_TAG}
     - docker push ${DOCKER_IMAGE_PREFIX}/admin:latest
 
@@ -243,7 +243,7 @@ docker-push-notifications:
   <<: *docker-push-template
   needs: ["docker-build-notifications"]
   script:
-    - docker build -t ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/notifications:latest -f server/UniBank.Notifications/Dockerfile .
+    - docker build -t ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG} -t ${DOCKER_IMAGE_PREFIX}/notifications:latest -f server/GoldBank.Notifications/Dockerfile .
     - docker push ${DOCKER_IMAGE_PREFIX}/notifications:${DOCKER_TAG}
     - docker push ${DOCKER_IMAGE_PREFIX}/notifications:latest
 
@@ -272,6 +272,6 @@ deploy-staging:
     - docker compose -f docker-compose.yml --profile infra --profile core up -d
   environment:
     name: staging
-    url: https://staging.unibank.internal
+    url: https://staging.goldbank.internal
   rules:
     - if: $CI_COMMIT_BRANCH == "main"

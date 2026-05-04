@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/admin/">
+    <Project Path="admin/GoldBank.Admin/GoldBank.Admin.csproj" />
+  </Folder>
+  <Folder Name="/hsm/">
+    <Project Path="hsm/GoldBank.HSM/GoldBank.HSM.csproj" />
+  </Folder>
+  <Folder Name="/server/">
+    <Project Path="server/GoldBank.Core/GoldBank.Core.csproj" />
+    <Project Path="server/GoldBank.Gateway/GoldBank.Gateway.csproj" />
+    <Project Path="server/GoldBank.Notifications/GoldBank.Notifications.csproj" />
+    <Project Path="server/GoldBank.Protos/GoldBank.Protos.csproj" />
+    <Project Path="server/GoldBank.Reporting/GoldBank.Reporting.csproj" />
+    <Project Path="server/GoldBank.SharedKernel/GoldBank.SharedKernel.csproj" />
+    <Project Path="server/GoldBank.Migrator/GoldBank.Migrator.csproj" />
+  </Folder>
+<Folder Name="/terminal/">
+    <Project Path="terminal/GoldBank.TerminalManager/GoldBank.TerminalManager.csproj" />
+    <Project Path="terminal/GoldBank.TerminalMigrator/GoldBank.TerminalMigrator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GoldBank.IntegrationTests/GoldBank.IntegrationTests.csproj" />
+    <Project Path="tests/GoldBank.Tests/GoldBank.Tests.csproj" />
+  </Folder>
+</Solution>

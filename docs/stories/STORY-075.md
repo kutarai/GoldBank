@@ -22,9 +22,9 @@ So that vulnerabilities are identified and fixed
 
 ### Background
 
-UniBank processes financial transactions for the unbanked population in Southern Africa, handling sensitive data including PINs, phone numbers, national ID numbers, account balances, and transaction histories. Before pilot deployment, a comprehensive security audit is mandatory to ensure the platform meets PCI-DSS v4.0 requirements, protects customer data, and withstands common attack vectors.
+GoldBank processes financial transactions for the unbanked population in Southern Africa, handling sensitive data including PINs, phone numbers, national ID numbers, account balances, and transaction histories. Before pilot deployment, a comprehensive security audit is mandatory to ensure the platform meets PCI-DSS v4.0 requirements, protects customer data, and withstands common attack vectors.
 
-The on-premise deployment model means UniBank's security perimeter is the deploying institution's infrastructure. Unlike cloud providers that handle many infrastructure security concerns, the UniBank platform must ensure its own security from the application layer through to data-at-rest encryption. The first deploying institution's compliance team will require evidence of a security audit as a condition of going live.
+The on-premise deployment model means GoldBank's security perimeter is the deploying institution's infrastructure. Unlike cloud providers that handle many infrastructure security concerns, the GoldBank platform must ensure its own security from the application layer through to data-at-rest encryption. The first deploying institution's compliance team will require evidence of a security audit as a condition of going live.
 
 This story covers both automated security scanning and manual verification of security controls across all system layers: transport security, authentication, authorization, input validation, data protection, cryptographic controls, logging, and PCI-DSS self-assessment.
 
@@ -161,7 +161,7 @@ This story covers both automated security scanning and manual verification of se
 8. Verify backup encryption configured and tested
 
 **9. PCI-DSS v4.0 Self-Assessment**
-Relevant SAQ sections for UniBank's scope:
+Relevant SAQ sections for GoldBank's scope:
 
 | Requirement | Area | Assessment Items |
 |---|---|---|
@@ -276,7 +276,7 @@ This entire story IS security. Key implementation notes:
   5. Regression test added to prevent recurrence
 
 - **PCI-DSS Compliance Notes:**
-  - UniBank likely falls under SAQ D (service provider) since it processes and stores cardholder data on behalf of deploying institutions
+  - GoldBank likely falls under SAQ D (service provider) since it processes and stores cardholder data on behalf of deploying institutions
   - The self-assessment in this story is an internal readiness check, not a formal QSA assessment
   - Deploying institutions may need their own PCI-DSS certification depending on their role
   - HSM usage for PIN processing satisfies PCI PIN Security Requirements

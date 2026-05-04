@@ -1,8 +1,8 @@
 # BMAD Method Workflow Status
 # Generated: 2026-02-24T00:00:00Z
-# Project: UniBank
+# Project: GoldBank
 
-project_name: "UniBank"
+project_name: "GoldBank"
 project_type: "other"
 project_level: 4
 communication_language: "English"
@@ -22,7 +22,7 @@ workflow_status:
   # Phase 1: Analysis (Optional but recommended)
   - name: product-brief
     phase: 1
-    status: "docs/product-brief-unibank-2026-02-24.md"
+    status: "docs/product-brief-goldbank-2026-02-24.md"
     description: "Create comprehensive product brief"
 
   - name: brainstorm-project
@@ -38,7 +38,7 @@ workflow_status:
   # Phase 2: Planning (Required - choose one based on project level)
   - name: prd
     phase: 2
-    status: "docs/prd-unibank-2026-02-24.md"
+    status: "docs/prd-goldbank-2026-02-24.md"
     description: "Product Requirements Document"
 
   - name: tech-spec
@@ -54,7 +54,7 @@ workflow_status:
   # Phase 3: Solutioning (Conditional on project level)
   - name: architecture
     phase: 3
-    status: "docs/architecture-unibank-2026-02-24.md"
+    status: "docs/architecture-goldbank-2026-02-24.md"
     description: "System architecture design"
 
   - name: solutioning-gate-check
@@ -66,5 +66,5 @@ workflow_status:
   # Note: Implementation tracked in sprint-status.yaml
   - name: sprint-planning
     phase: 4
-    status: "docs/sprint-plan-unibank-2026-02-24.md"
+    status: "docs/sprint-plan-goldbank-2026-02-24.md"
     description: "Sprint planning and story breakdown"

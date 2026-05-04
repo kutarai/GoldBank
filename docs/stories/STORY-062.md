@@ -21,7 +21,7 @@ So that I can monitor platform activity at a glance and quickly identify anomali
 ## Description
 
 ### Background
-A real-time operational dashboard is essential for monitoring the health and activity of the UniBank platform. Operations staff need an at-a-glance view of transaction throughput, success rates, active users, and top-performing merchants. The dashboard provides both real-time metrics (updated every few seconds) and rolling historical context (last 24 hours). This serves as the primary "heartbeat" view for the platform, enabling rapid identification of issues such as elevated failure rates, throughput drops, or unusual patterns.
+A real-time operational dashboard is essential for monitoring the health and activity of the GoldBank platform. Operations staff need an at-a-glance view of transaction throughput, success rates, active users, and top-performing merchants. The dashboard provides both real-time metrics (updated every few seconds) and rolling historical context (last 24 hours). This serves as the primary "heartbeat" view for the platform, enabling rapid identification of issues such as elevated failure rates, throughput drops, or unusual patterns.
 
 The dashboard leverages Blazor Server's built-in SignalR connectivity for real-time updates, combined with Redis counters for low-latency metric reads and PostgreSQL aggregates for historical data.
 

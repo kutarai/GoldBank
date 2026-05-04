@@ -23,7 +23,7 @@ So that my account is protected
 ### Background
 Session management and auto-timeout are essential security features for a mobile banking platform. If a user leaves their phone unattended with the banking app open, or if the phone is stolen while unlocked, an auto-timeout mechanism ensures that the session expires after a period of inactivity, requiring re-authentication before any further actions can be taken.
 
-This is especially critical in UniBank's target market where shared device usage is common (family members sharing a phone) and where devices may be more vulnerable to theft. The default inactivity timeout is 5 minutes, but this is configurable per tenant to allow different operators to balance security and convenience based on their market conditions and regulatory requirements.
+This is especially critical in GoldBank's target market where shared device usage is common (family members sharing a phone) and where devices may be more vulnerable to theft. The default inactivity timeout is 5 minutes, but this is configurable per tenant to allow different operators to balance security and convenience based on their market conditions and regulatory requirements.
 
 The session is tracked in Redis using a sliding window TTL keyed by the JWT's unique token identifier (JTI). Every authenticated API request resets the TTL, effectively extending the session as long as the user remains active. When the TTL expires, the next request will fail with a session-expired error, requiring the user to re-authenticate.
 

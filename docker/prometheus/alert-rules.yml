@@ -1,5 +1,5 @@
 groups:
-  - name: unibank-service-alerts
+  - name: goldbank-service-alerts
     rules:
       # ── HighErrorRate ──────────────────────────────────────────────────
       # Fires when the HTTP 5xx error rate exceeds 1 % of total requests

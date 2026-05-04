@@ -21,7 +21,7 @@ So that services can communicate asynchronously.
 ## Description
 
 ### Background
-UniBank requires robust asynchronous messaging for two distinct communication patterns:
+GoldBank requires robust asynchronous messaging for two distinct communication patterns:
 
 1. **Domain Event Messaging (Wolverine):** Internal service-to-service communication within the Modular Monolith (Core Banking) and between satellite services. Events like `AccountCreated`, `TransactionCompleted`, and `FraudAlertRaised` must be reliably published and consumed. Wolverine provides a durable outbox pattern backed by PostgreSQL, guaranteeing that events are not lost even if a service crashes mid-transaction.
 
@@ -74,7 +74,7 @@ This story sets up both messaging systems, defines the domain event contracts in
 
 - [ ] Wolverine is configured in Core Banking with PostgreSQL-backed durable outbox
 - [ ] Wolverine outbox uses the same PostgreSQL database as the application (co-located for transactional consistency)
-- [ ] Domain events are defined in `UniBank.SharedKernel/Events/`: `AccountCreated`, `UserRegistered`, `TransactionCompleted`, `TransactionFailed`, `KYCApproved`, `KYCRejected`, `FraudAlertRaised`, `LowFloatAlert`, `TerminalStatusChanged`, `PINCreated`
+- [ ] Domain events are defined in `GoldBank.SharedKernel/Events/`: `AccountCreated`, `UserRegistered`, `TransactionCompleted`, `TransactionFailed`, `KYCApproved`, `KYCRejected`, `FraudAlertRaised`, `LowFloatAlert`, `TerminalStatusChanged`, `PINCreated`
 - [ ] All domain events inherit from a common `DomainEvent` base class with `EventId`, `OccurredAt`, `TenantId` properties
 - [ ] A sample Wolverine handler exists and successfully processes a test event
 - [ ] Wolverine retry policy is configured: 3 retries with exponential backoff (1s, 5s, 30s)
@@ -93,15 +93,15 @@ This story sets up both messaging systems, defines the domain event contracts in
 ### Components
 
 **Affected Projects:**
-- `UniBank.SharedKernel` -- Domain event base classes and event definitions
-- `UniBank.Core` -- Wolverine configuration, outbox setup, sample handlers
-- `UniBank.TerminalManager` -- MQTT broker (MQTTnet) configuration
-- `UniBank.Notifications` -- Wolverine handler subscriptions (wiring only, handlers implemented in STORY-073)
+- `GoldBank.SharedKernel` -- Domain event base classes and event definitions
+- `GoldBank.Core` -- Wolverine configuration, outbox setup, sample handlers
+- `GoldBank.TerminalManager` -- MQTT broker (MQTTnet) configuration
+- `GoldBank.Notifications` -- Wolverine handler subscriptions (wiring only, handlers implemented in STORY-073)
 
 ### Domain Event Definitions (SharedKernel)
 
 ```csharp
-// UniBank.SharedKernel/Events/DomainEvent.cs
+// GoldBank.SharedKernel/Events/DomainEvent.cs
 public abstract record DomainEvent
 {
     public Guid EventId { get; init; } = Guid.NewGuid();
@@ -110,7 +110,7 @@ public abstract record DomainEvent
     public string? CorrelationId { get; init; }
 }
 
-// UniBank.SharedKernel/Events/UserRegistered.cs
+// GoldBank.SharedKernel/Events/UserRegistered.cs
 public record UserRegistered : DomainEvent
 {
     public Guid AccountId { get; init; }
@@ -118,7 +118,7 @@ public record UserRegistered : DomainEvent
     public string DeviceId { get; init; } = string.Empty;
 }
 
-// UniBank.SharedKernel/Events/AccountCreated.cs
+// GoldBank.SharedKernel/Events/AccountCreated.cs
 public record AccountCreated : DomainEvent
 {
     public Guid AccountId { get; init; }
@@ -126,13 +126,13 @@ public record AccountCreated : DomainEvent
     public string Status { get; init; } = "pending_kyc";
 }
 
-// UniBank.SharedKernel/Events/PINCreated.cs
+// GoldBank.SharedKernel/Events/PINCreated.cs
 public record PINCreated : DomainEvent
 {
     public Guid AccountId { get; init; }
 }
 
-// UniBank.SharedKernel/Events/TransactionCompleted.cs
+// GoldBank.SharedKernel/Events/TransactionCompleted.cs
 public record TransactionCompleted : DomainEvent
 {
     public Guid TransactionId { get; init; }
@@ -146,7 +146,7 @@ public record TransactionCompleted : DomainEvent
     public decimal NewBalance { get; init; }
 }
 
-// UniBank.SharedKernel/Events/TransactionFailed.cs
+// GoldBank.SharedKernel/Events/TransactionFailed.cs
 public record TransactionFailed : DomainEvent
 {
     public Guid TransactionId { get; init; }
@@ -157,7 +157,7 @@ public record TransactionFailed : DomainEvent
     public string FailureReason { get; init; } = string.Empty;
 }
 
-// UniBank.SharedKernel/Events/KYCApproved.cs
+// GoldBank.SharedKernel/Events/KYCApproved.cs
 public record KYCApproved : DomainEvent
 {
     public Guid AccountId { get; init; }
@@ -165,7 +165,7 @@ public record KYCApproved : DomainEvent
     public Guid ReviewedBy { get; init; }
 }
 
-// UniBank.SharedKernel/Events/KYCRejected.cs
+// GoldBank.SharedKernel/Events/KYCRejected.cs
 public record KYCRejected : DomainEvent
 {
     public Guid AccountId { get; init; }
@@ -174,7 +174,7 @@ public record KYCRejected : DomainEvent
     public Guid ReviewedBy { get; init; }
 }
 
-// UniBank.SharedKernel/Events/FraudAlertRaised.cs
+// GoldBank.SharedKernel/Events/FraudAlertRaised.cs
 public record FraudAlertRaised : DomainEvent
 {
     public Guid AccountId { get; init; }
@@ -184,7 +184,7 @@ public record FraudAlertRaised : DomainEvent
     public string Severity { get; init; } = "medium"; // low, medium, high, critical
 }
 
-// UniBank.SharedKernel/Events/LowFloatAlert.cs
+// GoldBank.SharedKernel/Events/LowFloatAlert.cs
 public record LowFloatAlert : DomainEvent
 {
     public Guid AgentId { get; init; }
@@ -193,7 +193,7 @@ public record LowFloatAlert : DomainEvent
     public decimal ThresholdPercentage { get; init; }
 }
 
-// UniBank.SharedKernel/Events/TerminalStatusChanged.cs
+// GoldBank.SharedKernel/Events/TerminalStatusChanged.cs
 public record TerminalStatusChanged : DomainEvent
 {
     public Guid TerminalId { get; init; }
@@ -207,7 +207,7 @@ public record TerminalStatusChanged : DomainEvent
 ### Wolverine Configuration (Core Banking)
 
 ```csharp
-// UniBank.Core/Program.cs or extension method
+// GoldBank.Core/Program.cs or extension method
 builder.Host.UseWolverine(opts =>
 {
     // PostgreSQL-backed durable outbox
@@ -232,7 +232,7 @@ builder.Host.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(Program).Assembly);
 
     // Also discover handlers in Notifications assembly
-    opts.Discovery.IncludeAssembly(typeof(UniBank.Notifications.NotificationHandlers).Assembly);
+    opts.Discovery.IncludeAssembly(typeof(GoldBank.Notifications.NotificationHandlers).Assembly);
 
     // Configure local queues
     opts.LocalQueue("notifications")
@@ -252,7 +252,7 @@ builder.Host.UseWolverine(opts =>
 ### Wolverine Saga Example
 
 ```csharp
-// UniBank.Core/Modules/Payments/Application/Sagas/PaymentSaga.cs
+// GoldBank.Core/Modules/Payments/Application/Sagas/PaymentSaga.cs
 public class PaymentSaga : Saga
 {
     public Guid PaymentId { get; set; }
@@ -299,7 +299,7 @@ public class PaymentSaga : Saga
 ### Sample Handler (Verification)
 
 ```csharp
-// UniBank.Core/Handlers/SampleEventHandler.cs
+// GoldBank.Core/Handlers/SampleEventHandler.cs
 public class AccountCreatedHandler
 {
     private readonly ILogger<AccountCreatedHandler> _logger;
@@ -325,7 +325,7 @@ public class AccountCreatedHandler
 ### MQTT Broker Configuration (Terminal Manager)
 
 ```csharp
-// UniBank.TerminalManager/Mqtt/MqttBrokerService.cs
+// GoldBank.TerminalManager/Mqtt/MqttBrokerService.cs
 public class MqttBrokerService : BackgroundService
 {
     private readonly MqttServer _mqttServer;

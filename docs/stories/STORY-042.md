@@ -22,7 +22,7 @@ So that **transactions route correctly to the appropriate national switch regard
 
 ### Background
 
-UniBank operates in a multi-switch environment where different financial institutions connect through different national switches using different protocols. Some institutions are reachable via ISO 8583 over TCP/IP, others via ISO 20022 over REST or MQ. The Message Router is the central orchestration component in the Switching Server that abstracts this complexity.
+GoldBank operates in a multi-switch environment where different financial institutions connect through different national switches using different protocols. Some institutions are reachable via ISO 8583 over TCP/IP, others via ISO 20022 over REST or MQ. The Message Router is the central orchestration component in the Switching Server that abstracts this complexity.
 
 The router works with a canonical internal message format — a protocol-agnostic representation of a financial transaction. When Core Banking needs to send a transaction to an external institution, it publishes a Wolverine command with the transaction details. The router receives this command, looks up the destination institution in the routing table to determine which adapter (ISO 8583 or ISO 20022) and which endpoint to use, then delegates to the appropriate adapter. The adapter handles all protocol-specific formatting and communication.
 
@@ -94,15 +94,15 @@ This design follows the Adapter Pattern, ensuring that adding support for a new 
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `CanonicalMessage.cs` | `src/Shared/UniBank.SharedKernel/Switching/` | Protocol-agnostic transaction representation |
-| `MessageRouter.cs` | `src/Satellites/UniBank.Switching/Routing/` | Resolves adapter and endpoint for a destination |
-| `IMessageRouter.cs` | `src/Satellites/UniBank.Switching/Routing/` | Router interface for DI |
-| `InstitutionRoute.cs` | `src/Satellites/UniBank.Switching/Routing/` | Entity for institution routing configuration |
-| `RouteCache.cs` | `src/Satellites/UniBank.Switching/Routing/` | Redis-backed route cache |
-| `RouteOutboundTransactionHandler.cs` | `src/Satellites/UniBank.Switching/Handlers/` | Wolverine handler for outbound routing |
-| `ProcessInboundTransactionHandler.cs` | `src/Satellites/UniBank.Switching/Handlers/` | Wolverine handler for inbound processing |
-| `SwitchingServiceRegistration.cs` | `src/Satellites/UniBank.Switching/Configuration/` | DI registration for adapters and router |
-| `ISwitchAdapter.cs` | `src/Satellites/UniBank.Switching/Adapters/` | Adapter interface (shared with STORY-040/041) |
+| `CanonicalMessage.cs` | `src/Shared/GoldBank.SharedKernel/Switching/` | Protocol-agnostic transaction representation |
+| `MessageRouter.cs` | `src/Satellites/GoldBank.Switching/Routing/` | Resolves adapter and endpoint for a destination |
+| `IMessageRouter.cs` | `src/Satellites/GoldBank.Switching/Routing/` | Router interface for DI |
+| `InstitutionRoute.cs` | `src/Satellites/GoldBank.Switching/Routing/` | Entity for institution routing configuration |
+| `RouteCache.cs` | `src/Satellites/GoldBank.Switching/Routing/` | Redis-backed route cache |
+| `RouteOutboundTransactionHandler.cs` | `src/Satellites/GoldBank.Switching/Handlers/` | Wolverine handler for outbound routing |
+| `ProcessInboundTransactionHandler.cs` | `src/Satellites/GoldBank.Switching/Handlers/` | Wolverine handler for inbound processing |
+| `SwitchingServiceRegistration.cs` | `src/Satellites/GoldBank.Switching/Configuration/` | DI registration for adapters and router |
+| `ISwitchAdapter.cs` | `src/Satellites/GoldBank.Switching/Adapters/` | Adapter interface (shared with STORY-040/041) |
 
 ### API / gRPC Endpoints
 
@@ -111,7 +111,7 @@ The Message Router does not expose external endpoints. It is an internal orchest
 **CanonicalMessage Definition:**
 
 ```csharp
-namespace UniBank.SharedKernel.Switching;
+namespace GoldBank.SharedKernel.Switching;
 
 /// <summary>
 /// Protocol-agnostic representation of a financial transaction.

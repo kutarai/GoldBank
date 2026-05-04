@@ -22,9 +22,9 @@ So that **I can track income from agent services and plan my business**
 
 ### Background
 
-In UniBank's agent banking model, merchants in Southern Africa serve as human ATMs — they perform cash-in (deposit) and cash-out (withdrawal) services for UniBank customers. For each agent transaction, the merchant earns a commission. This commission is a key income stream for agents and a primary incentive for merchants to join the UniBank network.
+In GoldBank's agent banking model, merchants in Southern Africa serve as human ATMs — they perform cash-in (deposit) and cash-out (withdrawal) services for GoldBank customers. For each agent transaction, the merchant earns a commission. This commission is a key income stream for agents and a primary incentive for merchants to join the GoldBank network.
 
-Cash-in commissions compensate the agent for accepting cash from a customer and crediting their UniBank account. Cash-out commissions compensate the agent for dispensing cash to a customer who debits their UniBank account. Commission rates may differ by transaction type, amount tier, and agent level (standard vs. premium agent).
+Cash-in commissions compensate the agent for accepting cash from a customer and crediting their GoldBank account. Cash-out commissions compensate the agent for dispensing cash to a customer who debits their GoldBank account. Commission rates may differ by transaction type, amount tier, and agent level (standard vs. premium agent).
 
 Agents need clear, detailed reporting on their commission earnings. They need to see how much they earned today, this week, this month. They need breakdowns by transaction type (how much from cash-in vs. cash-out). And they need to be able to export this data for their own bookkeeping, tax filings, or business planning.
 
@@ -55,7 +55,7 @@ This story builds the commission reporting capability. The commission transactio
 
 **Commission Report Flow:**
 
-1. Merchant agent logs into the UniBank merchant app
+1. Merchant agent logs into the GoldBank merchant app
 2. Agent navigates to "Commission Earnings" section
 3. App calls `AgentService.GetCommissionReport` with the agent's merchant ID and date range
 4. Server returns the commission summary and detailed breakdown
@@ -109,11 +109,11 @@ This story builds the commission reporting capability. The commission transactio
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `AgentCommissionService.cs` | `src/Core/UniBank.Core/Modules/Agents/Application/Services/` | Commission report query and aggregation |
-| `CommissionReportBuilder.cs` | `src/Core/UniBank.Core/Modules/Agents/Application/Services/` | Builds commission report with breakdowns |
-| `CommissionExporter.cs` | `src/Core/UniBank.Core/Modules/Agents/Application/Services/` | CSV export via streaming |
-| `AgentGrpcService.cs` | `src/Core/UniBank.Core/Modules/Agents/Grpc/` | gRPC service implementation |
-| `CommissionTransaction.cs` | `src/Core/UniBank.Core/Modules/Agents/Domain/Entities/` | Commission transaction entity |
+| `AgentCommissionService.cs` | `src/Core/GoldBank.Core/Modules/Agents/Application/Services/` | Commission report query and aggregation |
+| `CommissionReportBuilder.cs` | `src/Core/GoldBank.Core/Modules/Agents/Application/Services/` | Builds commission report with breakdowns |
+| `CommissionExporter.cs` | `src/Core/GoldBank.Core/Modules/Agents/Application/Services/` | CSV export via streaming |
+| `AgentGrpcService.cs` | `src/Core/GoldBank.Core/Modules/Agents/Grpc/` | gRPC service implementation |
+| `CommissionTransaction.cs` | `src/Core/GoldBank.Core/Modules/Agents/Domain/Entities/` | Commission transaction entity |
 
 ### API / gRPC Endpoints
 
@@ -411,7 +411,7 @@ CREATE INDEX idx_commission_summary_agent ON commission_summaries (agent_id, per
 - None directly. Commission reporting is a read-only view.
 
 **External Dependencies:**
-- None. All data is sourced from UniBank's own database.
+- None. All data is sourced from GoldBank's own database.
 
 ---
 

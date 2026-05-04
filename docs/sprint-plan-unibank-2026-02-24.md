@@ -1,4 +1,4 @@
-# Sprint Plan: UniBank
+# Sprint Plan: GoldBank
 
 **Date:** 2026-02-24
 **Scrum Master:** wmapundu
@@ -13,7 +13,7 @@
 
 ## Executive Summary
 
-UniBank's implementation is planned across 9 three-week sprints, totaling 27 weeks. The plan follows a foundation-first approach: infrastructure and user onboarding in Sprints 1-2, core payment capabilities in Sprints 3-4, external integrations in Sprints 5-6, admin/white-label/hardening in Sprints 7-8, and issuer-side card transaction processing in Sprint 9. The 83 stories total 396 story points, well within the team's 1,296-point total capacity (144 effective points x 9 sprints), providing buffer for unknowns and technical debt.
+GoldBank's implementation is planned across 9 three-week sprints, totaling 27 weeks. The plan follows a foundation-first approach: infrastructure and user onboarding in Sprints 1-2, core payment capabilities in Sprints 3-4, external integrations in Sprints 5-6, admin/white-label/hardening in Sprints 7-8, and issuer-side card transaction processing in Sprint 9. The 83 stories total 396 story points, well within the team's 1,296-point total capacity (144 effective points x 9 sprints), providing buffer for unknowns and technical debt.
 
 **Key Metrics:**
 - Total Stories: 83
@@ -41,7 +41,7 @@ I want a properly structured .NET 10 solution with all projects scaffolded
 So that the team can begin parallel development immediately
 
 **Acceptance Criteria:**
-- [ ] UniBank.sln created with all projects per architecture (Gateway, Core, Switching, TerminalManager, HSM, Admin, Reporting, Notifications, Protos, SharedKernel)
+- [ ] GoldBank.sln created with all projects per architecture (Gateway, Core, Switching, TerminalManager, HSM, Admin, Reporting, Notifications, Protos, SharedKernel)
 - [ ] Project references and NuGet packages configured
 - [ ] Solution builds successfully
 - [ ] README with setup instructions
@@ -112,8 +112,8 @@ So that all services have type-safe communication contracts
 
 **Acceptance Criteria:**
 - [ ] Proto files for all 10 gRPC services (Account, Payment, Transfer, Agent, BillPay, Merchant, Terminal, Admin, Reporting, HSM)
-- [ ] UniBank.Protos project compiles and generates C# code
-- [ ] Versioned as unibank.v1.{service}
+- [ ] GoldBank.Protos project compiles and generates C# code
+- [ ] Versioned as goldbank.v1.{service}
 - [ ] Request/response messages defined for all RPCs
 
 **Technical Notes:** Follow API design from architecture doc exactly.
@@ -230,7 +230,7 @@ So that we can monitor system health and search logs
 **User Story:**
 As an unbanked consumer
 I want to register using my phone number with OTP verification
-So that I can create a UniBank account
+So that I can create a GoldBank account
 
 **Acceptance Criteria:**
 - [ ] gRPC Register endpoint accepts phone number
@@ -707,7 +707,7 @@ So that I know the payment was successful
 
 **User Story:**
 As a consumer
-I want to send money to another UniBank user
+I want to send money to another GoldBank user
 So that I can pay people remotely
 
 **Acceptance Criteria:**
@@ -781,7 +781,7 @@ So that I can verify details and have a receipt
 **User Story:**
 As a consumer
 I want to deposit cash at a merchant agent
-So that I can load money into my UniBank account
+So that I can load money into my GoldBank account
 
 **Acceptance Criteria:**
 - [ ] Agent initiates cash-in (POS terminal or agent app)
@@ -1898,7 +1898,7 @@ So that we can launch with a real customer
 
 ### Sprint 3 (Weeks 7-9): Core Payments (NFC + QR)
 
-**Goal:** Deliver NFC contactless payments, EMV QR payments, and HSM integration — UniBank's core differentiator
+**Goal:** Deliver NFC contactless payments, EMV QR payments, and HSM integration — GoldBank's core differentiator
 
 **Stories:**
 
@@ -2057,7 +2057,7 @@ So that we can launch with a real customer
 
 **Total:** 34 points / 144 capacity (24% utilization)
 
-**Notes:** This sprint adds issuer-side card transaction processing as a new module under UniBank.Core. The switch (built in Sprint 5) already handles ISO 20022 message parsing and routing — this module provides the core banking logic: account validation, fund movement, and response generation. All 6 transaction types share common validation and the module follows the established modular monolith pattern.
+**Notes:** This sprint adds issuer-side card transaction processing as a new module under GoldBank.Core. The switch (built in Sprint 5) already handles ISO 20022 message parsing and routing — this module provides the core banking logic: account validation, fund movement, and response generation. All 6 transaction types share common validation and the module follows the established modular monolith pattern.
 
 ---
 

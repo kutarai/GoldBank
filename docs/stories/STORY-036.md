@@ -90,7 +90,7 @@ Functional Requirement: **FR-023**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Agents/` and `UniBank.Notifications/`
+**Module:** `GoldBank.Core/Modules/Agents/` and `GoldBank.Notifications/`
 
 ```
 Agents/
@@ -186,7 +186,7 @@ CREATE INDEX idx_receipts_transaction ON {tenant_schema}.transaction_receipts(tr
 **Agent Receipt:**
 ```
 ================================
-         UNIBANK
+         GOLDBANK
       AGENT RECEIPT
 ================================
 Date: 2026-02-24 14:30:00
@@ -204,14 +204,14 @@ Float Balance: USD  4,900.00
     CODE:  AG-00142
 ================================
     Thank you for using
-         UniBank
+         GoldBank
 ================================
 ```
 
 **Customer Receipt:**
 ```
 ================================
-         UNIBANK
+         GOLDBANK
     TRANSACTION RECEIPT
 ================================
 Date: 2026-02-24 14:30:00
@@ -225,7 +225,7 @@ Total:         USD    102.00
 Agent: John's Shop
 ================================
     Thank you for using
-         UniBank
+         GoldBank
 ================================
 ```
 
@@ -240,7 +240,7 @@ Agent: John's Shop
   "receipt_id": "uuid",
   "reference_number": "CIN-ZW-20260224-000001",
   "receipt_type": "agent",
-  "receipt_text": "================================\n         UNIBANK\n      AGENT RECEIPT\n...",
+  "receipt_text": "================================\n         GOLDBANK\n      AGENT RECEIPT\n...",
   "timestamp": "2026-02-24T14:30:00Z",
   "is_reprint": false
 }
@@ -253,7 +253,7 @@ Agent: John's Shop
   "receipt_id": "uuid",
   "reference_number": "CIN-ZW-20260224-000001",
   "receipt_type": "customer",
-  "receipt_text": "================================\n         UNIBANK\n    TRANSACTION RECEIPT\n...",
+  "receipt_text": "================================\n         GOLDBANK\n    TRANSACTION RECEIPT\n...",
   "timestamp": "2026-02-24T14:30:00Z",
   "is_reprint": false
 }
@@ -304,7 +304,7 @@ public class ThermalReceiptFormatter
     {
         var sb = new StringBuilder();
         sb.AppendLine(Separator);
-        sb.AppendLine(Center("UNIBANK"));
+        sb.AppendLine(Center("GOLDBANK"));
         sb.AppendLine(Center("AGENT RECEIPT"));
         sb.AppendLine(Separator);
         sb.AppendLine($"Date: {data.TransactionTime:yyyy-MM-dd HH:mm:ss}");
@@ -322,7 +322,7 @@ public class ThermalReceiptFormatter
         sb.AppendLine(Center($"CODE:  {data.AgentCode}"));
         sb.AppendLine(Separator);
         sb.AppendLine(Center("Thank you for using"));
-        sb.AppendLine(Center("UniBank"));
+        sb.AppendLine(Center("GoldBank"));
         sb.AppendLine(Separator);
         return sb.ToString();
     }

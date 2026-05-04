@@ -24,7 +24,7 @@ So that **high-value transactions have additional security**
 
 Contactless payments are designed for speed and convenience, but high-value transactions require additional cardholder verification to mitigate fraud risk. This follows the EMV Cardholder Verification Method (CVM) framework, which defines how the terminal and card (or phone in this case) negotiate the verification method based on transaction characteristics.
 
-For UniBank, the CVM threshold is configurable per tenant — this is critical for the white-label model where each bank deploying UniBank may have different risk appetites and regulatory requirements across Southern African countries. For example, a Zambian bank might set the threshold at 500 ZMW while a South African bank sets it at 500 ZAR.
+For GoldBank, the CVM threshold is configurable per tenant — this is critical for the white-label model where each bank deploying GoldBank may have different risk appetites and regulatory requirements across Southern African countries. For example, a Zambian bank might set the threshold at 500 ZMW while a South African bank sets it at 500 ZAR.
 
 Below the threshold, the transaction proceeds with "no CVM" — just a tap. Above the threshold, the terminal prompts the consumer to enter their PIN on the POS terminal keypad. The PIN is encrypted at the terminal using a session key derived from the HSM, transmitted as an encrypted PIN block through the switch, and verified server-side by the HSM.
 
@@ -38,7 +38,7 @@ Below the threshold, the transaction proceeds with "no CVM" — just a tap. Abov
 - CVM selection logic based on transaction amount vs. threshold
 - Terminal PIN entry flow (PIN entered on POS keypad, not on phone)
 - PIN block encryption at terminal using session key from HSM
-- PIN block transmission through switch to UniBank
+- PIN block transmission through switch to GoldBank
 - Server-side PIN block decryption via HSMService.DecryptPINBlock
 - PIN verification against stored account PIN hash
 - Integration with STORY-023 NFC payment flow (CVM is an additional step in the same flow)
@@ -46,7 +46,7 @@ Below the threshold, the transaction proceeds with "no CVM" — just a tap. Abov
 **Out of scope:**
 - On-device PIN entry (CDCVM — Consumer Device CVM). This is a future enhancement where PIN is entered on the phone screen instead of the terminal keypad.
 - Biometric CVM (fingerprint/face on phone). Future enhancement.
-- Offline PIN verification (all PIN verification is online in UniBank)
+- Offline PIN verification (all PIN verification is online in GoldBank)
 - PIN change flow (separate story)
 - PIN retry counting and lockout (handled by existing account security module)
 
@@ -64,8 +64,8 @@ Below the threshold, the transaction proceeds with "no CVM" — just a tap. Abov
    c. Terminal displays "Enter PIN" prompt on its screen
    d. Consumer enters their 4-6 digit PIN on the terminal's physical keypad
    e. Terminal encrypts the PIN into an ISO 9564 Format 0 PIN block using the terminal session key
-   f. Terminal sends the encrypted PIN block along with the transaction data through the switch to UniBank
-   g. UniBank's PaymentService receives the request, calls HSMService.DecryptPINBlock to recover the cleartext PIN
+   f. Terminal sends the encrypted PIN block along with the transaction data through the switch to GoldBank
+   g. GoldBank's PaymentService receives the request, calls HSMService.DecryptPINBlock to recover the cleartext PIN
    h. Cleartext PIN is hashed and compared against the stored account PIN hash
    i. If PIN matches: transaction authorized (proceed with debit-credit saga)
    j. If PIN does not match: transaction declined with response code "55" (incorrect PIN)
@@ -97,10 +97,10 @@ Below the threshold, the transaction proceeds with "no CVM" — just a tap. Abov
 |-----------|----------|---------|
 | `CvmListBuilder.kt` | `mobile/shared/.../payment/nfc/` | Builds CVM list for APDU responses (KMP) |
 | `EmvApduProcessor.kt` | `mobile/shared/.../payment/nfc/` | Updated to include CVM data in GPO/records |
-| `UniBankHceService.kt` | `mobile/android/app/.../hce/` | Updated HCE service with CVM list |
-| `PinVerificationService.cs` | `src/Modules/UniBank.Payment/Services/` | Server-side PIN verification logic |
-| `NfcPaymentHandler.cs` | `src/Modules/UniBank.Payment/Handlers/` | Updated to handle PIN block in auth request |
-| `TenantConfigService.cs` | `src/Modules/UniBank.Tenant/Services/` | Provides nfc_pin_threshold per tenant |
+| `GoldBankHceService.kt` | `mobile/android/app/.../hce/` | Updated HCE service with CVM list |
+| `PinVerificationService.cs` | `src/Modules/GoldBank.Payment/Services/` | Server-side PIN verification logic |
+| `NfcPaymentHandler.cs` | `src/Modules/GoldBank.Payment/Handlers/` | Updated to handle PIN block in auth request |
+| `TenantConfigService.cs` | `src/Modules/GoldBank.Tenant/Services/` | Provides nfc_pin_threshold per tenant |
 
 ### CVM List Encoding
 
@@ -111,10 +111,10 @@ The CVM list is included in the payment application records returned during the 
 ```
 CVM List Structure:
 - Bytes 1-4: Amount X (CVM threshold in minor units, big-endian)
-- Bytes 5-8: Amount Y (secondary threshold, set to same as X for UniBank)
+- Bytes 5-8: Amount Y (secondary threshold, set to same as X for GoldBank)
 - Remaining: CVM rules (2 bytes each)
 
-CVM Rules for UniBank:
+CVM Rules for GoldBank:
   Rule 1: 02 03  -> Encrypted PIN online, if terminal supports (condition: amount >= X)
   Rule 2: 1F 00  -> No CVM required (condition: always, fallback)
 
@@ -215,7 +215,7 @@ CREATE TABLE pin_retry_tracker (
 ### Edge Cases
 
 - **Terminal Does Not Support Online PIN:** Some older terminals may not support encrypted PIN for contactless. In this case, the terminal's CVM processing falls back to "no CVM." The server must decide: approve without PIN (risk acceptance) or decline. This is configurable per tenant via `nfc_require_pin_above_threshold` (strict or lenient mode).
-- **PIN Entry Timeout:** If the consumer does not enter the PIN within the terminal's timeout (typically 30 seconds), the terminal cancels the transaction. No request reaches UniBank.
+- **PIN Entry Timeout:** If the consumer does not enter the PIN within the terminal's timeout (typically 30 seconds), the terminal cancels the transaction. No request reaches GoldBank.
 - **Amount Exactly at Threshold:** Amounts equal to the threshold require PIN (>=, not >).
 - **Currency Mismatch:** The CVM threshold is in the tenant's base currency. If the transaction currency differs (unlikely in Southern African domestic transactions), the threshold comparison should be in the transaction currency after conversion. For Sprint 3, assume same currency.
 - **Contactless Limit vs. PIN Threshold:** Some markets have a regulatory contactless limit (e.g., transactions above a certain amount cannot be contactless at all). This is separate from the PIN threshold and can be configured as `nfc_max_amount` in tenant config.

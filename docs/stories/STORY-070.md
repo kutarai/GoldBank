@@ -22,13 +22,13 @@ So that **my business model is configured correctly and my revenue, risk, and co
 
 ### Background
 
-Every deploying institution on the UniBank platform operates under different regulatory regimes, market conditions, and business models. A Zambian mobile money operator might charge flat fees on NFC payments to compete with established MNOs, while a Malawian bank might use percentage-based fees to scale revenue with transaction values. A South African institution might set high daily transaction limits for their urban customer base, while a Mozambican institution might enforce lower limits due to regulatory AML requirements.
+Every deploying institution on the GoldBank platform operates under different regulatory regimes, market conditions, and business models. A Zambian mobile money operator might charge flat fees on NFC payments to compete with established MNOs, while a Malawian bank might use percentage-based fees to scale revenue with transaction values. A South African institution might set high daily transaction limits for their urban customer base, while a Mozambican institution might enforce lower limits due to regulatory AML requirements.
 
 The per-tenant fee and limit configuration system makes this possible without code changes. Each tenant has its own fee schedule, transaction limits, and agent commission rates stored as structured configuration. The `SharedKernel.FeeCalculator` and `SharedKernel.LimitChecker` components read from this configuration at transaction time, ensuring that every transaction is processed according to the deploying institution's specific rules.
 
 Configuration is cached in Redis for performance — fee calculation happens on every transaction, so database lookups are not acceptable in the hot path. The 5-minute TTL ensures changes propagate reasonably quickly. Admin endpoints allow institutions to update their configuration, and changes take effect within the cache TTL window.
 
-This is a foundational story for the white-label proposition: without tenant-specific fees and limits, every institution would be locked into the same pricing model, eliminating the commercial flexibility that makes UniBank attractive to diverse Southern African financial institutions.
+This is a foundational story for the white-label proposition: without tenant-specific fees and limits, every institution would be locked into the same pricing model, eliminating the commercial flexibility that makes GoldBank attractive to diverse Southern African financial institutions.
 
 **Functional Requirement:** FR-057
 
@@ -106,14 +106,14 @@ This is a foundational story for the white-label proposition: without tenant-spe
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `FeeCalculator.cs` | `src/Shared/UniBank.SharedKernel/Finance/` | Calculates transaction fees based on tenant config |
-| `LimitChecker.cs` | `src/Shared/UniBank.SharedKernel/Finance/` | Validates transactions against tenant limits |
-| `TenantFeeConfig.cs` | `src/Shared/UniBank.SharedKernel/Tenancy/` | Fee configuration value object |
-| `TenantLimitConfig.cs` | `src/Shared/UniBank.SharedKernel/Tenancy/` | Limit configuration value object |
-| `TenantConfigService.cs` | `src/Modules/UniBank.Admin/Services/` | gRPC service for tenant config management |
-| `TenantConfigCache.cs` | `src/Shared/UniBank.SharedKernel/Caching/` | Redis caching for tenant config (shared with STORY-068) |
-| `FeeSimulationService.cs` | `src/Modules/UniBank.Admin/Services/` | Fee simulation for admin preview |
-| `TenantConfigHistory.cs` | `src/Modules/UniBank.Admin/Domain/` | Configuration version history entity |
+| `FeeCalculator.cs` | `src/Shared/GoldBank.SharedKernel/Finance/` | Calculates transaction fees based on tenant config |
+| `LimitChecker.cs` | `src/Shared/GoldBank.SharedKernel/Finance/` | Validates transactions against tenant limits |
+| `TenantFeeConfig.cs` | `src/Shared/GoldBank.SharedKernel/Tenancy/` | Fee configuration value object |
+| `TenantLimitConfig.cs` | `src/Shared/GoldBank.SharedKernel/Tenancy/` | Limit configuration value object |
+| `TenantConfigService.cs` | `src/Modules/GoldBank.Admin/Services/` | gRPC service for tenant config management |
+| `TenantConfigCache.cs` | `src/Shared/GoldBank.SharedKernel/Caching/` | Redis caching for tenant config (shared with STORY-068) |
+| `FeeSimulationService.cs` | `src/Modules/GoldBank.Admin/Services/` | Fee simulation for admin preview |
+| `TenantConfigHistory.cs` | `src/Modules/GoldBank.Admin/Domain/` | Configuration version history entity |
 
 ### API / gRPC Endpoints
 

@@ -22,11 +22,11 @@ So that **merchants can accept digital payments**
 
 ### Background
 
-UniBank's value proposition to deploying institutions in Southern Africa hinges on enabling digital payments at the point of sale. EFT POS terminals are the physical bridge between the platform and real-world commerce — they process NFC taps, QR scans, and PIN entry for card-present transactions. Before a terminal can process any payment, it must be registered in the system, associated with a merchant, provisioned with configuration, and activated through a secure key exchange with the HSM.
+GoldBank's value proposition to deploying institutions in Southern Africa hinges on enabling digital payments at the point of sale. EFT POS terminals are the physical bridge between the platform and real-world commerce — they process NFC taps, QR scans, and PIN entry for card-present transactions. Before a terminal can process any payment, it must be registered in the system, associated with a merchant, provisioned with configuration, and activated through a secure key exchange with the HSM.
 
-Terminal provisioning in UniBank follows a pull-then-push model: an administrator registers the terminal in the system (creating the record and merchant association), and when the terminal powers on and connects via MQTT, the platform pushes configuration and initiates the cryptographic key exchange that ultimately activates the device. This zero-touch provisioning model is essential for deploying institutions operating in areas where on-site technical support is scarce — once a terminal is registered by an admin, a merchant can power it on and it self-provisions.
+Terminal provisioning in GoldBank follows a pull-then-push model: an administrator registers the terminal in the system (creating the record and merchant association), and when the terminal powers on and connects via MQTT, the platform pushes configuration and initiates the cryptographic key exchange that ultimately activates the device. This zero-touch provisioning model is essential for deploying institutions operating in areas where on-site technical support is scarce — once a terminal is registered by an admin, a merchant can power it on and it self-provisions.
 
-The Terminal Manager is a satellite service in the UniBank architecture, communicating with POS terminals over MQTT (lightweight, suitable for intermittent connectivity common in Southern African deployments) and with the core platform via gRPC.
+The Terminal Manager is a satellite service in the GoldBank architecture, communicating with POS terminals over MQTT (lightweight, suitable for intermittent connectivity common in Southern African deployments) and with the core platform via gRPC.
 
 **Functional Requirement:** FR-032
 
@@ -86,15 +86,15 @@ The Terminal Manager is a satellite service in the UniBank architecture, communi
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `UniBank.TerminalManager` | `src/Satellites/UniBank.TerminalManager/` | Terminal Manager satellite service |
-| `TerminalService.cs` | `src/Satellites/UniBank.TerminalManager/Services/` | gRPC service for terminal operations |
-| `MqttTerminalBridge.cs` | `src/Satellites/UniBank.TerminalManager/Mqtt/` | MQTT publish/subscribe handler for terminal communication |
-| `TerminalProvisioningHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Wolverine handler for provisioning workflow orchestration |
-| `TerminalRegisteredEvent.cs` | `src/Shared/UniBank.Events/Terminal/` | Domain event for terminal registration |
-| `TerminalActivatedEvent.cs` | `src/Shared/UniBank.Events/Terminal/` | Domain event for terminal activation |
-| `terminal_service.proto` | `src/Shared/UniBank.Protos/` | gRPC proto definition for TerminalService |
-| `Terminal.cs` | `src/Satellites/UniBank.TerminalManager/Domain/` | Terminal entity |
-| `TerminalConfiguration.cs` | `src/Satellites/UniBank.TerminalManager/Domain/` | Configuration value object |
+| `GoldBank.TerminalManager` | `src/Satellites/GoldBank.TerminalManager/` | Terminal Manager satellite service |
+| `TerminalService.cs` | `src/Satellites/GoldBank.TerminalManager/Services/` | gRPC service for terminal operations |
+| `MqttTerminalBridge.cs` | `src/Satellites/GoldBank.TerminalManager/Mqtt/` | MQTT publish/subscribe handler for terminal communication |
+| `TerminalProvisioningHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Wolverine handler for provisioning workflow orchestration |
+| `TerminalRegisteredEvent.cs` | `src/Shared/GoldBank.Events/Terminal/` | Domain event for terminal registration |
+| `TerminalActivatedEvent.cs` | `src/Shared/GoldBank.Events/Terminal/` | Domain event for terminal activation |
+| `terminal_service.proto` | `src/Shared/GoldBank.Protos/` | gRPC proto definition for TerminalService |
+| `Terminal.cs` | `src/Satellites/GoldBank.TerminalManager/Domain/` | Terminal entity |
+| `TerminalConfiguration.cs` | `src/Satellites/GoldBank.TerminalManager/Domain/` | Configuration value object |
 
 ### API / gRPC Endpoints
 
@@ -102,7 +102,7 @@ The Terminal Manager is a satellite service in the UniBank architecture, communi
 
 ```protobuf
 syntax = "proto3";
-package unibank.terminal.v1;
+package goldbank.terminal.v1;
 
 service TerminalService {
   rpc RegisterTerminal (RegisterTerminalRequest) returns (RegisterTerminalResponse);

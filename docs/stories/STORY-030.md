@@ -23,7 +23,7 @@ So that I can support family cross-border.
 ### Background
 Cross-border remittances are a critical use case for Southern Africa's unbanked population. Millions of migrant workers in countries like South Africa, Botswana, and Namibia regularly send money to family in Zimbabwe, Mozambique, Malawi, and other SADC countries. Traditional remittance channels (Western Union, MoneyGram) charge fees of 8-15%, while informal channels (bus drivers, cross-border traders) are risky and unreliable.
 
-UniBank's cross-border transfer capability allows users in one country deployment (tenant) to send money to users in another country deployment. This involves cross-tenant communication, foreign exchange conversion, and compliance with cross-border transfer limits. The transfer may route through the switching server for inter-bank settlement when the recipient is on a different financial institution, or directly between UniBank tenants when both parties are on the platform.
+GoldBank's cross-border transfer capability allows users in one country deployment (tenant) to send money to users in another country deployment. This involves cross-tenant communication, foreign exchange conversion, and compliance with cross-border transfer limits. The transfer may route through the switching server for inter-bank settlement when the recipient is on a different financial institution, or directly between GoldBank tenants when both parties are on the platform.
 
 Functional Requirement: **FR-016**.
 
@@ -39,7 +39,7 @@ Functional Requirement: **FR-016**.
 - Compliance metadata capture (purpose of transfer, source of funds)
 
 **Out of scope:**
-- Transfers to non-UniBank recipients in other countries (future: interoperability)
+- Transfers to non-GoldBank recipients in other countries (future: interoperability)
 - Real-time exchange rate API integration (manual/admin-configured rates for MVP)
 - Transfers to countries outside the supported SADC corridor list
 - Cash pickup at destination (future: agent network integration across borders)
@@ -87,7 +87,7 @@ Functional Requirement: **FR-016**.
 
 ### Components
 
-**Module:** `UniBank.Core/Modules/Transfers/`
+**Module:** `GoldBank.Core/Modules/Transfers/`
 
 ```
 Transfers/

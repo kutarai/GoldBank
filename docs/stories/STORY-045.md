@@ -22,11 +22,11 @@ So that **all transactions are matched and discrepancies flagged for investigati
 
 ### Background
 
-Reconciliation is a critical operational process for any bank connected to a national payment switch. Every day, UniBank must verify that its record of transactions matches what the national switch recorded. Discrepancies can arise from network failures, timeouts, partial processing, clock skew, or bugs in either system. Without daily reconciliation, financial errors can accumulate undetected, leading to customer complaints, regulatory issues, and financial loss.
+Reconciliation is a critical operational process for any bank connected to a national payment switch. Every day, GoldBank must verify that its record of transactions matches what the national switch recorded. Discrepancies can arise from network failures, timeouts, partial processing, clock skew, or bugs in either system. Without daily reconciliation, financial errors can accumulate undetected, leading to customer complaints, regulatory issues, and financial loss.
 
-The reconciliation process compares UniBank's `switch_messages` and transaction records against settlement files or statement messages (camt.053) received from the national switch. Transactions are categorized as: matched (amounts and references agree), mismatched (amounts differ), unmatched local (in UniBank but not in the switch file), or unmatched remote (in the switch file but not in UniBank). Mismatches and unmatched transactions are flagged for manual review by the operations team.
+The reconciliation process compares GoldBank's `switch_messages` and transaction records against settlement files or statement messages (camt.053) received from the national switch. Transactions are categorized as: matched (amounts and references agree), mismatched (amounts differ), unmatched local (in GoldBank but not in the switch file), or unmatched remote (in the switch file but not in GoldBank). Mismatches and unmatched transactions are flagged for manual review by the operations team.
 
-This process runs on a configurable schedule — typically once per day after the switch's end-of-day cutoff — and produces a reconciliation report. The report feeds into the net settlement calculation, which determines how much UniBank owes or is owed by the national switch for the day's transactions.
+This process runs on a configurable schedule — typically once per day after the switch's end-of-day cutoff — and produces a reconciliation report. The report feeds into the net settlement calculation, which determines how much GoldBank owes or is owed by the national switch for the day's transactions.
 
 **Functional Requirements:** FR-030 (Daily Reconciliation)
 
@@ -34,7 +34,7 @@ This process runs on a configurable schedule — typically once per day after th
 
 **In scope:**
 - Automated reconciliation job on a configurable schedule
-- Retrieval of UniBank's switch transactions for the reconciliation period from `switch_messages` table
+- Retrieval of GoldBank's switch transactions for the reconciliation period from `switch_messages` table
 - Settlement file parsing from the national switch (configurable format per switch)
 - camt.053 (Bank to Customer Statement) parsing via the ISO 20022 adapter
 - Transaction matching by reference number (RRN, end-to-end ID)
@@ -62,14 +62,14 @@ This process runs on a configurable schedule — typically once per day after th
    - Pull from SFTP or API endpoint (configurable per switch)
    - Or parse a camt.053 message received earlier via the ISO 20022 adapter
 4. **Parse Switch File:** Parse the settlement file into a normalized list of transactions (reference, amount, direction, status)
-5. **Match Transactions:** For each UniBank transaction, look for a matching switch transaction by reference number:
+5. **Match Transactions:** For each GoldBank transaction, look for a matching switch transaction by reference number:
    - **Matched:** Reference found, amounts agree — mark as reconciled
    - **Mismatched:** Reference found, but amounts differ — flag for review
 6. **Find Unmatched:**
-   - **Unmatched Local:** UniBank transactions with no matching switch record
-   - **Unmatched Remote:** Switch transactions with no matching UniBank record
+   - **Unmatched Local:** GoldBank transactions with no matching switch record
+   - **Unmatched Remote:** Switch transactions with no matching GoldBank record
 7. **Generate Report:** Create a reconciliation report with summary statistics and detailed line items
-8. **Calculate Settlement:** Net settlement = sum of UniBank debits to switch - sum of UniBank credits from switch
+8. **Calculate Settlement:** Net settlement = sum of GoldBank debits to switch - sum of GoldBank credits from switch
 9. **Flag Mismatches:** Publish `ReconciliationMismatchFound` Wolverine event for each mismatch, triggering:
    - Notification to operations team
    - Entry in the admin dashboard's reconciliation queue
@@ -92,8 +92,8 @@ This process runs on a configurable schedule — typically once per day after th
 - [ ] Transactions are matched by reference number (RRN for ISO 8583, EndToEndId for ISO 20022)
 - [ ] Matched transactions with agreeing amounts are marked as reconciled
 - [ ] Mismatched transactions (amounts differ) are flagged for manual review
-- [ ] Unmatched local transactions (in UniBank, not in switch) are identified and flagged
-- [ ] Unmatched remote transactions (in switch, not in UniBank) are identified and flagged
+- [ ] Unmatched local transactions (in GoldBank, not in switch) are identified and flagged
+- [ ] Unmatched remote transactions (in switch, not in GoldBank) are identified and flagged
 - [ ] Reconciliation report is generated with: total matched, total mismatched, total unmatched local, total unmatched remote, net settlement amount
 - [ ] `ReconciliationMismatchFound` Wolverine event is published for each mismatch, triggering notification to operations
 - [ ] Net settlement is calculated: sum of debits minus sum of credits
@@ -109,16 +109,16 @@ This process runs on a configurable schedule — typically once per day after th
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `ReconciliationJob.cs` | `src/Satellites/UniBank.Switching/Reconciliation/` | Scheduled job orchestrator |
-| `ReconciliationEngine.cs` | `src/Satellites/UniBank.Switching/Reconciliation/` | Core matching logic |
-| `SettlementFileParser.cs` | `src/Satellites/UniBank.Switching/Reconciliation/Parsers/` | Base class for settlement file parsers |
-| `CsvSettlementParser.cs` | `src/Satellites/UniBank.Switching/Reconciliation/Parsers/` | CSV format parser |
-| `FixedWidthSettlementParser.cs` | `src/Satellites/UniBank.Switching/Reconciliation/Parsers/` | Fixed-width format parser |
-| `Camt053SettlementParser.cs` | `src/Satellites/UniBank.Switching/Reconciliation/Parsers/` | ISO 20022 camt.053 parser |
-| `SettlementFileRetriever.cs` | `src/Satellites/UniBank.Switching/Reconciliation/` | SFTP/API client to pull settlement files |
-| `ReconciliationReportBuilder.cs` | `src/Satellites/UniBank.Switching/Reconciliation/` | Generates reconciliation report |
-| `NetSettlementCalculator.cs` | `src/Satellites/UniBank.Switching/Reconciliation/` | Calculates net settlement position |
-| `ReconciliationMismatchHandler.cs` | `src/Satellites/UniBank.Switching/Handlers/` | Publishes mismatch events |
+| `ReconciliationJob.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/` | Scheduled job orchestrator |
+| `ReconciliationEngine.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/` | Core matching logic |
+| `SettlementFileParser.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/Parsers/` | Base class for settlement file parsers |
+| `CsvSettlementParser.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/Parsers/` | CSV format parser |
+| `FixedWidthSettlementParser.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/Parsers/` | Fixed-width format parser |
+| `Camt053SettlementParser.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/Parsers/` | ISO 20022 camt.053 parser |
+| `SettlementFileRetriever.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/` | SFTP/API client to pull settlement files |
+| `ReconciliationReportBuilder.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/` | Generates reconciliation report |
+| `NetSettlementCalculator.cs` | `src/Satellites/GoldBank.Switching/Reconciliation/` | Calculates net settlement position |
+| `ReconciliationMismatchHandler.cs` | `src/Satellites/GoldBank.Switching/Handlers/` | Publishes mismatch events |
 
 ### API / gRPC Endpoints
 
@@ -232,13 +232,13 @@ public class NetSettlementCalculator
 {
     public NetSettlement Calculate(IReadOnlyList<MatchedTransaction> matched)
     {
-        // Debits: transactions where UniBank account was debited
+        // Debits: transactions where GoldBank account was debited
         //         (outbound to other banks)
         var totalDebits = matched
             .Where(m => m.Local.Direction == "outbound")
             .Sum(m => m.Local.Amount);
 
-        // Credits: transactions where UniBank account was credited
+        // Credits: transactions where GoldBank account was credited
         //          (inbound from other banks)
         var totalCredits = matched
             .Where(m => m.Local.Direction == "inbound")
@@ -380,14 +380,14 @@ CREATE TABLE switching.settlement_files (
 ### Edge Cases
 
 - **Settlement File Not Available:** If the settlement file is not available at the scheduled time (switch delay, SFTP outage), retry up to 3 times with exponential backoff (1 min, 5 min, 15 min). If still unavailable, mark the reconciliation as "failed — file not available" and alert operations.
-- **Empty Settlement File:** If the settlement file contains zero transactions (holiday, switch outage), create a reconciliation report with all UniBank transactions as "unmatched_local". Alert operations of the anomaly.
-- **Duplicate Reference Numbers:** If multiple UniBank transactions share the same reference number (should not happen, but defensive coding), match the first occurrence and flag the duplicates for investigation.
+- **Empty Settlement File:** If the settlement file contains zero transactions (holiday, switch outage), create a reconciliation report with all GoldBank transactions as "unmatched_local". Alert operations of the anomaly.
+- **Duplicate Reference Numbers:** If multiple GoldBank transactions share the same reference number (should not happen, but defensive coding), match the first occurrence and flag the duplicates for investigation.
 - **Settlement File Format Change:** If the settlement file format changes unexpectedly (switch upgrade), the parser will fail. Log the parsing error, mark reconciliation as failed, and alert operations. The parser format is configurable per switch to accommodate changes.
 - **Time Zone / Cutoff Mismatch:** Different switches may use different cutoff times and time zones. The reconciliation window must be configured per switch (cutoff time + timezone). Transactions near the cutoff boundary may appear in the next day's file — handle gracefully by checking the previous and next day if a transaction is unmatched.
 - **Large Transaction Volume:** On high-volume days, reconciliation may involve hundreds of thousands of transactions. Use batch processing and streaming where possible. The matching algorithm should be O(n) using hash-based lookups, not O(n^2) nested loops.
 - **Partial Settlement File:** If the settlement file is truncated (partial download), detect the truncation (record count mismatch vs. trailer, unexpected EOF), mark reconciliation as failed, and retry the download.
 - **Already Reconciled:** If reconciliation is triggered for a date that has already been successfully reconciled, return "already_completed" and do not re-run unless explicitly forced.
-- **Cross-Day Transactions:** Transactions initiated just before the cutoff but completed after may appear differently in the UniBank log vs. the switch file. Use the switch timestamp (not UniBank's timestamp) for date assignment.
+- **Cross-Day Transactions:** Transactions initiated just before the cutoff but completed after may appear differently in the GoldBank log vs. the switch file. Use the switch timestamp (not GoldBank's timestamp) for date assignment.
 
 ---
 

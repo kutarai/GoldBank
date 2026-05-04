@@ -1,4 +1,4 @@
-# System Architecture: UniBank
+# System Architecture: GoldBank
 
 **Date:** 2026-02-24
 **Architect:** wmapundu
@@ -11,17 +11,17 @@
 
 ## Document Overview
 
-This document defines the system architecture for UniBank. It provides the technical blueprint for implementation, addressing all functional and non-functional requirements from the PRD.
+This document defines the system architecture for GoldBank. It provides the technical blueprint for implementation, addressing all functional and non-functional requirements from the PRD.
 
 **Related Documents:**
-- Product Requirements Document: docs/prd-unibank-2026-02-24.md
-- Product Brief: docs/product-brief-unibank-2026-02-24.md
+- Product Requirements Document: docs/prd-goldbank-2026-02-24.md
+- Product Brief: docs/product-brief-goldbank-2026-02-24.md
 
 ---
 
 ## Executive Summary
 
-UniBank is architected as a **modular monolith with dedicated satellite services**, built on **.NET 10** with **PostgreSQL 18**, communicating via **gRPC** for speed and **Wolverine + MQTT** for async messaging. The architecture is designed for on-premise deployment using Docker containers, supporting multi-tenant white-label deployments with schema-per-tenant data isolation. Satellite services handle PCI-sensitive operations (switching, HSM, terminal management) with network segmentation, while the core banking monolith manages all business logic through well-defined internal modules.
+GoldBank is architected as a **modular monolith with dedicated satellite services**, built on **.NET 10** with **PostgreSQL 18**, communicating via **gRPC** for speed and **Wolverine + MQTT** for async messaging. The architecture is designed for on-premise deployment using Docker containers, supporting multi-tenant white-label deployments with schema-per-tenant data isolation. Satellite services handle PCI-sensitive operations (switching, HSM, terminal management) with network segmentation, while the core banking monolith manages all business logic through well-defined internal modules.
 
 ---
 
@@ -597,12 +597,12 @@ National Switch → Switching Server → Parse message
 | Aspect | Design |
 |--------|--------|
 | **Protocol** | gRPC with Protocol Buffers |
-| **Versioning** | Package-level in proto (e.g., `unibank.v1.accounts`) |
+| **Versioning** | Package-level in proto (e.g., `goldbank.v1.accounts`) |
 | **Authentication** | JWT Bearer tokens in gRPC metadata |
 | **Authorization** | Role-based claims in JWT |
 | **Streaming** | Server streaming for transaction history and report export |
 | **Error handling** | gRPC status codes with detailed error metadata |
-| **Contracts** | Shared `.proto` files in UniBank.Protos project |
+| **Contracts** | Shared `.proto` files in GoldBank.Protos project |
 
 ### Endpoints
 
@@ -731,7 +731,7 @@ Refresh token → Gateway → Core Banking → Validate + Rotate → New access 
   "device_id": "device_uuid",
   "permissions": ["payments", "transfers", "bills"],
   "exp": 1740000000,
-  "iss": "unibank-gateway"
+  "iss": "goldbank-gateway"
 }
 ```
 
@@ -1236,12 +1236,12 @@ Roles:
 ### Code Organization
 
 ```
-UniBank.sln
+GoldBank.sln
 ├── src/
-│   ├── UniBank.Protos/                  # Shared .proto files (service contracts)
-│   ├── UniBank.SharedKernel/            # Domain events, value objects, common types
-│   ├── UniBank.Gateway/                 # API Gateway + gRPC interceptors
-│   ├── UniBank.Core/                    # Core Banking modular monolith
+│   ├── GoldBank.Protos/                  # Shared .proto files (service contracts)
+│   ├── GoldBank.SharedKernel/            # Domain events, value objects, common types
+│   ├── GoldBank.Gateway/                 # API Gateway + gRPC interceptors
+│   ├── GoldBank.Core/                    # Core Banking modular monolith
 │   │   ├── Modules/
 │   │   │   ├── Accounts/
 │   │   │   │   ├── Domain/             # Entities, value objects
@@ -1261,24 +1261,24 @@ UniBank.sln
 │   │       ├── Persistence/            # EF Core DbContext, migrations
 │   │       ├── Caching/                # Redis integration
 │   │       └── Messaging/              # Wolverine configuration
-│   ├── UniBank.Switching/               # Switching Server
+│   ├── GoldBank.Switching/               # Switching Server
 │   │   ├── Adapters/
 │   │   │   ├── ISO8583/
 │   │   │   └── ISO20022/
 │   │   ├── CanonicalFormat/
 │   │   ├── Reconciliation/
 │   │   └── ConnectionManager/
-│   ├── UniBank.TerminalManager/         # Terminal Manager + MQTT
-│   ├── UniBank.HSM/                     # HSM Interface (PKCS#11)
-│   ├── UniBank.Admin/                   # Blazor Server Admin Portal
-│   ├── UniBank.Reporting/               # Reporting Engine
-│   ├── UniBank.Notifications/           # Notification Service
-│   └── UniBank.Mobile/                  # KMP Mobile App (separate repo possible)
+│   ├── GoldBank.TerminalManager/         # Terminal Manager + MQTT
+│   ├── GoldBank.HSM/                     # HSM Interface (PKCS#11)
+│   ├── GoldBank.Admin/                   # Blazor Server Admin Portal
+│   ├── GoldBank.Reporting/               # Reporting Engine
+│   ├── GoldBank.Notifications/           # Notification Service
+│   └── GoldBank.Mobile/                  # KMP Mobile App (separate repo possible)
 ├── tests/
-│   ├── UniBank.Core.Tests/              # Unit tests for core business logic
-│   ├── UniBank.Switching.Tests/         # Switching adapter tests
-│   ├── UniBank.Integration.Tests/       # gRPC service integration tests
-│   └── UniBank.E2E.Tests/              # End-to-end flow tests
+│   ├── GoldBank.Core.Tests/              # Unit tests for core business logic
+│   ├── GoldBank.Switching.Tests/         # Switching adapter tests
+│   ├── GoldBank.Integration.Tests/       # gRPC service integration tests
+│   └── GoldBank.E2E.Tests/              # End-to-end flow tests
 ├── docker/
 │   ├── docker-compose.yml               # Production compose
 │   ├── docker-compose.override.yml      # Development overrides

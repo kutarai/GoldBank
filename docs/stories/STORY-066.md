@@ -21,9 +21,9 @@ So that I can verify transactions are accounted for and identify discrepancies b
 ## Description
 
 ### Background
-Reconciliation is a fundamental financial control process. Every day, UniBank must verify that its internal transaction records match those of external payment networks and switch partners. The daily reconciliation job (implemented in STORY-045) compares UniBank's transaction records with settlement files from external switches and produces match/mismatch results. This story provides the admin-facing reporting interface that allows finance staff to view reconciliation summaries, drill down into mismatched transactions, investigate discrepancies, and track the overall health of the reconciliation process.
+Reconciliation is a fundamental financial control process. Every day, GoldBank must verify that its internal transaction records match those of external payment networks and switch partners. The daily reconciliation job (implemented in STORY-045) compares GoldBank's transaction records with settlement files from external switches and produces match/mismatch results. This story provides the admin-facing reporting interface that allows finance staff to view reconciliation summaries, drill down into mismatched transactions, investigate discrepancies, and track the overall health of the reconciliation process.
 
-Unresolved mismatches represent financial risk -- either UniBank has charged a customer without the external network processing the payment, or the external network has processed a payment that UniBank has not recorded. Timely identification and resolution of mismatches is critical for financial integrity.
+Unresolved mismatches represent financial risk -- either GoldBank has charged a customer without the external network processing the payment, or the external network has processed a payment that GoldBank has not recorded. Timely identification and resolution of mismatches is critical for financial integrity.
 
 ### Scope
 **In scope:**

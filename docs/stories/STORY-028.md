@@ -24,9 +24,9 @@ So that **I know the payment was successful**
 
 This story completes the QR payment experience by providing immediate confirmation and receipts after a QR code payment (STORY-027). It mirrors the notification pattern established in STORY-025 for NFC payments, reusing the same Wolverine event-driven infrastructure, notification service, and push notification pipeline.
 
-For UniBank's target users in the informal economy, the confirmation serves a critical trust function. When a consumer pays a street vendor via QR code, both parties need immediate digital proof of the transaction. The consumer sees a confirmation screen on their phone, and both parties receive push notifications. The transaction appears in both their histories immediately.
+For GoldBank's target users in the informal economy, the confirmation serves a critical trust function. When a consumer pays a street vendor via QR code, both parties need immediate digital proof of the transaction. The consumer sees a confirmation screen on their phone, and both parties receive push notifications. The transaction appears in both their histories immediately.
 
-The receipt is also shareable — the consumer can share it with the merchant via the phone's system share intent (WhatsApp, SMS, etc.), which is important in environments where the merchant may not have the UniBank app installed (future: merchant receives SMS receipt).
+The receipt is also shareable — the consumer can share it with the merchant via the phone's system share intent (WhatsApp, SMS, etc.), which is important in environments where the merchant may not have the GoldBank app installed (future: merchant receives SMS receipt).
 
 **Functional Requirements:** FR-014 (QR Payment Confirmation & Notifications)
 
@@ -116,10 +116,10 @@ The receipt is also shareable — the consumer can share it with the merchant vi
 | `QrPaymentConfirmationScreen.kt` | `mobile/shared/.../payment/qr/` | KMP confirmation/failure screen |
 | `ReceiptGenerator.kt` | `mobile/shared/.../payment/` | Text/image receipt generation (KMP) |
 | `ShareIntentLauncher.kt` | `mobile/android/app/.../share/` | Android system share intent |
-| `TransactionCompletedHandler.cs` | `src/Modules/UniBank.Notification/Handlers/` | Reused from STORY-025 — handles qr_payment type |
-| `TransactionFailedHandler.cs` | `src/Modules/UniBank.Notification/Handlers/` | Reused from STORY-025 — handles qr_payment type |
-| `FcmNotificationSender.cs` | `src/Modules/UniBank.Notification/Services/` | Reused from STORY-025 |
-| `TransactionCacheInvalidator.cs` | `src/Modules/UniBank.Payment/Handlers/` | Reused from STORY-025 |
+| `TransactionCompletedHandler.cs` | `src/Modules/GoldBank.Notification/Handlers/` | Reused from STORY-025 — handles qr_payment type |
+| `TransactionFailedHandler.cs` | `src/Modules/GoldBank.Notification/Handlers/` | Reused from STORY-025 — handles qr_payment type |
+| `FcmNotificationSender.cs` | `src/Modules/GoldBank.Notification/Services/` | Reused from STORY-025 |
+| `TransactionCacheInvalidator.cs` | `src/Modules/GoldBank.Payment/Handlers/` | Reused from STORY-025 |
 
 ### Wolverine Events
 
@@ -303,7 +303,7 @@ fun QrPaymentConfirmationScreen(
 fun generateTextReceipt(result: QrPaymentResult): String {
     return buildString {
         appendLine("================================")
-        appendLine("       UniBank Payment Receipt")
+        appendLine("       GoldBank Payment Receipt")
         appendLine("================================")
         appendLine()
         appendLine("Status:    Payment Successful")
@@ -315,7 +315,7 @@ fun generateTextReceipt(result: QrPaymentResult): String {
         appendLine("Date:      ${formatDateTime(result.timestamp)}")
         appendLine()
         appendLine("================================")
-        appendLine("     Thank you for using UniBank")
+        appendLine("     Thank you for using GoldBank")
         appendLine("================================")
     }
 }
@@ -324,7 +324,7 @@ fun generateTextReceipt(result: QrPaymentResult): String {
 fun shareReceipt(context: Context, receiptText: String) {
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, "UniBank Payment Receipt")
+        putExtra(Intent.EXTRA_SUBJECT, "GoldBank Payment Receipt")
         putExtra(Intent.EXTRA_TEXT, receiptText)
     }
     context.startActivity(Intent.createChooser(shareIntent, "Share Receipt"))
@@ -363,7 +363,7 @@ The notification handler creates records with type `qr_payment_success`, `qr_pay
 - **Notification Delivery Delay:** Push notifications may be delayed (FCM is best-effort). The confirmation screen on the payer's phone is the immediate feedback. The merchant's push notification may arrive within 1-5 seconds. If the merchant does not receive notification quickly, they can check their transaction history in the app.
 - **Share Intent Failure:** If the system share intent fails (no sharing apps installed — extremely unlikely on Android), log the error and inform the user. Offer to copy the receipt text to clipboard instead.
 - **Multiple Rapid Payments:** If the consumer makes several QR payments in quick succession, each gets its own confirmation screen and notification. The notification handler uses transaction_id idempotency to prevent duplicate notifications.
-- **Merchant Without UniBank App:** If the payee is a merchant account but the merchant device does not have the app installed or FCM registered, the notification fails silently. The merchant can check their balance/history when they next open the app. SMS fallback (per STORY-025 pattern) applies if configured.
+- **Merchant Without GoldBank App:** If the payee is a merchant account but the merchant device does not have the app installed or FCM registered, the notification fails silently. The merchant can check their balance/history when they next open the app. SMS fallback (per STORY-025 pattern) applies if configured.
 - **Locale and Currency Formatting:** The confirmation screen formats currency using the device locale (e.g., "R 250.00" for ZAR, "ZMW 250.00" for ZMW). The notification templates use the tenant's default locale. Mismatched locales between payer and payee are handled by sending each notification in the recipient's preferred locale.
 
 ---

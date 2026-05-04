@@ -21,7 +21,7 @@ So that unauthorized devices cannot access my account
 ## Description
 
 ### Background
-Device binding is a critical security layer for mobile banking in Southern Africa, where SIM-swap fraud and account takeover attacks are prevalent. By binding a user's account to a specific physical device during registration, UniBank ensures that even if credentials are compromised, an attacker cannot access the account from a different device without completing a re-verification process.
+Device binding is a critical security layer for mobile banking in Southern Africa, where SIM-swap fraud and account takeover attacks are prevalent. By binding a user's account to a specific physical device during registration, GoldBank ensures that even if credentials are compromised, an attacker cannot access the account from a different device without completing a re-verification process.
 
 The device fingerprint consists of the Android ID (a unique per-device, per-app identifier) combined with the app installation ID (a UUID generated on first app launch). This combination ensures uniqueness while respecting user privacy. The device ID is embedded in the JWT token as a claim, and the API Gateway validates that every authenticated request originates from the bound device.
 
@@ -47,7 +47,7 @@ Device transfer is supported for legitimate use cases (new phone, factory reset)
 ### User Flow
 
 **Initial Binding (during registration):**
-1. User installs the UniBank app and launches it for the first time
+1. User installs the GoldBank app and launches it for the first time
 2. App generates a device fingerprint: SHA-256(Android_ID + Installation_UUID)
 3. During registration (STORY-009), the device fingerprint is sent as part of the registration request
 4. Server stores the device fingerprint in the `accounts.device_id` column
@@ -55,7 +55,7 @@ Device transfer is supported for legitimate use cases (new phone, factory reset)
 6. API Gateway validates `device_id` on every authenticated request
 
 **Device Transfer (new device):**
-1. User installs UniBank on a new device and attempts to log in
+1. User installs GoldBank on a new device and attempts to log in
 2. App sends login request with the new device's fingerprint
 3. Server detects device_id mismatch and returns `DEVICE_MISMATCH` error
 4. App prompts user: "This device is not registered. To transfer your account, verify your identity."

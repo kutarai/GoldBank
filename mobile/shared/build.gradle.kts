@@ -43,7 +43,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.unibank.shared"
+    namespace = "com.goldbank.shared"
     compileSdk = 36
     defaultConfig {
         minSdk = 26
@@ -57,7 +57,7 @@ android {
     // Server protos use import "Protos/common.proto" so the root must be the parent of Protos/
     sourceSets.getByName("main") {
         proto {
-            srcDir("../../server/UniBank.Protos")
+            srcDir("../../server/GoldBank.Protos")
             include("Protos/*.proto")
         }
     }

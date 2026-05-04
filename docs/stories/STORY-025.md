@@ -22,7 +22,7 @@ So that **I have confirmation and a receipt**
 
 ### Background
 
-For UniBank's target users — many of whom are new to digital payments — immediate transaction confirmation is essential for building trust and confidence. When a consumer taps their phone at a POS terminal, they need to know within seconds whether the payment succeeded or failed, along with the key transaction details.
+For GoldBank's target users — many of whom are new to digital payments — immediate transaction confirmation is essential for building trust and confidence. When a consumer taps their phone at a POS terminal, they need to know within seconds whether the payment succeeded or failed, along with the key transaction details.
 
 This story implements the notification and receipt pipeline that fires after every NFC payment processed by STORY-023. It leverages Wolverine's event-driven architecture: the `TransactionCompleted` event published at the end of the NFC payment saga triggers a notification handler that pushes confirmations to both the payer and the merchant via Firebase Cloud Messaging (FCM). The transaction also becomes immediately visible in the user's transaction history through cache invalidation.
 
@@ -92,13 +92,13 @@ For the unbanked demographic, SMS fallback is also important — not all users w
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `TransactionCompletedHandler.cs` | `src/Modules/UniBank.Notification/Handlers/` | Wolverine handler for TransactionCompleted |
-| `TransactionFailedHandler.cs` | `src/Modules/UniBank.Notification/Handlers/` | Wolverine handler for TransactionFailed |
-| `FcmNotificationSender.cs` | `src/Modules/UniBank.Notification/Services/` | Firebase Cloud Messaging integration |
-| `SmsNotificationSender.cs` | `src/Modules/UniBank.Notification/Services/` | SMS gateway integration (fallback) |
-| `NotificationTemplateEngine.cs` | `src/Modules/UniBank.Notification/Services/` | Template rendering for notification content |
-| `NotificationPreferenceService.cs` | `src/Modules/UniBank.Notification/Services/` | User notification preference lookup |
-| `TransactionCacheInvalidator.cs` | `src/Modules/UniBank.Payment/Handlers/` | Redis cache invalidation on transaction events |
+| `TransactionCompletedHandler.cs` | `src/Modules/GoldBank.Notification/Handlers/` | Wolverine handler for TransactionCompleted |
+| `TransactionFailedHandler.cs` | `src/Modules/GoldBank.Notification/Handlers/` | Wolverine handler for TransactionFailed |
+| `FcmNotificationSender.cs` | `src/Modules/GoldBank.Notification/Services/` | Firebase Cloud Messaging integration |
+| `SmsNotificationSender.cs` | `src/Modules/GoldBank.Notification/Services/` | SMS gateway integration (fallback) |
+| `NotificationTemplateEngine.cs` | `src/Modules/GoldBank.Notification/Services/` | Template rendering for notification content |
+| `NotificationPreferenceService.cs` | `src/Modules/GoldBank.Notification/Services/` | User notification preference lookup |
+| `TransactionCacheInvalidator.cs` | `src/Modules/GoldBank.Payment/Handlers/` | Redis cache invalidation on transaction events |
 
 ### Wolverine Events
 

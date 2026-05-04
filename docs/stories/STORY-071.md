@@ -22,7 +22,7 @@ So that I can manage my deployment independently
 
 ### Background
 
-UniBank's white-label model means multiple deploying institutions share the underlying platform while each operates independently. With the core white-label configuration (STORY-055) and branding engine (STORY-069) in place, this final story delivers the admin portal experience that enforces strict tenant isolation. This is critical for the pilot launch: the first deploying institution must be able to log into their own admin portal, see only their data, manage their users, and configure their deployment without any risk of cross-tenant data leakage.
+GoldBank's white-label model means multiple deploying institutions share the underlying platform while each operates independently. With the core white-label configuration (STORY-055) and branding engine (STORY-069) in place, this final story delivers the admin portal experience that enforces strict tenant isolation. This is critical for the pilot launch: the first deploying institution must be able to log into their own admin portal, see only their data, manage their users, and configure their deployment without any risk of cross-tenant data leakage.
 
 In the Southern African context, regulatory requirements demand clear data isolation between different licensed financial institutions. Each deploying institution's compliance team must be confident that their data is not visible to other tenants and that their administrative actions affect only their own deployment. This story delivers that assurance through technical controls at the authentication, authorization, and data access layers.
 
@@ -48,7 +48,7 @@ In the Southern African context, regulatory requirements demand clear data isola
 ### User Flow
 
 **Tenant Admin Login:**
-1. Tenant admin navigates to admin portal URL (e.g., `admin.institution-name.co.za` or `admin.unibank.co.za/tenant-slug`)
+1. Tenant admin navigates to admin portal URL (e.g., `admin.institution-name.co.za` or `admin.goldbank.co.za/tenant-slug`)
 2. Login page displays tenant branding (logo, colors from branding config)
 3. Admin enters credentials (email + password + optional MFA)
 4. System authenticates against `admin_users` table, verifying `tenant_id` match
@@ -57,7 +57,7 @@ In the Southern African context, regulatory requirements demand clear data isola
 
 **Super Admin Login:**
 1. Super admin navigates to admin portal root URL
-2. Login page shows UniBank platform branding
+2. Login page shows GoldBank platform branding
 3. Super admin authenticates with elevated credentials + mandatory MFA
 4. JWT issued with claims: `sub`, `role=super_admin`, `tenant_id=*` (wildcard)
 5. Admin portal shows tenant selector dropdown in top navigation bar

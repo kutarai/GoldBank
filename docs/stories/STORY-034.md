@@ -23,7 +23,7 @@ So that I'm incentivized to serve customers.
 ### Background
 The agent banking model in Southern Africa relies on a network of independent merchants who act as banking access points for the unbanked. These agents invest their own capital as float and dedicate time and physical space to serve customers. A fair and transparent commission structure is essential to attract and retain quality agents. Without adequate compensation, agent networks shrink and financial inclusion goals fail.
 
-UniBank's commission engine must be flexible enough to support different commission structures across tenants (each country deployment may have different regulatory requirements and market expectations). Commissions must be calculated automatically during each agent transaction, credited to a separate commission balance (distinct from the agent's float), and made available for periodic settlement.
+GoldBank's commission engine must be flexible enough to support different commission structures across tenants (each country deployment may have different regulatory requirements and market expectations). Commissions must be calculated automatically during each agent transaction, credited to a separate commission balance (distinct from the agent's float), and made available for periodic settlement.
 
 Functional Requirement: **FR-021**.
 
@@ -78,7 +78,7 @@ Functional Requirement: **FR-021**.
 
 ### Components
 
-**Module:** `UniBank.SharedKernel/` (FeeCalculator) and `UniBank.Core/Modules/Agents/`
+**Module:** `GoldBank.SharedKernel/` (FeeCalculator) and `GoldBank.Core/Modules/Agents/`
 
 ```
 SharedKernel/

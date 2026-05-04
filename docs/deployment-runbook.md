@@ -1,7 +1,7 @@
-# UniBank White-Label Platform - Deployment Runbook
+# GoldBank White-Label Platform - Deployment Runbook
 
 ## Overview
-This runbook covers the deployment of the UniBank white-label banking platform for pilot institutions. It includes prerequisites, environment setup, tenant onboarding, rollback procedures, incident response, and health check verification.
+This runbook covers the deployment of the GoldBank white-label banking platform for pilot institutions. It includes prerequisites, environment setup, tenant onboarding, rollback procedures, incident response, and health check verification.
 
 ---
 
@@ -32,11 +32,11 @@ This runbook covers the deployment of the UniBank white-label banking platform f
 
 ### 2.1 Clone and Build
 ```bash
-git clone <repository-url> unibank-whitelabel
-cd unibank-whitelabel
+git clone <repository-url> goldbank-whitelabel
+cd goldbank-whitelabel
 
 # Build all services
-/path/to/dotnet build UniBank.slnx --configuration Release
+/path/to/dotnet build GoldBank.slnx --configuration Release
 ```
 
 ### 2.2 Configure Environment Variables
@@ -45,8 +45,8 @@ Create `.env` file in the project root:
 # Database
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
-POSTGRES_DB=unibank
-POSTGRES_USER=unibank_app
+POSTGRES_DB=goldbank
+POSTGRES_USER=goldbank_app
 POSTGRES_PASSWORD=<secure-password>
 
 # Redis
@@ -57,7 +57,7 @@ REDIS_PASSWORD=<secure-password>
 # MQTT
 MQTT_HOST=mqtt
 MQTT_PORT=1883
-MQTT_USERNAME=unibank
+MQTT_USERNAME=goldbank
 MQTT_PASSWORD=<secure-password>
 
 # HSM
@@ -70,8 +70,8 @@ ASPNETCORE_URLS=https://+:5001;http://+:5000
 
 # JWT
 JWT_SECRET=<256-bit-secret>
-JWT_ISSUER=unibank
-JWT_AUDIENCE=unibank-mobile
+JWT_ISSUER=goldbank
+JWT_AUDIENCE=goldbank-mobile
 JWT_EXPIRY_MINUTES=30
 ```
 
@@ -83,10 +83,10 @@ docker compose up -d db redis mqtt
 ### 2.4 Initialize Database
 ```bash
 # Create the main database
-docker compose exec db psql -U postgres -c "CREATE DATABASE unibank;"
+docker compose exec db psql -U postgres -c "CREATE DATABASE goldbank;"
 
 # Run migrations (if using EF Core migrations)
-dotnet ef database update --project server/UniBank.Core
+dotnet ef database update --project server/GoldBank.Core
 ```
 
 ### 2.5 Start Application Services
@@ -130,7 +130,7 @@ CREATE SCHEMA IF NOT EXISTS tenant_fnb_zw;
 ### 3.2 Run Tenant Migrations
 ```bash
 # Apply EF Core migrations to the new tenant schema
-dotnet ef database update --project server/UniBank.Core -- --tenant-schema tenant_fnb_zw
+dotnet ef database update --project server/GoldBank.Core -- --tenant-schema tenant_fnb_zw
 ```
 
 ### 3.3 Configure Tenant-Specific Settings
@@ -162,7 +162,7 @@ VALUES (
 ```bash
 # Test tenant-specific gRPC endpoint
 grpcurl -d '{"phone": "+263771234567", "country_code": "+263", "tenant_id": "fnb_zw"}' \
-  localhost:5001 unibank.v1.account.AccountService/Register
+  localhost:5001 goldbank.v1.account.AccountService/Register
 ```
 
 ---
@@ -175,7 +175,7 @@ grpcurl -d '{"phone": "+263771234567", "country_code": "+263", "tenant_id": "fnb
 docker compose down
 
 # Switch to previous image tag
-export UNIBANK_VERSION=<previous-version>
+export GOLDBANK_VERSION=<previous-version>
 docker compose up -d
 
 # Verify health
@@ -185,10 +185,10 @@ curl -k https://localhost:5001/health
 ### 4.2 Database Rollback
 ```bash
 # Revert last migration
-dotnet ef database update <previous-migration-name> --project server/UniBank.Core
+dotnet ef database update <previous-migration-name> --project server/GoldBank.Core
 
 # If data corruption, restore from backup
-pg_restore -U postgres -d unibank /backups/unibank_<timestamp>.dump
+pg_restore -U postgres -d goldbank /backups/goldbank_<timestamp>.dump
 ```
 
 ### 4.3 Configuration Rollback
@@ -221,7 +221,7 @@ docker compose up -d --force-recreate
 ### 5.3 Key Log Locations
 ```bash
 # Application logs
-docker compose logs unibank-core --tail 100
+docker compose logs goldbank-core --tail 100
 
 # Database logs
 docker compose logs db --tail 100
@@ -233,7 +233,7 @@ docker compose logs redis --tail 100
 ### 5.4 Emergency Contacts
 - **On-call Engineer**: See PagerDuty rotation
 - **Database Admin**: See PagerDuty rotation
-- **Security Team**: security@unibank.com
+- **Security Team**: security@goldbank.com
 
 ---
 
@@ -296,11 +296,11 @@ Configure your monitoring system to poll `/health` every 30 seconds:
 ```yaml
 # Prometheus scrape config
 scrape_configs:
-  - job_name: 'unibank-health'
+  - job_name: 'goldbank-health'
     scrape_interval: 30s
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['unibank-core:5000']
+      - targets: ['goldbank-core:5000']
 ```
 
 ---

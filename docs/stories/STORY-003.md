@@ -21,7 +21,7 @@ So that all services can persist data with tenant isolation.
 ## Description
 
 ### Background
-UniBank is a white-label platform where each deployment (tenant) serves a different banking brand. Data isolation between tenants is critical for security, compliance, and regulatory requirements across different Southern African jurisdictions. The schema-per-tenant approach provides strong isolation -- each tenant gets its own PostgreSQL schema with identical table structures, while shared/global data (tenant registry, bill providers, system configuration) lives in a `public` schema.
+GoldBank is a white-label platform where each deployment (tenant) serves a different banking brand. Data isolation between tenants is critical for security, compliance, and regulatory requirements across different Southern African jurisdictions. The schema-per-tenant approach provides strong isolation -- each tenant gets its own PostgreSQL schema with identical table structures, while shared/global data (tenant registry, bill providers, system configuration) lives in a `public` schema.
 
 This story establishes the database foundation including the multi-tenant resolution mechanism, EF Core DbContext configuration, migration framework, and table partitioning strategy for high-volume tables.
 
@@ -64,7 +64,7 @@ This story establishes the database foundation including the multi-tenant resolu
 
 - [ ] Public schema contains `tenants`, `bill_providers`, and `system_config` tables with correct columns and constraints
 - [ ] Tenant schema template contains all domain tables: `accounts`, `transactions`, `kyc_documents`, `merchants`, `agents`, `terminals`, `audit_logs`, `notifications`, `disputes`, `reconciliation`
-- [ ] `ITenantProvider` interface is defined in `UniBank.SharedKernel` with implementation in `UniBank.Core`
+- [ ] `ITenantProvider` interface is defined in `GoldBank.SharedKernel` with implementation in `GoldBank.Core`
 - [ ] `ITenantProvider` resolves tenant schema from gRPC metadata (`x-tenant-id` header or JWT `tenant_id` claim)
 - [ ] `TenantDbContext` dynamically sets PostgreSQL `search_path` based on resolved tenant
 - [ ] `PublicDbContext` always operates on the `public` schema
@@ -73,7 +73,7 @@ This story establishes the database foundation including the multi-tenant resolu
 - [ ] `transactions` table is partitioned by month on `created_at` column
 - [ ] `audit_logs` table is partitioned by month on `timestamp` column
 - [ ] Automated partition creation generates partitions 3 months ahead
-- [ ] Seed data creates a default tenant (`unibank_default`) for development
+- [ ] Seed data creates a default tenant (`goldbank_default`) for development
 - [ ] All tables have appropriate indexes for expected query patterns
 - [ ] All tables include `created_at` and `updated_at` audit columns
 - [ ] Soft delete is supported via `deleted_at` nullable timestamp column where applicable
@@ -85,9 +85,9 @@ This story establishes the database foundation including the multi-tenant resolu
 ### Components
 
 **Affected Projects:**
-- `UniBank.SharedKernel` -- `ITenantProvider`, `TenantInfo` types
-- `UniBank.Core` -- `TenantDbContext`, `PublicDbContext`, migration framework, tenant provider implementation
-- `UniBank.Core.Modules.Accounts.Infrastructure.Persistence` -- account-related entity configurations
+- `GoldBank.SharedKernel` -- `ITenantProvider`, `TenantInfo` types
+- `GoldBank.Core` -- `TenantDbContext`, `PublicDbContext`, migration framework, tenant provider implementation
+- `GoldBank.Core.Modules.Accounts.Infrastructure.Persistence` -- account-related entity configurations
 
 ### Public Schema Tables
 
@@ -436,7 +436,7 @@ public class TenantDbContext : DbContext
     {
         _tenantProvider = tenantProvider;
         var tenant = _tenantProvider.GetCurrentTenant();
-        _schema = tenant.SchemaName; // e.g., "tenant_unibank_default"
+        _schema = tenant.SchemaName; // e.g., "tenant_goldbank_default"
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -8,7 +8,7 @@
 
 ## Context
 
-The UniBank mobile app has ~30 screens covering 8 of 13 server modules. Five modules lack UI: AI Vision/Intelligence, Fraud Detection, Admin, CardTransactions, and advanced WhiteLabel. The admin portal (`unibank-admin`) exists as a Razor Pages container with basic admin functionality delivered in Sprint 7 (STORY-055 through STORY-067), including admin auth, KYC review, dispute management, and reporting RPCs. EPIC-019 enhances this with a Blazor Server frontend for real-time dashboards, granular roles, and multi-tenant user management.
+The GoldBank mobile app has ~30 screens covering 8 of 13 server modules. Five modules lack UI: AI Vision/Intelligence, Fraud Detection, Admin, CardTransactions, and advanced WhiteLabel. The admin portal (`goldbank-admin`) exists as a Razor Pages container with basic admin functionality delivered in Sprint 7 (STORY-055 through STORY-067), including admin auth, KYC review, dispute management, and reporting RPCs. EPIC-019 enhances this with a Blazor Server frontend for real-time dashboards, granular roles, and multi-tenant user management.
 
 This spec covers two EPICs:
 - **EPIC-018** — Customer-facing mobile app updates (Jetpack Compose / Kotlin)
@@ -247,7 +247,7 @@ App Launch
 
 ### Overview
 
-Blazor Server application within the existing `unibank-admin` container. Role-based access control with 7 roles, multi-tenant + multi-branch user management. Real-time dashboards for KYC review, fraud monitoring, and dispute resolution.
+Blazor Server application within the existing `goldbank-admin` container. Role-based access control with 7 roles, multi-tenant + multi-branch user management. Real-time dashboards for KYC review, fraud monitoring, and dispute resolution.
 
 ### Roles (7)
 
@@ -341,13 +341,13 @@ Browser (Bank Employee)
   │
   │ HTTPS / WebSocket (SignalR)
   │
-  ├── Blazor Server (unibank-admin container)
+  ├── Blazor Server (goldbank-admin container)
   │     ├── Pages/ (Razor components)
   │     ├── Services/ (gRPC clients to Gateway)
   │     ├── Auth/ (JWT + role claims)
   │     └── Hubs/ (SignalR for real-time)
   │
-  └── UniBank Gateway (gRPC)
+  └── GoldBank Gateway (gRPC)
         ├── AdminService (existing)
         ├── AIService (KYC, fraud, disputes)
         ├── AccountService

@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: UniBank
+  - name: GoldBank
     orgId: 1
-    folder: UniBank
+    folder: GoldBank
     type: file
     disableDeletion: false
     editable: true

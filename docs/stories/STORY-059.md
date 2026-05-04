@@ -21,7 +21,7 @@ So that identity verification meets regulatory standards and only verified custo
 ## Description
 
 ### Background
-Know Your Customer (KYC) compliance is a regulatory requirement for all financial services in Southern Africa. While UniBank uses automated identity verification (ID document scanning and selfie matching), a manual review workflow is essential for cases where automated checks are inconclusive, for escalated reviews, and to satisfy regulatory requirements for human oversight. Compliance staff need a streamlined queue-based workflow to efficiently review KYC submissions, compare ID documents against selfies, and make approval decisions. This story builds the admin-facing KYC review interface that connects to the KYC infrastructure established in STORY-012.
+Know Your Customer (KYC) compliance is a regulatory requirement for all financial services in Southern Africa. While GoldBank uses automated identity verification (ID document scanning and selfie matching), a manual review workflow is essential for cases where automated checks are inconclusive, for escalated reviews, and to satisfy regulatory requirements for human oversight. Compliance staff need a streamlined queue-based workflow to efficiently review KYC submissions, compare ID documents against selfies, and make approval decisions. This story builds the admin-facing KYC review interface that connects to the KYC infrastructure established in STORY-012.
 
 ### Scope
 **In scope:**

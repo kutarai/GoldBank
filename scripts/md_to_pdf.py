@@ -219,7 +219,7 @@ def header_footer(canvas, doc):
     canvas.saveState()
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(colors.HexColor("#666"))
-    canvas.drawString(15*mm, 10*mm, "UniBank Branch Operations Manual · v1.0 · April 2026")
+    canvas.drawString(15*mm, 10*mm, "GoldBank Branch Operations Manual · v1.0 · April 2026")
     canvas.drawRightString(A4[0] - 15*mm, 10*mm, f"Page {doc.page}")
     canvas.restoreState()
 
@@ -239,8 +239,8 @@ def main():
         OUT, pagesize=A4,
         leftMargin=15*mm, rightMargin=15*mm,
         topMargin=15*mm, bottomMargin=18*mm,
-        title="UniBank Branch Operations Manual",
-        author="UniBank Branch Operations / Training",
+        title="GoldBank Branch Operations Manual",
+        author="GoldBank Branch Operations / Training",
     )
     doc.build(flow, onFirstPage=header_footer, onLaterPages=header_footer)
 
@@ -271,7 +271,7 @@ def main():
             Paragraph(title, H2),
             Spacer(1, 12),
             Paragraph(
-                "The following pages are the actual PDF produced by the live UniBank gateway. "
+                "The following pages are the actual PDF produced by the live GoldBank gateway. "
                 "They are bit-for-bit identical to what tellers, vault managers, and supervisors "
                 "will print in production.",
                 BODY),

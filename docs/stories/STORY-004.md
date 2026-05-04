@@ -21,9 +21,9 @@ So that all services have type-safe communication contracts.
 ## Description
 
 ### Background
-UniBank's microservice architecture relies on gRPC for all inter-service communication. Defining the protobuf contracts upfront allows teams to work in parallel -- frontend and backend developers can generate client/server stubs from the same `.proto` files, ensuring type safety and API compatibility.
+GoldBank's microservice architecture relies on gRPC for all inter-service communication. Defining the protobuf contracts upfront allows teams to work in parallel -- frontend and backend developers can generate client/server stubs from the same `.proto` files, ensuring type safety and API compatibility.
 
-All proto files are centralized in the `UniBank.Protos` project, versioned under the `unibank.v1` package namespace. This project compiles the `.proto` files into C# classes that are referenced by all other projects. The contracts cover all 10 services in the UniBank platform.
+All proto files are centralized in the `GoldBank.Protos` project, versioned under the `goldbank.v1` package namespace. This project compiles the `.proto` files into C# classes that are referenced by all other projects. The contracts cover all 10 services in the GoldBank platform.
 
 ### Scope
 
@@ -33,7 +33,7 @@ All proto files are centralized in the `UniBank.Protos` project, versioned under
 - Common/shared message types (Money, Pagination, Timestamp wrappers)
 - Server streaming RPCs for transaction history and report exports
 - Proto file compilation configuration in `.csproj`
-- Versioning strategy (`unibank.v1.*`)
+- Versioning strategy (`goldbank.v1.*`)
 - Enum definitions for statuses, types, and categories
 - Field validation annotations via `buf` or comments
 
@@ -44,10 +44,10 @@ All proto files are centralized in the `UniBank.Protos` project, versioned under
 - Client SDK generation for mobile apps
 
 ### User Flow
-1. Developer adds or modifies a `.proto` file in `UniBank.Protos/Protos/`
+1. Developer adds or modifies a `.proto` file in `GoldBank.Protos/Protos/`
 2. Developer runs `dotnet build` on the Protos project
 3. `Grpc.Tools` generates C# classes for messages and service stubs
-4. Other projects reference `UniBank.Protos` and use the generated types
+4. Other projects reference `GoldBank.Protos` and use the generated types
 5. Server projects implement the generated service base classes
 6. Client projects use the generated client stubs
 
@@ -57,14 +57,14 @@ All proto files are centralized in the `UniBank.Protos` project, versioned under
 
 - [ ] Proto files exist for all 10 services: Account, Payment, Transfer, Agent, BillPay, Merchant, Terminal, Admin, Reporting, HSM
 - [ ] All proto files compile without errors via `dotnet build`
-- [ ] Each service is namespaced as `unibank.v1.{service_name}` (e.g., `unibank.v1.accounts`)
+- [ ] Each service is namespaced as `goldbank.v1.{service_name}` (e.g., `goldbank.v1.accounts`)
 - [ ] Request and response messages are defined for all RPC methods listed in the technical specification
 - [ ] Streaming RPCs are defined for: `GetTransactions`, `SearchTransactions`, `GetMerchantTransactions`, `ExportReport`
 - [ ] Common message types are defined in `common.proto`: `Money`, `PaginationRequest`, `PaginationResponse`, `DateRange`, `StatusResponse`
 - [ ] Enum types are defined for all status fields (account status, transaction type/status, KYC status, etc.)
 - [ ] Proto files include descriptive comments for all services, methods, messages, and fields
-- [ ] `UniBank.Protos.csproj` is configured to generate both server and client stubs
-- [ ] All other projects can reference `UniBank.Protos` and use generated types
+- [ ] `GoldBank.Protos.csproj` is configured to generate both server and client stubs
+- [ ] All other projects can reference `GoldBank.Protos` and use generated types
 
 ---
 
@@ -72,12 +72,12 @@ All proto files are centralized in the `UniBank.Protos` project, versioned under
 
 ### Components
 
-**Project:** `UniBank.Protos`
+**Project:** `GoldBank.Protos`
 
 **File Structure:**
 ```
-UniBank.Protos/
-  UniBank.Protos.csproj
+GoldBank.Protos/
+  GoldBank.Protos.csproj
   Protos/
     common.proto
     account_service.proto
@@ -92,7 +92,7 @@ UniBank.Protos/
     hsm_service.proto
 ```
 
-**UniBank.Protos.csproj Configuration:**
+**GoldBank.Protos.csproj Configuration:**
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -116,8 +116,8 @@ UniBank.Protos/
 **common.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.common;
-option csharp_namespace = "UniBank.Protos.Common";
+package goldbank.v1.common;
+option csharp_namespace = "GoldBank.Protos.Common";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
@@ -158,8 +158,8 @@ message StatusResponse {
 **account_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.accounts;
-option csharp_namespace = "UniBank.Protos.Accounts";
+package goldbank.v1.accounts;
+option csharp_namespace = "GoldBank.Protos.Accounts";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -256,32 +256,32 @@ message GetBalanceRequest {
 
 message BalanceResponse {
   string account_id = 1;
-  unibank.v1.common.Money balance = 2;
-  unibank.v1.common.Money available_balance = 3;
-  unibank.v1.common.Money daily_limit = 4;
-  unibank.v1.common.Money daily_used = 5;
+  goldbank.v1.common.Money balance = 2;
+  goldbank.v1.common.Money available_balance = 3;
+  goldbank.v1.common.Money daily_limit = 4;
+  goldbank.v1.common.Money daily_used = 5;
 }
 
 // --- Transaction Messages ---
 message GetTransactionsRequest {
   string account_id = 1;
-  unibank.v1.common.DateRange date_range = 2;
+  goldbank.v1.common.DateRange date_range = 2;
   TransactionType type_filter = 3;
   TransactionStatus status_filter = 4;
-  unibank.v1.common.PaginationRequest pagination = 5;
+  goldbank.v1.common.PaginationRequest pagination = 5;
 }
 
 message TransactionResponse {
   string transaction_id = 1;
   TransactionType type = 2;
-  unibank.v1.common.Money amount = 3;
-  unibank.v1.common.Money fee = 4;
+  goldbank.v1.common.Money amount = 3;
+  goldbank.v1.common.Money fee = 4;
   TransactionStatus status = 5;
   string reference = 6;
   string description = 7;
   string counterparty_name = 8;
   string counterparty_phone = 9;
-  unibank.v1.common.Money balance_after = 10;
+  goldbank.v1.common.Money balance_after = 10;
   google.protobuf.Timestamp created_at = 11;
   google.protobuf.Timestamp completed_at = 12;
 }
@@ -325,8 +325,8 @@ enum TransactionStatus {
 **payment_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.payments;
-option csharp_namespace = "UniBank.Protos.Payments";
+package goldbank.v1.payments;
+option csharp_namespace = "GoldBank.Protos.Payments";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -341,7 +341,7 @@ message NFCPaymentRequest {
   string account_id = 1;
   string merchant_id = 2;
   string terminal_id = 3;
-  unibank.v1.common.Money amount = 4;
+  goldbank.v1.common.Money amount = 4;
   string pin = 5;                // Encrypted PIN block
   string nfc_data = 6;           // NFC tag data
 }
@@ -349,7 +349,7 @@ message NFCPaymentRequest {
 message QRCodeRequest {
   string merchant_id = 1;
   string terminal_id = 2;
-  unibank.v1.common.Money amount = 3;
+  goldbank.v1.common.Money amount = 3;
   string description = 4;
   int32 ttl_seconds = 5;         // QR code validity period
 }
@@ -372,9 +372,9 @@ message PaymentResponse {
   string message = 2;
   string transaction_id = 3;
   string reference = 4;
-  unibank.v1.common.Money amount = 5;
-  unibank.v1.common.Money fee = 6;
-  unibank.v1.common.Money new_balance = 7;
+  goldbank.v1.common.Money amount = 5;
+  goldbank.v1.common.Money fee = 6;
+  goldbank.v1.common.Money new_balance = 7;
   google.protobuf.Timestamp completed_at = 8;
 }
 ```
@@ -382,8 +382,8 @@ message PaymentResponse {
 **transfer_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.transfers;
-option csharp_namespace = "UniBank.Protos.Transfers";
+package goldbank.v1.transfers;
+option csharp_namespace = "GoldBank.Protos.Transfers";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -396,7 +396,7 @@ service TransferService {
 message P2PTransferRequest {
   string sender_account_id = 1;
   string recipient_phone = 2;    // E.164 format
-  unibank.v1.common.Money amount = 3;
+  goldbank.v1.common.Money amount = 3;
   string description = 4;
   string pin = 5;                // Encrypted PIN block
 }
@@ -406,7 +406,7 @@ message CrossBorderTransferRequest {
   string recipient_phone = 2;
   string recipient_name = 3;
   string recipient_country = 4;  // ISO 3166-1 alpha-3
-  unibank.v1.common.Money send_amount = 5;
+  goldbank.v1.common.Money send_amount = 5;
   string receive_currency = 6;   // Destination currency
   string corridor_id = 7;        // Remittance corridor
   string pin = 8;
@@ -417,11 +417,11 @@ message TransferResponse {
   string message = 2;
   string transaction_id = 3;
   string reference = 4;
-  unibank.v1.common.Money amount_sent = 5;
-  unibank.v1.common.Money amount_received = 6;
-  unibank.v1.common.Money fee = 7;
+  goldbank.v1.common.Money amount_sent = 5;
+  goldbank.v1.common.Money amount_received = 6;
+  goldbank.v1.common.Money fee = 7;
   string exchange_rate = 8;
-  unibank.v1.common.Money new_balance = 9;
+  goldbank.v1.common.Money new_balance = 9;
   TransferStatus status = 10;
   google.protobuf.Timestamp estimated_delivery = 11;
 }
@@ -438,8 +438,8 @@ enum TransferStatus {
 **agent_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.agents;
-option csharp_namespace = "UniBank.Protos.Agents";
+package goldbank.v1.agents;
+option csharp_namespace = "GoldBank.Protos.Agents";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -454,14 +454,14 @@ service AgentService {
 message CashInRequest {
   string agent_id = 1;
   string customer_phone = 2;
-  unibank.v1.common.Money amount = 3;
+  goldbank.v1.common.Money amount = 3;
   string agent_pin = 4;
 }
 
 message CashOutRequest {
   string agent_id = 1;
   string customer_account_id = 2;
-  unibank.v1.common.Money amount = 3;
+  goldbank.v1.common.Money amount = 3;
   string customer_pin = 4;
   string agent_pin = 5;
 }
@@ -471,9 +471,9 @@ message CashOperationResponse {
   string message = 2;
   string transaction_id = 3;
   string reference = 4;
-  unibank.v1.common.Money amount = 5;
-  unibank.v1.common.Money commission = 6;
-  unibank.v1.common.Money new_float_balance = 7;
+  goldbank.v1.common.Money amount = 5;
+  goldbank.v1.common.Money commission = 6;
+  goldbank.v1.common.Money new_float_balance = 7;
   google.protobuf.Timestamp completed_at = 8;
 }
 
@@ -483,19 +483,19 @@ message FloatBalanceRequest {
 
 message FloatBalanceResponse {
   string agent_id = 1;
-  unibank.v1.common.Money float_balance = 2;
-  unibank.v1.common.Money float_limit = 3;
-  unibank.v1.common.Money available_float = 4;
+  goldbank.v1.common.Money float_balance = 2;
+  goldbank.v1.common.Money float_limit = 3;
+  goldbank.v1.common.Money available_float = 4;
 }
 
 message CommissionReportRequest {
   string agent_id = 1;
-  unibank.v1.common.DateRange date_range = 2;
+  goldbank.v1.common.DateRange date_range = 2;
 }
 
 message CommissionReportResponse {
   string agent_id = 1;
-  unibank.v1.common.Money total_commission = 2;
+  goldbank.v1.common.Money total_commission = 2;
   int32 total_transactions = 3;
   repeated CommissionLineItem items = 4;
 }
@@ -503,16 +503,16 @@ message CommissionReportResponse {
 message CommissionLineItem {
   string transaction_type = 1;
   int32 count = 2;
-  unibank.v1.common.Money total_amount = 3;
-  unibank.v1.common.Money total_commission = 4;
+  goldbank.v1.common.Money total_amount = 3;
+  goldbank.v1.common.Money total_commission = 4;
 }
 ```
 
 **billpay_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.billpay;
-option csharp_namespace = "UniBank.Protos.BillPay";
+package goldbank.v1.billpay;
+option csharp_namespace = "GoldBank.Protos.BillPay";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -520,7 +520,7 @@ import "google/protobuf/timestamp.proto";
 service BillPayService {
   rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
   rpc PayBill(PayBillRequest) returns (PayBillResponse);
-  rpc SaveBiller(SaveBillerRequest) returns (unibank.v1.common.StatusResponse);
+  rpc SaveBiller(SaveBillerRequest) returns (goldbank.v1.common.StatusResponse);
   rpc GetSavedBillers(GetSavedBillersRequest) returns (GetSavedBillersResponse);
 }
 
@@ -540,15 +540,15 @@ message BillProvider {
   string category = 4;
   bool requires_meter_number = 5;
   bool requires_account_number = 6;
-  unibank.v1.common.Money min_amount = 7;
-  unibank.v1.common.Money max_amount = 8;
+  goldbank.v1.common.Money min_amount = 7;
+  goldbank.v1.common.Money max_amount = 8;
 }
 
 message PayBillRequest {
   string account_id = 1;
   string provider_id = 2;
   string billing_reference = 3;  // Meter number, account number, etc.
-  unibank.v1.common.Money amount = 4;
+  goldbank.v1.common.Money amount = 4;
   string pin = 5;
 }
 
@@ -558,9 +558,9 @@ message PayBillResponse {
   string transaction_id = 3;
   string reference = 4;
   string token = 5;              // Electricity token, voucher code, etc.
-  unibank.v1.common.Money amount = 6;
-  unibank.v1.common.Money fee = 7;
-  unibank.v1.common.Money new_balance = 8;
+  goldbank.v1.common.Money amount = 6;
+  goldbank.v1.common.Money fee = 7;
+  goldbank.v1.common.Money new_balance = 8;
   google.protobuf.Timestamp completed_at = 9;
 }
 
@@ -592,8 +592,8 @@ message SavedBiller {
 **merchant_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.merchants;
-option csharp_namespace = "UniBank.Protos.Merchants";
+package goldbank.v1.merchants;
+option csharp_namespace = "GoldBank.Protos.Merchants";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -649,14 +649,14 @@ message MerchantProfileResponse {
 
 message MerchantTransactionsRequest {
   string merchant_id = 1;
-  unibank.v1.common.DateRange date_range = 2;
-  unibank.v1.common.PaginationRequest pagination = 3;
+  goldbank.v1.common.DateRange date_range = 2;
+  goldbank.v1.common.PaginationRequest pagination = 3;
 }
 
 message MerchantTransactionResponse {
   string transaction_id = 1;
-  unibank.v1.common.Money amount = 2;
-  unibank.v1.common.Money fee = 3;
+  goldbank.v1.common.Money amount = 2;
+  goldbank.v1.common.Money fee = 3;
   string reference = 4;
   string payment_method = 5;     // NFC, QR
   string terminal_id = 6;
@@ -665,7 +665,7 @@ message MerchantTransactionResponse {
 
 message MerchantSettlementsRequest {
   string merchant_id = 1;
-  unibank.v1.common.DateRange date_range = 2;
+  goldbank.v1.common.DateRange date_range = 2;
 }
 
 message MerchantSettlementsResponse {
@@ -674,7 +674,7 @@ message MerchantSettlementsResponse {
 
 message Settlement {
   string settlement_id = 1;
-  unibank.v1.common.Money amount = 2;
+  goldbank.v1.common.Money amount = 2;
   int32 transaction_count = 3;
   string status = 4;
   google.protobuf.Timestamp settlement_date = 5;
@@ -693,8 +693,8 @@ enum MerchantStatus {
 **terminal_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.terminals;
-option csharp_namespace = "UniBank.Protos.Terminals";
+package goldbank.v1.terminals;
+option csharp_namespace = "GoldBank.Protos.Terminals";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -702,7 +702,7 @@ import "google/protobuf/timestamp.proto";
 service TerminalService {
   rpc RegisterTerminal(RegisterTerminalRequest) returns (RegisterTerminalResponse);
   rpc GetTerminalStatus(TerminalStatusRequest) returns (TerminalStatusResponse);
-  rpc PushUpdate(PushUpdateRequest) returns (unibank.v1.common.StatusResponse);
+  rpc PushUpdate(PushUpdateRequest) returns (goldbank.v1.common.StatusResponse);
 }
 
 message RegisterTerminalRequest {
@@ -762,30 +762,30 @@ enum UpdateType {
 **admin_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.admin;
-option csharp_namespace = "UniBank.Protos.Admin";
+package goldbank.v1.admin;
+option csharp_namespace = "GoldBank.Protos.Admin";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
 
 service AdminService {
   rpc SearchCustomers(SearchCustomersRequest) returns (SearchCustomersResponse);
-  rpc ManageAccount(ManageAccountRequest) returns (unibank.v1.common.StatusResponse);
-  rpc ManageMerchant(ManageMerchantRequest) returns (unibank.v1.common.StatusResponse);
+  rpc ManageAccount(ManageAccountRequest) returns (goldbank.v1.common.StatusResponse);
+  rpc ManageMerchant(ManageMerchantRequest) returns (goldbank.v1.common.StatusResponse);
   rpc SearchTransactions(SearchTransactionsRequest) returns (stream AdminTransactionResponse);
-  rpc ReviewKYC(ReviewKYCRequest) returns (unibank.v1.common.StatusResponse);
-  rpc UpdateSystemConfig(UpdateSystemConfigRequest) returns (unibank.v1.common.StatusResponse);
+  rpc ReviewKYC(ReviewKYCRequest) returns (goldbank.v1.common.StatusResponse);
+  rpc UpdateSystemConfig(UpdateSystemConfigRequest) returns (goldbank.v1.common.StatusResponse);
 }
 
 message SearchCustomersRequest {
   string query = 1;              // Phone, name, national ID
   string status_filter = 2;
-  unibank.v1.common.PaginationRequest pagination = 3;
+  goldbank.v1.common.PaginationRequest pagination = 3;
 }
 
 message SearchCustomersResponse {
   repeated CustomerSummary customers = 1;
-  unibank.v1.common.PaginationResponse pagination = 2;
+  goldbank.v1.common.PaginationResponse pagination = 2;
 }
 
 message CustomerSummary {
@@ -794,7 +794,7 @@ message CustomerSummary {
   string full_name = 3;
   string status = 4;
   int32 kyc_level = 5;
-  unibank.v1.common.Money balance = 6;
+  goldbank.v1.common.Money balance = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp last_login_at = 8;
 }
@@ -837,10 +837,10 @@ message SearchTransactionsRequest {
   string reference = 3;
   string type_filter = 4;
   string status_filter = 5;
-  unibank.v1.common.DateRange date_range = 6;
-  unibank.v1.common.Money min_amount = 7;
-  unibank.v1.common.Money max_amount = 8;
-  unibank.v1.common.PaginationRequest pagination = 9;
+  goldbank.v1.common.DateRange date_range = 6;
+  goldbank.v1.common.Money min_amount = 7;
+  goldbank.v1.common.Money max_amount = 8;
+  goldbank.v1.common.PaginationRequest pagination = 9;
 }
 
 message AdminTransactionResponse {
@@ -848,8 +848,8 @@ message AdminTransactionResponse {
   string account_id = 2;
   string account_phone = 3;
   string type = 4;
-  unibank.v1.common.Money amount = 5;
-  unibank.v1.common.Money fee = 6;
+  goldbank.v1.common.Money amount = 5;
+  goldbank.v1.common.Money fee = 6;
   string status = 7;
   string reference = 8;
   string counterparty_info = 9;
@@ -881,8 +881,8 @@ message UpdateSystemConfigRequest {
 **reporting_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.reporting;
-option csharp_namespace = "UniBank.Protos.Reporting";
+package goldbank.v1.reporting;
+option csharp_namespace = "GoldBank.Protos.Reporting";
 
 import "Protos/common.proto";
 import "google/protobuf/timestamp.proto";
@@ -897,15 +897,15 @@ service ReportingService {
 }
 
 message DashboardRequest {
-  unibank.v1.common.DateRange date_range = 1;
+  goldbank.v1.common.DateRange date_range = 1;
 }
 
 message DashboardResponse {
   int64 total_users = 1;
   int64 active_users = 2;
   int64 total_transactions = 3;
-  unibank.v1.common.Money total_volume = 4;
-  unibank.v1.common.Money total_revenue = 5;
+  goldbank.v1.common.Money total_volume = 4;
+  goldbank.v1.common.Money total_revenue = 5;
   int32 active_merchants = 6;
   int32 active_agents = 7;
   int32 active_terminals = 8;
@@ -920,7 +920,7 @@ message DailyMetric {
 }
 
 message UserGrowthRequest {
-  unibank.v1.common.DateRange date_range = 1;
+  goldbank.v1.common.DateRange date_range = 1;
   string granularity = 2;        // daily, weekly, monthly
 }
 
@@ -939,13 +939,13 @@ message GrowthDataPoint {
 }
 
 message MerchantReportRequest {
-  unibank.v1.common.DateRange date_range = 1;
+  goldbank.v1.common.DateRange date_range = 1;
   string merchant_id = 2;        // Optional: specific merchant
 }
 
 message MerchantReportResponse {
   repeated MerchantMetric merchants = 1;
-  unibank.v1.common.Money total_volume = 2;
+  goldbank.v1.common.Money total_volume = 2;
   int32 total_transactions = 3;
 }
 
@@ -953,30 +953,30 @@ message MerchantMetric {
   string merchant_id = 1;
   string business_name = 2;
   int32 transaction_count = 3;
-  unibank.v1.common.Money volume = 4;
-  unibank.v1.common.Money commission = 5;
+  goldbank.v1.common.Money volume = 4;
+  goldbank.v1.common.Money commission = 5;
 }
 
 message RevenueReportRequest {
-  unibank.v1.common.DateRange date_range = 1;
+  goldbank.v1.common.DateRange date_range = 1;
   string granularity = 2;
 }
 
 message RevenueReportResponse {
   repeated RevenueDataPoint data_points = 1;
-  unibank.v1.common.Money total_revenue = 2;
+  goldbank.v1.common.Money total_revenue = 2;
   repeated RevenueByType revenue_by_type = 3;
 }
 
 message RevenueDataPoint {
   string period = 1;
-  unibank.v1.common.Money revenue = 2;
+  goldbank.v1.common.Money revenue = 2;
   int32 transaction_count = 3;
 }
 
 message RevenueByType {
   string transaction_type = 1;
-  unibank.v1.common.Money revenue = 2;
+  goldbank.v1.common.Money revenue = 2;
   int32 count = 3;
   string percentage = 4;
 }
@@ -990,7 +990,7 @@ message ReconReportResponse {
   string batch_date = 1;
   string partner_code = 2;
   int32 total_transactions = 3;
-  unibank.v1.common.Money total_amount = 4;
+  goldbank.v1.common.Money total_amount = 4;
   int32 matched_count = 5;
   int32 unmatched_count = 6;
   string status = 7;
@@ -999,14 +999,14 @@ message ReconReportResponse {
 
 message ReconDiscrepancy {
   string transaction_reference = 1;
-  unibank.v1.common.Money our_amount = 2;
-  unibank.v1.common.Money partner_amount = 3;
+  goldbank.v1.common.Money our_amount = 2;
+  goldbank.v1.common.Money partner_amount = 3;
   string discrepancy_type = 4;   // missing, amount_mismatch, status_mismatch
 }
 
 message ExportReportRequest {
   string report_type = 1;        // dashboard, user_growth, merchant, revenue, recon
-  unibank.v1.common.DateRange date_range = 2;
+  goldbank.v1.common.DateRange date_range = 2;
   string format = 3;             // csv, xlsx, pdf
 }
 
@@ -1022,8 +1022,8 @@ message ExportChunk {
 **hsm_service.proto:**
 ```protobuf
 syntax = "proto3";
-package unibank.v1.hsm;
-option csharp_namespace = "UniBank.Protos.HSM";
+package goldbank.v1.hsm;
+option csharp_namespace = "GoldBank.Protos.HSM";
 
 service HSMService {
   rpc GenerateKey(GenerateKeyRequest) returns (GenerateKeyResponse);

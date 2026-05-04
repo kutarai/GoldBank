@@ -22,7 +22,7 @@ So that **users can transact with external banks and financial institutions**
 
 ### Background
 
-When a UniBank customer initiates a transaction that targets an account at another bank — whether it is a funds transfer, a POS purchase at a merchant whose acquirer is a different bank, or a bill payment routed through the national clearing system — the transaction must leave UniBank's domain and travel through the national payment switch to reach the destination institution.
+When a GoldBank customer initiates a transaction that targets an account at another bank — whether it is a funds transfer, a POS purchase at a merchant whose acquirer is a different bank, or a bill payment routed through the national clearing system — the transaction must leave GoldBank's domain and travel through the national payment switch to reach the destination institution.
 
 This story implements the full outbound transaction lifecycle within the Switching Server: receiving the transaction request from Core Banking via Wolverine messaging, routing it through the Message Router to select the correct adapter, formatting and sending the message to the national switch, awaiting and parsing the response, and communicating the result back to Core Banking.
 
@@ -54,7 +54,7 @@ The flow must be resilient. National switches can be slow, unresponsive, or retu
 
 **End-to-End Outbound Transaction Flow:**
 
-1. **Customer Action:** A UniBank customer initiates an external transfer (e.g., send ZAR 500 to a Standard Bank account)
+1. **Customer Action:** A GoldBank customer initiates an external transfer (e.g., send ZAR 500 to a Standard Bank account)
 2. **Core Banking Validation:** Core Banking validates the transaction: sufficient funds, account active, fraud checks passed, daily limits not exceeded
 3. **Funds Hold:** Core Banking places a hold on the source account for the transaction amount
 4. **Wolverine Command:** Core Banking publishes `RouteOutboundTransaction` command to the Switching Server via Wolverine
@@ -110,14 +110,14 @@ The flow must be resilient. National switches can be slow, unresponsive, or retu
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `RouteOutboundTransactionHandler.cs` | `src/Satellites/UniBank.Switching/Handlers/` | Wolverine handler for outbound routing |
-| `OutboundTransactionOrchestrator.cs` | `src/Satellites/UniBank.Switching/Orchestration/` | Orchestrates the send/receive/reversal lifecycle |
-| `ReversalService.cs` | `src/Satellites/UniBank.Switching/Services/` | Handles automatic reversal for timed-out financial messages |
-| `CircuitBreakerConfig.cs` | `src/Satellites/UniBank.Switching/Resilience/` | Polly circuit breaker configuration per switch endpoint |
-| `SwitchMetrics.cs` | `src/Satellites/UniBank.Switching/Telemetry/` | Prometheus metrics for switch connectivity |
-| `TcpConnectionPool.cs` | `src/Satellites/UniBank.Switching/Network/` | TCP socket pool (shared with STORY-040) |
-| `MessageRouter.cs` | `src/Satellites/UniBank.Switching/Routing/` | Route resolution (from STORY-042) |
-| `ISwitchAdapter.cs` | `src/Satellites/UniBank.Switching/Adapters/` | Adapter interface (from STORY-040/041) |
+| `RouteOutboundTransactionHandler.cs` | `src/Satellites/GoldBank.Switching/Handlers/` | Wolverine handler for outbound routing |
+| `OutboundTransactionOrchestrator.cs` | `src/Satellites/GoldBank.Switching/Orchestration/` | Orchestrates the send/receive/reversal lifecycle |
+| `ReversalService.cs` | `src/Satellites/GoldBank.Switching/Services/` | Handles automatic reversal for timed-out financial messages |
+| `CircuitBreakerConfig.cs` | `src/Satellites/GoldBank.Switching/Resilience/` | Polly circuit breaker configuration per switch endpoint |
+| `SwitchMetrics.cs` | `src/Satellites/GoldBank.Switching/Telemetry/` | Prometheus metrics for switch connectivity |
+| `TcpConnectionPool.cs` | `src/Satellites/GoldBank.Switching/Network/` | TCP socket pool (shared with STORY-040) |
+| `MessageRouter.cs` | `src/Satellites/GoldBank.Switching/Routing/` | Route resolution (from STORY-042) |
+| `ISwitchAdapter.cs` | `src/Satellites/GoldBank.Switching/Adapters/` | Adapter interface (from STORY-040/041) |
 
 ### API / gRPC Endpoints
 

@@ -21,7 +21,7 @@ So that I can start transacting
 ## Description
 
 ### Background
-Once a user's KYC process is approved (either automatically via selfie match in STORY-012 or manually by a KYC reviewer), their account must be activated so they can begin using UniBank's financial services. This is the pivotal transition point in the onboarding journey -- moving a user from a registration-only state to a fully functional banking customer.
+Once a user's KYC process is approved (either automatically via selfie match in STORY-012 or manually by a KYC reviewer), their account must be activated so they can begin using GoldBank's financial services. This is the pivotal transition point in the onboarding journey -- moving a user from a registration-only state to a fully functional banking customer.
 
 Account activation is an event-driven process orchestrated by a Wolverine saga. When the `KYCApproved` event is published (from STORY-012), the saga coordinates several actions: updating the account status, initializing the zero balance record, sending welcome notifications, and publishing the `AccountCreated` event for downstream consumers. This must happen reliably and atomically -- if any step fails, the saga must handle compensation.
 

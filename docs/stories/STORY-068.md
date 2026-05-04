@@ -22,7 +22,7 @@ So that **the platform reflects my brand and my customers see a familiar experie
 
 ### Background
 
-UniBank is a white-label platform — every deploying institution (tenant) should experience the platform as their own product, not as a generic banking app. When a customer in Zambia opens "Zanaco Mobile" and a customer in Malawi opens "NBS Direct", they should each see their own bank's branding despite both running on the same UniBank platform underneath. This is the core of the white-label value proposition.
+GoldBank is a white-label platform — every deploying institution (tenant) should experience the platform as their own product, not as a generic banking app. When a customer in Zambia opens "Zanaco Mobile" and a customer in Malawi opens "NBS Direct", they should each see their own bank's branding despite both running on the same GoldBank platform underneath. This is the core of the white-label value proposition.
 
 Branding customization must be achievable without code deployment. A deploying institution's marketing team should be able to update their logo, adjust brand colors, and change the app name through an admin interface. The changes propagate to both the mobile application (which fetches tenant configuration at login) and the Blazor admin portal (which uses CSS variables driven by tenant configuration).
 
@@ -81,7 +81,7 @@ Branding configuration is cached in Redis to minimize database lookups on every 
 - [ ] Logo, primary color, secondary color, accent color, app name, splash screen, and font family are configurable per tenant via `AdminService.UpdateTenantBranding` gRPC endpoint
 - [ ] Branding changes are applied across the mobile app (on next config fetch) and Blazor admin portal (immediately for the current admin, within 5 minutes for other sessions)
 - [ ] Branding changes do not require a code deployment — configuration-only change
-- [ ] Default branding (UniBank defaults) is applied for tenants that have not configured custom branding
+- [ ] Default branding (GoldBank defaults) is applied for tenants that have not configured custom branding
 - [ ] Branding configuration is cached in Redis with key pattern `tenant_config:{tenant_id}` and 5-minute TTL
 - [ ] Logo and splash screen assets are stored securely and served via authenticated endpoint (no public URLs for brand assets)
 - [ ] Brand assets are validated: logo must be PNG or SVG, max 2MB, minimum dimensions 200x200px; splash screen must be PNG or JPG, max 5MB
@@ -97,13 +97,13 @@ Branding configuration is cached in Redis to minimize database lookups on every 
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `TenantBrandingService.cs` | `src/Modules/UniBank.Admin/Services/` | gRPC service for branding management |
-| `BrandingConfiguration.cs` | `src/Shared/UniBank.SharedKernel/Tenancy/` | Branding value object / DTO |
-| `BrandingAssetStore.cs` | `src/Modules/UniBank.Admin/Storage/` | Brand asset upload and retrieval |
-| `TenantConfigCache.cs` | `src/Shared/UniBank.SharedKernel/Caching/` | Redis caching for tenant configuration |
-| `ThemeProvider.razor` | `src/Web/UniBank.AdminPortal/Components/` | Blazor component that injects CSS variables |
-| `BrandingPreview.razor` | `src/Web/UniBank.AdminPortal/Pages/Settings/` | Branding preview page |
-| `BrandingHistoryEntity.cs` | `src/Modules/UniBank.Admin/Domain/` | Branding version history entity |
+| `TenantBrandingService.cs` | `src/Modules/GoldBank.Admin/Services/` | gRPC service for branding management |
+| `BrandingConfiguration.cs` | `src/Shared/GoldBank.SharedKernel/Tenancy/` | Branding value object / DTO |
+| `BrandingAssetStore.cs` | `src/Modules/GoldBank.Admin/Storage/` | Brand asset upload and retrieval |
+| `TenantConfigCache.cs` | `src/Shared/GoldBank.SharedKernel/Caching/` | Redis caching for tenant configuration |
+| `ThemeProvider.razor` | `src/Web/GoldBank.AdminPortal/Components/` | Blazor component that injects CSS variables |
+| `BrandingPreview.razor` | `src/Web/GoldBank.AdminPortal/Pages/Settings/` | Branding preview page |
+| `BrandingHistoryEntity.cs` | `src/Modules/GoldBank.Admin/Domain/` | Branding version history entity |
 
 ### API / gRPC Endpoints
 
@@ -236,7 +236,7 @@ COMMENT ON COLUMN shared.tenants.branding_json IS 'Tenant branding configuration
 
 ```json
 {
-  "app_name": "UniBank",
+  "app_name": "GoldBank",
   "primary_color": "#0D47A1",
   "secondary_color": "#1565C0",
   "accent_color": "#FF6F00",

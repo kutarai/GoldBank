@@ -22,7 +22,7 @@ So that potential fraud is detected early
 
 ### Background
 
-UniBank serves the unbanked population in Southern Africa through mobile wallets, NFC payments, QR payments, and P2P transfers. This demographic is particularly vulnerable to fraud: agents may exploit customers, stolen phones can lead to unauthorized transactions, and new accounts may be used for money laundering. Early fraud detection is a regulatory requirement and a business necessity for deploying institutions.
+GoldBank serves the unbanked population in Southern Africa through mobile wallets, NFC payments, QR payments, and P2P transfers. This demographic is particularly vulnerable to fraud: agents may exploit customers, stolen phones can lead to unauthorized transactions, and new accounts may be used for money laundering. Early fraud detection is a regulatory requirement and a business necessity for deploying institutions.
 
 Southern African regulators (e.g., SARB in South Africa, Bank of Zambia) require financial institutions to implement transaction monitoring for anti-money laundering (AML) and counter-terrorism financing (CTF) compliance. This story implements a rules-based fraud detection engine that evaluates transactions in real-time, raises alerts for the compliance team, and can auto-suspend suspicious accounts.
 

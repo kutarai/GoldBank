@@ -9,7 +9,7 @@
 
 ## Business Context
 
-Zimbabwe is a high-volume diaspora remittance market. UniBank can capture both inbound (cash-out / direct credit) and outbound corridors via partner Money Transfer Operators (MTOs) and SWIFT correspondent banks. This epic adds the corridor catalogue, FX quoting, settlement file generation, compliance gates, and customer-facing send/receive flows.
+Zimbabwe is a high-volume diaspora remittance market. GoldBank can capture both inbound (cash-out / direct credit) and outbound corridors via partner Money Transfer Operators (MTOs) and SWIFT correspondent banks. This epic adds the corridor catalogue, FX quoting, settlement file generation, compliance gates, and customer-facing send/receive flows.
 
 ## User Personas
 

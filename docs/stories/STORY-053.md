@@ -22,11 +22,11 @@ So that **I can track business performance and reconcile my records**
 
 ### Background
 
-Merchants need visibility into their transaction activity. A corner shop owner accepting UniBank payments needs to see which payments were received today, what fees were charged, and what the running total looks like. At the end of the month, they need a statement summarizing all activity — total sales, total fees, net revenue — for their own bookkeeping and potentially for tax purposes.
+Merchants need visibility into their transaction activity. A corner shop owner accepting GoldBank payments needs to see which payments were received today, what fees were charged, and what the running total looks like. At the end of the month, they need a statement summarizing all activity — total sales, total fees, net revenue — for their own bookkeeping and potentially for tax purposes.
 
 This story provides merchants with real-time access to their transaction history and the ability to generate periodic statements. The transaction history is queryable in real time via server-streaming gRPC (for efficient delivery of potentially large result sets). Statements are pre-generated summaries stored for retrieval, covering daily or monthly periods with aggregated totals.
 
-For UniBank's target market — informal merchants in Southern Africa — this visibility is often the first time they have had structured financial records for their business. It is a significant step toward financial inclusion and business formalization.
+For GoldBank's target market — informal merchants in Southern Africa — this visibility is often the first time they have had structured financial records for their business. It is a significant step toward financial inclusion and business formalization.
 
 **Functional Requirements:** FR-040 (Merchant Transaction History & Statements)
 
@@ -54,7 +54,7 @@ For UniBank's target market — informal merchants in Southern Africa — this v
 
 **Transaction History Flow:**
 
-1. Merchant logs in via the UniBank merchant app or portal
+1. Merchant logs in via the GoldBank merchant app or portal
 2. Merchant navigates to "Transaction History"
 3. App calls `MerchantService.GetTransactions` gRPC endpoint with merchant ID and optional filters
 4. Server streams transaction records back to the client, sorted by most recent first
@@ -107,12 +107,12 @@ For UniBank's target market — informal merchants in Southern Africa — this v
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `MerchantTransactionService.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Services/` | Transaction history query logic |
-| `MerchantStatementService.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Services/` | Statement generation and retrieval |
-| `StatementGenerator.cs` | `src/Core/UniBank.Core/Modules/Merchants/Application/Services/` | Calculates statement aggregates |
-| `MerchantGrpcService.cs` | `src/Core/UniBank.Core/Modules/Merchants/Grpc/` | gRPC service implementation |
-| `MerchantStatement.cs` | `src/Core/UniBank.Core/Modules/Merchants/Domain/Entities/` | Statement domain entity |
-| `StatementGenerationJob.cs` | `src/Core/UniBank.Core/Modules/Merchants/Jobs/` | Scheduled job for statement generation |
+| `MerchantTransactionService.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Services/` | Transaction history query logic |
+| `MerchantStatementService.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Services/` | Statement generation and retrieval |
+| `StatementGenerator.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Application/Services/` | Calculates statement aggregates |
+| `MerchantGrpcService.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Grpc/` | gRPC service implementation |
+| `MerchantStatement.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Domain/Entities/` | Statement domain entity |
+| `StatementGenerationJob.cs` | `src/Core/GoldBank.Core/Modules/Merchants/Jobs/` | Scheduled job for statement generation |
 
 ### API / gRPC Endpoints
 
@@ -343,7 +343,7 @@ CREATE INDEX idx_merchant_statements_settlement ON merchant_statements (settleme
 - None directly. Transaction history and statements are read-only views.
 
 **External Dependencies:**
-- None. All data is sourced from UniBank's own database.
+- None. All data is sourced from GoldBank's own database.
 
 ---
 

@@ -1,5 +1,5 @@
 // =============================================================================
-// UniBank CI/CD Pipeline - Jenkins
+// GoldBank CI/CD Pipeline - Jenkins
 // .NET 10 Preview | Docker Compose v2 | Multi-service Build
 // =============================================================================
 
@@ -10,7 +10,7 @@ pipeline {
         DOTNET_CLI_TELEMETRY_OPTOUT = 'true'
         DOTNET_NOLOGO              = 'true'
         DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 'true'
-        SOLUTION_FILE              = 'UniBank.slnx'
+        SOLUTION_FILE              = 'GoldBank.slnx'
         DOCKER_REGISTRY            = credentials('docker-registry-url')
         DOCKER_TAG                 = "${env.GIT_COMMIT?.take(8) ?: 'latest'}"
         COVERAGE_THRESHOLD         = '80'
@@ -68,7 +68,7 @@ pipeline {
                     }
                     steps {
                         sh '''
-                            dotnet test tests/UniBank.Tests/UniBank.Tests.csproj \
+                            dotnet test tests/GoldBank.Tests/GoldBank.Tests.csproj \
                                 --configuration Release \
                                 --no-build \
                                 --logger "junit;LogFilePath=../../test-results/unit-tests.xml" \
@@ -95,7 +95,7 @@ pipeline {
                     }
                     steps {
                         sh '''
-                            dotnet test tests/UniBank.IntegrationTests/UniBank.IntegrationTests.csproj \
+                            dotnet test tests/GoldBank.IntegrationTests/GoldBank.IntegrationTests.csproj \
                                 --configuration Release \
                                 --no-build \
                                 --logger "junit;LogFilePath=../../test-results/integration-tests.xml" \
@@ -124,7 +124,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    COVERAGE_FILE=$(find . -name "coverage.cobertura.xml" -path "*/UniBank.Tests/*" | head -1)
+                    COVERAGE_FILE=$(find . -name "coverage.cobertura.xml" -path "*/GoldBank.Tests/*" | head -1)
                     if [ -n "$COVERAGE_FILE" ]; then
                         LINE_RATE=$(grep -oP 'line-rate="\\K[^"]+' "$COVERAGE_FILE" | head -1)
                         COVERAGE_PCT=$(echo "$LINE_RATE * 100" | bc -l | xargs printf "%.2f")
@@ -149,27 +149,27 @@ pipeline {
             parallel {
                 stage('Build Gateway') {
                     steps {
-                        sh "docker build -t ${DOCKER_REGISTRY}/unibank/gateway:${DOCKER_TAG} -f server/UniBank.Gateway/Dockerfile ."
+                        sh "docker build -t ${DOCKER_REGISTRY}/goldbank/gateway:${DOCKER_TAG} -f server/GoldBank.Gateway/Dockerfile ."
                     }
                 }
                 stage('Build Terminal Manager') {
                     steps {
-                        sh "docker build -t ${DOCKER_REGISTRY}/unibank/terminal-manager:${DOCKER_TAG} -f terminal/UniBank.TerminalManager/Dockerfile ."
+                        sh "docker build -t ${DOCKER_REGISTRY}/goldbank/terminal-manager:${DOCKER_TAG} -f terminal/GoldBank.TerminalManager/Dockerfile ."
                     }
                 }
                 stage('Build HSM') {
                     steps {
-                        sh "docker build -t ${DOCKER_REGISTRY}/unibank/hsm:${DOCKER_TAG} -f hsm/UniBank.HSM/Dockerfile ."
+                        sh "docker build -t ${DOCKER_REGISTRY}/goldbank/hsm:${DOCKER_TAG} -f hsm/GoldBank.HSM/Dockerfile ."
                     }
                 }
                 stage('Build Admin') {
                     steps {
-                        sh "docker build -t ${DOCKER_REGISTRY}/unibank/admin:${DOCKER_TAG} -f admin/UniBank.Admin/Dockerfile ."
+                        sh "docker build -t ${DOCKER_REGISTRY}/goldbank/admin:${DOCKER_TAG} -f admin/GoldBank.Admin/Dockerfile ."
                     }
                 }
                 stage('Build Notifications') {
                     steps {
-                        sh "docker build -t ${DOCKER_REGISTRY}/unibank/notifications:${DOCKER_TAG} -f server/UniBank.Notifications/Dockerfile ."
+                        sh "docker build -t ${DOCKER_REGISTRY}/goldbank/notifications:${DOCKER_TAG} -f server/GoldBank.Notifications/Dockerfile ."
                     }
                 }
             }
@@ -193,10 +193,10 @@ pipeline {
                     sh """
                         # Tag and push all service images with commit SHA and latest
                         for SERVICE in gateway switching terminal-manager hsm admin notifications; do
-                            docker tag ${DOCKER_REGISTRY}/unibank/\${SERVICE}:${DOCKER_TAG} \
-                                       ${DOCKER_REGISTRY}/unibank/\${SERVICE}:latest
-                            docker push ${DOCKER_REGISTRY}/unibank/\${SERVICE}:${DOCKER_TAG}
-                            docker push ${DOCKER_REGISTRY}/unibank/\${SERVICE}:latest
+                            docker tag ${DOCKER_REGISTRY}/goldbank/\${SERVICE}:${DOCKER_TAG} \
+                                       ${DOCKER_REGISTRY}/goldbank/\${SERVICE}:latest
+                            docker push ${DOCKER_REGISTRY}/goldbank/\${SERVICE}:${DOCKER_TAG}
+                            docker push ${DOCKER_REGISTRY}/goldbank/\${SERVICE}:latest
                         done
                     """
                 }
@@ -233,10 +233,10 @@ pipeline {
             cleanWs()
         }
         success {
-            echo 'UniBank pipeline completed successfully.'
+            echo 'GoldBank pipeline completed successfully.'
         }
         failure {
-            echo 'UniBank pipeline failed. Check the logs for details.'
+            echo 'GoldBank pipeline failed. Check the logs for details.'
         }
     }
 }

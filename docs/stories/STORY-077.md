@@ -22,14 +22,14 @@ So that **the team can implement card transaction processing handlers in subsequ
 
 ### Background
 
-The bank's core system needs to process card transactions received from the switch (UniBank.Switching) that sits between the bank and the national payments network. Transactions arrive in ISO 20022 format and are translated by the switch into gRPC calls to Core Banking. This module handles the core banking side: account validation, fund movement, balance/statement enquiries, and response generation.
+The bank's core system needs to process card transactions received from the switch (GoldBank.Switching) that sits between the bank and the national payments network. Transactions arrive in ISO 20022 format and are translated by the switch into gRPC calls to Core Banking. This module handles the core banking side: account validation, fund movement, balance/statement enquiries, and response generation.
 
 The CardTransactions module is the issuer-side processor — it handles transactions where the bank's clients are using their cards at merchants (on-us or off-us) or receiving deposits. The switch has already been built (Sprint 5, EPIC-008) and communicates with Core Banking via gRPC. This module provides the gRPC endpoints and business logic that the switch calls.
 
 ### Scope
 
 **In scope:**
-- Module folder structure under `server/UniBank.Core/Modules/CardTransactions/`
+- Module folder structure under `server/GoldBank.Core/Modules/CardTransactions/`
 - Domain entities: `CardTransaction`, `CardTransactionType` enum
 - gRPC proto definition: `card_transaction_service.proto` with RPCs for all 6 transaction types
 - Database schema and EF Core entity configuration
@@ -46,7 +46,7 @@ The CardTransactions module is the issuer-side processor — it handles transact
 ### Module Structure
 
 ```
-server/UniBank.Core/Modules/CardTransactions/
+server/GoldBank.Core/Modules/CardTransactions/
 ├── Application/
 │   ├── Commands/
 │   │   ├── ProcessPurchaseCommand.cs
@@ -80,7 +80,7 @@ server/UniBank.Core/Modules/CardTransactions/
 - [ ] Module folder structure created matching the pattern of existing modules (Payments, Transfers, Accounts)
 - [ ] `CardTransaction` domain entity created with fields: AccountId, MerchantAccountId (nullable), MerchantId, MerchantName, TransactionType, Amount, Fee, Currency, Status, ResponseCode, AuthorizationCode, Reference, RetrievalReference, Stan, TerminalId, ProcessingCode, SourceInstitution, AcquiringInstitution, BalanceAfter, TenantId, CompletedAt
 - [ ] `CardTransactionType` enum created with values: OnUsPurchase, OffUsPurchase, OnUsDeposit, OffUsDeposit, BalanceEnquiry, StatementEnquiry
-- [ ] `card_transaction_service.proto` created in `server/UniBank.Protos/Protos/` with RPC methods: ProcessPurchase, ProcessDeposit, BalanceEnquiry, StatementEnquiry
+- [ ] `card_transaction_service.proto` created in `server/GoldBank.Protos/Protos/` with RPC methods: ProcessPurchase, ProcessDeposit, BalanceEnquiry, StatementEnquiry
 - [ ] Proto messages include: card_holder_account, merchant_id, merchant_name, terminal_id, amount (Money type), processing_code, source_institution, acquiring_institution, stan, retrieval_reference, transaction_id
 - [ ] Response proto includes: success, response_code, authorization_code, message, available_balance (Money), transaction_id
 - [ ] EF Core entity configuration maps `CardTransaction` to `card_transactions` table in tenant schema
@@ -102,7 +102,7 @@ server/UniBank.Core/Modules/CardTransactions/
 | `CardTransactionValidator.cs` | `Modules/CardTransactions/Application/Validators/` | Common validation for all card transactions |
 | `CardTransactionResult.cs` | `Modules/CardTransactions/Application/Handlers/` | Shared result model for handler responses |
 | `CardTransactionEntityConfiguration.cs` | `Modules/CardTransactions/Infrastructure/Persistence/` | EF Core mapping |
-| `card_transaction_service.proto` | `server/UniBank.Protos/Protos/` | gRPC service definition |
+| `card_transaction_service.proto` | `server/GoldBank.Protos/Protos/` | gRPC service definition |
 
 ### API / gRPC Endpoints
 
@@ -111,7 +111,7 @@ server/UniBank.Core/Modules/CardTransactions/
 ```protobuf
 syntax = "proto3";
 
-package unibank.v1.cardtransactions;
+package goldbank.v1.cardtransactions;
 
 import "google/protobuf/timestamp.proto";
 import "Protos/common.proto";
@@ -129,7 +129,7 @@ message PurchaseRequest {
   string merchant_id = 3;
   string merchant_name = 4;
   string terminal_id = 5;
-  unibank.v1.common.Money amount = 6;
+  goldbank.v1.common.Money amount = 6;
   string processing_code = 7;
   string source_institution = 8;
   string acquiring_institution = 9;
@@ -145,7 +145,7 @@ message DepositRequest {
   string merchant_id = 3;
   string merchant_name = 4;
   string terminal_id = 5;
-  unibank.v1.common.Money amount = 6;
+  goldbank.v1.common.Money amount = 6;
   string processing_code = 7;
   string source_institution = 8;
   string acquiring_institution = 9;
@@ -181,7 +181,7 @@ message CardTransactionResponse {
   string response_code = 2;
   string authorization_code = 3;
   string message = 4;
-  unibank.v1.common.Money available_balance = 5;
+  goldbank.v1.common.Money available_balance = 5;
   string transaction_id = 6;
   google.protobuf.Timestamp processed_at = 7;
 }
@@ -190,18 +190,18 @@ message BalanceEnquiryResponse {
   bool success = 1;
   string response_code = 2;
   string message = 3;
-  unibank.v1.common.Money available_balance = 4;
-  unibank.v1.common.Money ledger_balance = 5;
+  goldbank.v1.common.Money available_balance = 4;
+  goldbank.v1.common.Money ledger_balance = 5;
   string transaction_id = 6;
 }
 
 message StatementEntry {
   google.protobuf.Timestamp date = 1;
   string description = 2;
-  unibank.v1.common.Money amount = 3;
+  goldbank.v1.common.Money amount = 3;
   string type = 4;
   string reference = 5;
-  unibank.v1.common.Money balance_after = 6;
+  goldbank.v1.common.Money balance_after = 6;
 }
 
 message StatementEnquiryResponse {
@@ -209,7 +209,7 @@ message StatementEnquiryResponse {
   string response_code = 2;
   string message = 3;
   repeated StatementEntry entries = 4;
-  unibank.v1.common.Money available_balance = 5;
+  goldbank.v1.common.Money available_balance = 5;
   string transaction_id = 6;
 }
 ```
@@ -252,7 +252,7 @@ CREATE INDEX idx_card_txn_stan_source ON tenant_{slug}.card_transactions (stan, 
 
 ### Security Considerations
 
-- Only the switch (UniBank.Switching) should call this gRPC service — enforce via mTLS or service-to-service auth tokens
+- Only the switch (GoldBank.Switching) should call this gRPC service — enforce via mTLS or service-to-service auth tokens
 - Account balance must never be exposed to off-us merchants; only return response codes
 - All transactions must be logged with full audit trail
 - Idempotency: duplicate STAN + source_institution combinations within a time window must return the original response

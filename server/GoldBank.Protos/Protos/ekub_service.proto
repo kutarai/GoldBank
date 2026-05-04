@@ -1,0 +1,344 @@
+syntax = "proto3";
+package goldbank.v1.ekub;
+option csharp_namespace = "GoldBank.Protos.Ekub";
+
+import "Protos/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// Ekub — group savings + lending product. v1 covers groups, invitations, role
+// assignment, contributions (treasurer-confirmed), the monthly bank fee, and
+// per-member share calculation. Loans + voting + repayment are v2.
+service EkubService {
+  // -------------------------------------------------------------------------
+  // Group lifecycle
+  // -------------------------------------------------------------------------
+  rpc CreateGroup(CreateGroupRequest) returns (GroupResponse);
+  rpc AssignRole(AssignRoleRequest) returns (GroupResponse);
+  rpc CloseGroup(CloseGroupRequest) returns (goldbank.v1.common.StatusResponse);
+
+  // -------------------------------------------------------------------------
+  // Membership
+  // -------------------------------------------------------------------------
+  rpc InviteMember(InviteMemberRequest) returns (InvitationResponse);
+  rpc RevokeInvitation(RevokeInvitationRequest) returns (goldbank.v1.common.StatusResponse);
+  rpc ListMyInvitations(ListMyInvitationsRequest) returns (ListInvitationsResponse);
+  rpc RespondToInvitation(RespondToInvitationRequest) returns (goldbank.v1.common.StatusResponse);
+  rpc KickMember(KickMemberRequest) returns (goldbank.v1.common.StatusResponse);
+
+  // -------------------------------------------------------------------------
+  // Contributions
+  // -------------------------------------------------------------------------
+  rpc RecordContribution(RecordContributionRequest) returns (ContributionResponse);
+  rpc ConfirmContribution(ConfirmContributionRequest) returns (ContributionResponse);
+  rpc ListGroupContributions(ListGroupContributionsRequest) returns (ListContributionsResponse);
+
+  // -------------------------------------------------------------------------
+  // Reads
+  // -------------------------------------------------------------------------
+  rpc ListMyGroups(ListMyGroupsRequest) returns (ListGroupsResponse);
+  rpc GetGroupDetail(GetGroupDetailRequest) returns (GroupDetailResponse);
+  rpc GetMyShare(GetMyShareRequest) returns (MyShareResponse);
+
+  // -------------------------------------------------------------------------
+  // Monthly bank fee
+  // -------------------------------------------------------------------------
+  rpc ApplyMonthlyFee(ApplyMonthlyFeeRequest) returns (ApplyMonthlyFeeResponse);
+
+  // -------------------------------------------------------------------------
+  // Loans (v2)
+  // -------------------------------------------------------------------------
+  rpc ApplyForLoan(ApplyForLoanRequest) returns (LoanResponse);
+  rpc VoteOnLoan(VoteOnLoanRequest) returns (LoanResponse);
+  rpc ConfirmLoanByTreasurer(ConfirmLoanRequest) returns (LoanResponse); // disburses on approval
+  rpc RecordLoanRepayment(RecordLoanRepaymentRequest) returns (LoanResponse);
+  rpc ListGroupLoans(ListGroupLoansRequest) returns (ListLoansResponse);
+  rpc GetLoanDetail(GetLoanDetailRequest) returns (LoanDetailResponse);
+  rpc ListMyLoans(ListMyLoansRequest) returns (ListLoansResponse);
+}
+
+// =============================================================================
+// Group lifecycle
+// =============================================================================
+
+message CreateGroupRequest {
+  string customer_id                  = 1; // creator → chairman
+  string name                         = 2;
+  string description                  = 3;
+  string currency                     = 4; // "ZWG" | "USD"
+  string monthly_contribution         = 5; // decimal as string
+  string loan_interest_rate_percent   = 6; // annual %, decimal as string
+  // When false, a borrower pays interest only on the portion of any loan that
+  // exceeds their own confirmed contributions. Default true (interest on full
+  // principal).
+  bool   apply_interest_on_contributions = 7;
+}
+
+message AssignRoleRequest {
+  string group_id            = 1;
+  string requester_customer_id = 2; // must be chairman
+  string target_customer_id  = 3;
+  string role                = 4; // "Treasurer" | "Secretary" | "Member"
+}
+
+message CloseGroupRequest {
+  string group_id            = 1;
+  string requester_customer_id = 2; // must be chairman
+  string reason              = 3;
+}
+
+// =============================================================================
+// Membership
+// =============================================================================
+
+message InviteMemberRequest {
+  string group_id            = 1;
+  string inviter_customer_id = 2; // must be chairman or secretary
+  string invitee_phone       = 3;
+}
+
+message RevokeInvitationRequest {
+  string invitation_id       = 1;
+  string requester_customer_id = 2;
+}
+
+message ListMyInvitationsRequest {
+  string customer_id = 1;
+}
+
+message RespondToInvitationRequest {
+  string invitation_id = 1;
+  string customer_id   = 2;
+  bool   accept        = 3; // false = decline
+}
+
+message KickMemberRequest {
+  string group_id              = 1;
+  string requester_customer_id = 2; // must be chairman
+  string target_customer_id    = 3;
+  string reason                = 4;
+}
+
+// =============================================================================
+// Contributions
+// =============================================================================
+
+message RecordContributionRequest {
+  string group_id    = 1;
+  string customer_id = 2; // contributor
+  string amount      = 3; // decimal as string
+  string period      = 4; // optional "YYYY-MM"; defaults to current month
+  string notes       = 5;
+}
+
+message ConfirmContributionRequest {
+  string contribution_id          = 1;
+  string treasurer_customer_id    = 2;
+  bool   approve                  = 3; // false = reject
+  string notes                    = 4;
+}
+
+message ListGroupContributionsRequest {
+  string group_id            = 1;
+  string requester_customer_id = 2; // must be a member
+  string period              = 3; // optional filter "YYYY-MM"
+  string status_filter       = 4; // empty | "pending" | "confirmed" | "rejected"
+}
+
+// =============================================================================
+// Reads
+// =============================================================================
+
+message ListMyGroupsRequest {
+  string customer_id    = 1;
+  string status_filter  = 2; // empty | "forming" | "active" | "closed" | "suspended"
+}
+
+message GetGroupDetailRequest {
+  string group_id            = 1;
+  string requester_customer_id = 2;
+}
+
+message GetMyShareRequest {
+  string group_id    = 1;
+  string customer_id = 2;
+}
+
+// =============================================================================
+// Fee
+// =============================================================================
+
+message ApplyMonthlyFeeRequest {
+  string period = 1; // "YYYY-MM"; if empty, use current month
+}
+
+message ApplyMonthlyFeeResponse {
+  bool   success            = 1;
+  string period             = 2;
+  int32  groups_processed   = 3;
+  int32  fees_recorded      = 4;
+  int32  fees_skipped       = 5; // already had a fee for this period
+}
+
+// =============================================================================
+// View models
+// =============================================================================
+
+message GroupResponse {
+  string id                              = 1;
+  string name                            = 2;
+  string description                     = 3;
+  string currency                        = 4;
+  string monthly_contribution            = 5;
+  string loan_interest_rate_percent      = 6;
+  string status                          = 7;
+  string chairman_customer_id            = 8;
+  int32  active_member_count             = 9;
+  google.protobuf.Timestamp activated_at = 10;
+  google.protobuf.Timestamp created_at   = 11;
+  bool   apply_interest_on_contributions = 12;
+}
+
+message MemberResponse {
+  string customer_id     = 1;
+  string membership_id   = 2;
+  string role            = 3;
+  string first_name      = 4;
+  string last_name       = 5;
+  string phone           = 6;
+  google.protobuf.Timestamp joined_at = 7;
+  google.protobuf.Timestamp left_at   = 8; // nil if active
+}
+
+message GroupDetailResponse {
+  GroupResponse group              = 1;
+  repeated MemberResponse members  = 2;
+  goldbank.v1.common.Money pot_balance = 3; // confirmed contributions − fees
+}
+
+message ListGroupsResponse {
+  repeated GroupResponse groups = 1;
+}
+
+message InvitationResponse {
+  string id                   = 1;
+  string group_id             = 2;
+  string group_name           = 3;
+  string invitee_phone        = 4;
+  string inviter_customer_id  = 5;
+  string status               = 6;
+  google.protobuf.Timestamp expires_at  = 7;
+  google.protobuf.Timestamp created_at  = 8;
+}
+
+message ListInvitationsResponse {
+  repeated InvitationResponse invitations = 1;
+}
+
+message ContributionResponse {
+  string id                       = 1;
+  string group_id                 = 2;
+  string customer_id              = 3;
+  goldbank.v1.common.Money amount = 4;
+  string period                   = 5;
+  string status                   = 6;
+  string confirmed_by_customer_id = 7;
+  google.protobuf.Timestamp confirmed_at = 8;
+  google.protobuf.Timestamp created_at   = 9;
+  string notes                           = 10;
+}
+
+message ListContributionsResponse {
+  repeated ContributionResponse contributions = 1;
+}
+
+message MyShareResponse {
+  string customer_id                            = 1;
+  string group_id                               = 2;
+  goldbank.v1.common.Money my_contributions     = 3; // sum of own confirmed contributions
+  goldbank.v1.common.Money my_interest_earnings = 4; // pro-rata share of interest (v2 will populate)
+  goldbank.v1.common.Money my_share_total       = 5; // contributions + interest earnings
+  string my_share_percent                       = 6; // own confirmed contributions / total confirmed
+}
+
+// =============================================================================
+// Loans (v2)
+// =============================================================================
+
+message ApplyForLoanRequest {
+  string group_id            = 1;
+  string borrower_customer_id = 2;
+  string principal           = 3; // decimal as string
+  int32  term_months         = 4;
+  string purpose             = 5;
+}
+
+message VoteOnLoanRequest {
+  string loan_id             = 1;
+  string voter_customer_id   = 2;
+  bool   approve             = 3;
+}
+
+message ConfirmLoanRequest {
+  string loan_id             = 1;
+  string treasurer_customer_id = 2;
+  bool   approve             = 3; // false = treasurer rejects despite member vote
+  string notes               = 4;
+}
+
+message RecordLoanRepaymentRequest {
+  string loan_id             = 1;
+  string treasurer_customer_id = 2; // treasurer records the repayment receipt
+  string amount              = 3; // decimal as string; full installment or partial
+}
+
+message ListGroupLoansRequest {
+  string group_id            = 1;
+  string requester_customer_id = 2;
+  string status_filter       = 3;
+}
+
+message ListMyLoansRequest {
+  string customer_id = 1;
+}
+
+message GetLoanDetailRequest {
+  string loan_id             = 1;
+  string requester_customer_id = 2;
+}
+
+message LoanResponse {
+  string id                              = 1;
+  string group_id                        = 2;
+  string borrower_customer_id            = 3;
+  goldbank.v1.common.Money principal     = 4;
+  string interest_rate_percent           = 5;
+  int32  term_months                     = 6;
+  goldbank.v1.common.Money installment_amount  = 7;
+  goldbank.v1.common.Money outstanding_balance = 8;
+  string status                          = 9; // Voting | AwaitingTreasurer | Disbursed | Repaying | Closed | Rejected | Defaulted
+  int32  approved_votes                  = 10;
+  int32  rejected_votes                  = 11;
+  int32  total_eligible_voters           = 12; // active members minus borrower
+  google.protobuf.Timestamp created_at   = 13;
+  google.protobuf.Timestamp disbursed_at = 14;
+  // The requester's own vote on this loan, if any: "Approve", "Reject", or empty.
+  // Set on responses to ListGroupLoans / GetLoanDetail / VoteOnLoan etc., so the
+  // client can hide vote buttons after a vote has been cast.
+  string my_vote                         = 15;
+}
+
+message VoteResponse {
+  string voter_customer_id    = 1;
+  bool   approve              = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message LoanDetailResponse {
+  LoanResponse loan                     = 1;
+  repeated VoteResponse votes           = 2;
+  goldbank.v1.common.Money total_repaid = 3;
+}
+
+message ListLoansResponse {
+  repeated LoanResponse loans = 1;
+}

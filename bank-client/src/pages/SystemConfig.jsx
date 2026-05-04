@@ -29,7 +29,7 @@ const INITIAL_CONFIGS = [
   { id: 18, key: 'loan.min_credit_score', value: '200', tenantId: null, category: 'Loans', description: 'Minimum credit score required to apply for a loan.' },
   { id: 19, key: 'loan.income_variance_threshold', value: '10', tenantId: null, category: 'Loans', description: 'Income variance % above which a warning is triggered on loan review.' },
   { id: 20, key: 'switch.gateway_url', value: 'http://synergy-switch:5002', tenantId: null, category: 'Switch', description: 'SynergySwitch gRPC endpoint URL for card transaction routing.' },
-  { id: 21, key: 'ai.ollama_url', value: 'http://unibank-ollama:11434', tenantId: null, category: 'AI', description: 'Ollama inference endpoint URL for on-premise AI services.' },
+  { id: 21, key: 'ai.ollama_url', value: 'http://goldbank-ollama:11434', tenantId: null, category: 'AI', description: 'Ollama inference endpoint URL for on-premise AI services.' },
   { id: 22, key: 'ai.model_name', value: 'qwen3-vl', tenantId: null, category: 'AI', description: 'Default AI model used for vision and text inference.' },
 ];
 

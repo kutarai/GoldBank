@@ -21,7 +21,7 @@ So that I can track financial performance and ensure fee collection is accurate
 ## Description
 
 ### Background
-Revenue tracking is essential for financial management and business viability. UniBank's revenue comes primarily from transaction fees (charged to customers or merchants), interchange fees (from switch transactions between banks), and terminal fees (monthly charges per deployed terminal). Finance staff need detailed breakdowns of revenue by source, by tenant, and by time period to monitor financial performance, prepare management reports, and ensure accurate fee collection. Month-over-month comparisons help identify trends and anomalies that require investigation.
+Revenue tracking is essential for financial management and business viability. GoldBank's revenue comes primarily from transaction fees (charged to customers or merchants), interchange fees (from switch transactions between banks), and terminal fees (monthly charges per deployed terminal). Finance staff need detailed breakdowns of revenue by source, by tenant, and by time period to monitor financial performance, prepare management reports, and ensure accurate fee collection. Month-over-month comparisons help identify trends and anomalies that require investigation.
 
 In the multi-tenant model, each tenant contributes differently to overall platform revenue. Understanding per-tenant revenue allows for accurate revenue sharing, pricing negotiations, and financial forecasting.
 

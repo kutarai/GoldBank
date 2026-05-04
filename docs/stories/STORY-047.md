@@ -22,9 +22,9 @@ So that **PIN data is always securely encrypted and key material never exists in
 
 ### Background
 
-Every time a customer enters a PIN on an EFT POS terminal, that PIN must be encrypted using keys that are securely derived, distributed, and rotated. In Southern African banking regulations and PCI PIN Security requirements, terminal key management is not optional — it is a compliance gate. A compromised terminal key can expose thousands of customer PINs, making this one of the highest-security components in the UniBank platform.
+Every time a customer enters a PIN on an EFT POS terminal, that PIN must be encrypted using keys that are securely derived, distributed, and rotated. In Southern African banking regulations and PCI PIN Security requirements, terminal key management is not optional — it is a compliance gate. A compromised terminal key can expose thousands of customer PINs, making this one of the highest-security components in the GoldBank platform.
 
-UniBank implements a three-tier key hierarchy for terminal cryptography:
+GoldBank implements a three-tier key hierarchy for terminal cryptography:
 - **Terminal Master Key (TMK):** The root key for each terminal. Generated inside the HSM, never leaves the HSM boundary in cleartext. Used to encrypt session keys for transport to the terminal.
 - **Terminal PIN Key (TPK):** Derived from the TMK. Used by the terminal to encrypt PIN blocks during cardholder verification. Rotated on a configurable schedule.
 - **Terminal MAC Key (TMK-MAC):** Derived from the TMK. Used to generate Message Authentication Codes on transaction messages between the terminal and the switch, ensuring message integrity.
@@ -105,13 +105,13 @@ This is a system-to-system flow triggered during terminal provisioning (STORY-04
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `TerminalKeyService.cs` | `src/Satellites/UniBank.TerminalManager/Services/` | gRPC service for terminal key operations |
-| `KeyDistributionHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Wolverine handler orchestrating key distribution via MQTT |
-| `KeyRotationScheduler.cs` | `src/Satellites/UniBank.TerminalManager/Jobs/` | Background job for scheduled key rotation |
-| `KeyAcknowledgmentHandler.cs` | `src/Satellites/UniBank.TerminalManager/Handlers/` | Handles terminal key acknowledgment messages |
-| `TerminalKeyEntity.cs` | `src/Satellites/UniBank.TerminalManager/Domain/` | Terminal key entity |
-| `KeyRotationDueEvent.cs` | `src/Shared/UniBank.Events/Terminal/` | Wolverine event for key rotation scheduling |
-| `KeyInjectionFailedEvent.cs` | `src/Shared/UniBank.Events/Terminal/` | Wolverine event for key injection failure alerting |
+| `TerminalKeyService.cs` | `src/Satellites/GoldBank.TerminalManager/Services/` | gRPC service for terminal key operations |
+| `KeyDistributionHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Wolverine handler orchestrating key distribution via MQTT |
+| `KeyRotationScheduler.cs` | `src/Satellites/GoldBank.TerminalManager/Jobs/` | Background job for scheduled key rotation |
+| `KeyAcknowledgmentHandler.cs` | `src/Satellites/GoldBank.TerminalManager/Handlers/` | Handles terminal key acknowledgment messages |
+| `TerminalKeyEntity.cs` | `src/Satellites/GoldBank.TerminalManager/Domain/` | Terminal key entity |
+| `KeyRotationDueEvent.cs` | `src/Shared/GoldBank.Events/Terminal/` | Wolverine event for key rotation scheduling |
+| `KeyInjectionFailedEvent.cs` | `src/Shared/GoldBank.Events/Terminal/` | Wolverine event for key injection failure alerting |
 
 ### API / gRPC Endpoints
 

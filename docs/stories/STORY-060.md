@@ -21,7 +21,7 @@ So that the platform operates with correct business rules and can be adjusted wi
 ## Description
 
 ### Background
-UniBank operates as a white-label platform serving multiple tenants, each potentially with different fee structures, transaction limits, and operational parameters. The system configuration management interface allows super admins to set global defaults and tenant admins to set tenant-specific overrides. Configuration changes are sensitive operations that affect revenue and customer experience, so they require an audit trail, optional scheduling (effective dates), and Redis cache invalidation to ensure changes propagate correctly across all services. This eliminates the need for code deployments to adjust business parameters.
+GoldBank operates as a white-label platform serving multiple tenants, each potentially with different fee structures, transaction limits, and operational parameters. The system configuration management interface allows super admins to set global defaults and tenant admins to set tenant-specific overrides. Configuration changes are sensitive operations that affect revenue and customer experience, so they require an audit trail, optional scheduling (effective dates), and Redis cache invalidation to ensure changes propagate correctly across all services. This eliminates the need for code deployments to adjust business parameters.
 
 ### Scope
 **In scope:**

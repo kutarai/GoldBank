@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# UniBank - Start All Services with Podman
+# GoldBank - Start All Services with Podman
 #
 # Usage:
 #   ./scripts/podman-up.sh              # Start infra + core + monitoring
@@ -107,7 +107,7 @@ done
 
 echo ""
 echo -e "${BLUE}[INFO]${NC} =============================================="
-echo -e "${BLUE}[INFO]${NC} UniBank — Starting with Podman"
+echo -e "${BLUE}[INFO]${NC} GoldBank — Starting with Podman"
 echo -e "${BLUE}[INFO]${NC} =============================================="
 echo -e "${BLUE}[INFO]${NC} Profiles:  ${PROFILES[*]}"
 echo -e "${BLUE}[INFO]${NC} Network:   ${NETWORK_NAME}"
@@ -119,12 +119,12 @@ ${COMPOSE_CMD} ${PROFILE_ARGS} up -d ${BUILD_FLAG}
 # ─── Summary ─────────────────────────────────────────────────────────────────
 
 echo ""
-echo -e "${GREEN}[PASS]${NC} UniBank services started."
+echo -e "${GREEN}[PASS]${NC} GoldBank services started."
 echo ""
 
 # Show running containers
-podman ps --filter "label=com.docker.compose.project=unibank" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null \
-    || podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "unibank|NAMES"
+podman ps --filter "label=com.docker.compose.project=goldbank" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null \
+    || podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "goldbank|NAMES"
 
 echo ""
 

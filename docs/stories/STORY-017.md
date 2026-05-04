@@ -21,7 +21,7 @@ So that I can track my spending
 ## Description
 
 ### Background
-Transaction history is a core feature that enables users to track their financial activity, verify incoming payments, reconcile spending, and detect unauthorized transactions. For UniBank's target users in Southern Africa, many of whom are transitioning from cash-only economies, having a clear, accessible record of digital transactions builds confidence in the platform and supports financial literacy.
+Transaction history is a core feature that enables users to track their financial activity, verify incoming payments, reconcile spending, and detect unauthorized transactions. For GoldBank's target users in Southern Africa, many of whom are transitioning from cash-only economies, having a clear, accessible record of digital transactions builds confidence in the platform and supports financial literacy.
 
 This story implements the transaction history endpoint using gRPC server streaming, which is ideal for delivering potentially large result sets efficiently. Rather than loading all transactions into memory at once, the server streams transaction records to the client as they are read from the database. This approach is memory-efficient for both server and client, and provides a better user experience -- the app can begin rendering results immediately as they arrive.
 

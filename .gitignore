@@ -71,3 +71,46 @@ _bmad-output/
 .agent/
 .opencode/
 .qwen/
+.claude/
+
+## Node / Vite (bank-client, bank-teller)
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.vite/
+**/.vite/
+*.log
+npm-debug.log*
+
+## Android / Gradle (mobile)
+.gradle/
+**/.gradle/
+**/build/
+mobile/local.properties
+*.iml
+*.apk
+*.ap_
+*.aab
+captures/
+.cxx/
+**/.cxx/
+**/.kotlin/
+
+## Local secrets / env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+local.properties
+
+## Editor / OS
+.fleet/
+*.local
+
+## Generated artifacts
+hsm/data/
+docker/postgres-data/

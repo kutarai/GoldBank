@@ -21,9 +21,9 @@ So that my information is always up to date
 ## Description
 
 ### Background
-Once a user's account is activated (STORY-013), they need the ability to view their profile information and update certain fields. In UniBank's model, some fields are sourced from the KYC process (full name, ID number, phone number) and are therefore read-only -- they represent verified identity data that cannot be changed without a new KYC review. Other fields (display name, email, address, preferred language) are user-managed and can be updated freely.
+Once a user's account is activated (STORY-013), they need the ability to view their profile information and update certain fields. In GoldBank's model, some fields are sourced from the KYC process (full name, ID number, phone number) and are therefore read-only -- they represent verified identity data that cannot be changed without a new KYC review. Other fields (display name, email, address, preferred language) are user-managed and can be updated freely.
 
-This is particularly important in the Southern African context where users may move between regions, change their preferred language (e.g., from Chichewa to English in Malawi), or want to update their communication preferences. The profile view also serves as a trust signal -- users can verify that UniBank has their correct details on file.
+This is particularly important in the Southern African context where users may move between regions, change their preferred language (e.g., from Chichewa to English in Malawi), or want to update their communication preferences. The profile view also serves as a trust signal -- users can verify that GoldBank has their correct details on file.
 
 All profile changes are logged in an audit trail for compliance purposes, ensuring a complete history of data modifications.
 

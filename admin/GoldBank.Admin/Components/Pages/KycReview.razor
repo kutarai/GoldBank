@@ -1,0 +1,609 @@
+@page "/kyc"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = AdminRoles.KycAccess)]
+@inject AdminService.AdminServiceClient AdminClient
+@inject ISnackbar Snackbar
+
+<PageTitle>KYC Review - GoldBank Admin</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4">KYC Document Review</MudText>
+
+@* ── Stats Cards ─────────────────────────────────────────────────────────── *@
+<MudGrid Class="mb-6">
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2"
+                  Style="border-top: 4px solid var(--mud-palette-success);">
+            <MudText Typo="Typo.h3" Color="Color.Success">@_statsAutoApproved</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Auto-Approved Today</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2"
+                  Style="border-top: 4px solid var(--mud-palette-warning);">
+            <MudText Typo="Typo.h3" Color="Color.Warning">@_statsPending</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Pending Review</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudPaper Class="pa-4 d-flex flex-column align-center" Elevation="2"
+                  Style="border-top: 4px solid var(--mud-palette-error);">
+            <MudText Typo="Typo.h3" Color="Color.Error">@_statsRejected</MudText>
+            <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Rejected Today</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@* ── Review Queue ─────────────────────────────────────────────────────────── *@
+<MudPaper Elevation="2" Class="pa-0 mb-4">
+    <MudDataGrid T="KycQueueItem"
+                 Items="_queue"
+                 Dense="true"
+                 Hover="true"
+                 Striped="true"
+                 Loading="_loading"
+                 LoadingProgressColor="Color.Primary"
+                 RowClick="OnRowClick"
+                 Class="cursor-pointer">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6" Class="px-4 py-2">Review Queue</MudText>
+            <MudSpacer />
+            <MudTooltip Text="Refresh queue">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                               Color="Color.Primary"
+                               OnClick="LoadQueueAsync"
+                               Disabled="_loading" />
+            </MudTooltip>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.AccountId" Title="Account ID" />
+            <PropertyColumn Property="x => x.FullName"  Title="Name" />
+            <PropertyColumn Property="x => x.SubmittedDate" Title="Submitted" Format="yyyy-MM-dd HH:mm" />
+            <TemplateColumn Title="Face Match" SortBy="x => x.FaceMatchScore">
+                <CellTemplate>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudProgressLinear Value="@((int)(context.Item.FaceMatchScore * 100))"
+                                           Max="100"
+                                           Color="@GetScoreColor(context.Item.FaceMatchScore)"
+                                           Style="width:120px;"
+                                           Rounded="true"
+                                           Size="Size.Medium" />
+                        <MudText Typo="Typo.caption">
+                            @((context.Item.FaceMatchScore * 100).ToString("0"))%
+                        </MudText>
+                    </MudStack>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Status">
+                <CellTemplate>
+                    <MudChip T="string"
+                             Color="@GetDecisionColor(context.Item.AiDecision)"
+                             Size="Size.Small">
+                        @FormatDecision(context.Item.AiDecision)
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Action" Sortable="false">
+                <CellTemplate>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.RateReview"
+                               OnClick="@(() => OpenReviewDialog(context.Item))">
+                        Review
+                    </MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <NoRecordsContent>
+            <MudText Class="pa-4">No KYC submissions pending review.</MudText>
+        </NoRecordsContent>
+        <PagerContent>
+            <MudDataGridPager T="KycQueueItem" PageSizeOptions="new[] { 10, 25, 50 }" />
+        </PagerContent>
+    </MudDataGrid>
+</MudPaper>
+
+@* ── Review Dialog ────────────────────────────────────────────────────────── *@
+<MudDialog @bind-Visible="_reviewDialogVisible" Options="_dialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">
+                KYC Review — @(_selectedItem?.AccountId ?? "")
+            </MudText>
+        </MudStack>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_selectedItem is not null)
+        {
+            <MudGrid Spacing="4">
+
+                @* Left column — photos *@
+                <MudItem xs="12" md="5">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Selfie Photo</MudText>
+                    <MudPaper Outlined="true" Class="d-flex justify-center align-center pa-4 mb-4"
+                              Style="min-height:180px; background: var(--mud-palette-background-grey);">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudAvatar Style="width:120px; height:120px;" Color="Color.Primary">
+                                <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size:72px;" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Selfie image placeholder
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">ID Document</MudText>
+                    <MudPaper Outlined="true" Class="d-flex justify-center align-center pa-4"
+                              Style="min-height:150px; background: var(--mud-palette-background-grey);">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                            <MudAvatar Style="width:100px; height:100px;" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Badge" Style="font-size:60px;" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                ID document image placeholder
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                @* Right column — AI data + decision *@
+                <MudItem xs="12" md="7">
+
+                    @* Face match score gauge *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Face Match Score</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
+                        <MudProgressLinear Value="@((int)(_selectedItem.FaceMatchScore * 100))"
+                                           Max="100"
+                                           Color="@GetScoreColor(_selectedItem.FaceMatchScore)"
+                                           Rounded="true"
+                                           Size="Size.Large"
+                                           Style="flex:1;" />
+                        <MudText Typo="Typo.h6"
+                                 Color="@GetScoreColor(_selectedItem.FaceMatchScore)"
+                                 Style="min-width:52px;">
+                            @((_selectedItem.FaceMatchScore * 100).ToString("0.0"))%
+                        </MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4">
+                        Confidence: @_selectedItem.FaceMatchConfidence
+                    </MudText>
+
+                    @* Extracted field comparison table *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Extracted Fields vs Declared Data</MudText>
+                    <MudSimpleTable Dense="true" Striped="true" Bordered="true" Class="mb-4">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Extracted</th>
+                                <th>Match</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><MudText Typo="Typo.body2">Full Name</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @(_selectedItem.ExtractedName ?? "—")
+                                    </MudText>
+                                </td>
+                                <td>@FieldMatchChip(_selectedItem.NameMatch)</td>
+                            </tr>
+                            <tr>
+                                <td><MudText Typo="Typo.body2">ID Number</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @(_selectedItem.ExtractedIdNumber ?? "—")
+                                    </MudText>
+                                </td>
+                                <td>@FieldMatchChip(_selectedItem.IdNumberMatch)</td>
+                            </tr>
+                            <tr>
+                                <td><MudText Typo="Typo.body2">Date of Birth</MudText></td>
+                                <td>
+                                    <MudText Typo="Typo.body2">
+                                        @(_selectedItem.ExtractedDob ?? "—")
+                                    </MudText>
+                                </td>
+                                <td>@FieldMatchChip(_selectedItem.DobMatch)</td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    @* AI decision + rejection reason *@
+                    <MudAlert Severity="@GetDecisionSeverity(_selectedItem.AiDecision)"
+                              Class="mb-4" Dense="true">
+                        <strong>AI Decision:</strong> @FormatDecision(_selectedItem.AiDecision)
+                        @if (!string.IsNullOrWhiteSpace(_selectedItem.RejectionReason))
+                        {
+                            <br />
+                            <span>Reason: @_selectedItem.RejectionReason</span>
+                        }
+                    </MudAlert>
+
+                    <MudDivider Class="mb-4" />
+
+                    @* Admin decision controls *@
+                    <MudText Typo="Typo.subtitle2" Class="mb-3">Your Decision</MudText>
+
+                    <MudStack Row="true" Spacing="2" Class="mb-3">
+                        <MudButton Variant="@(_pendingDecision == KYCDecision.Approve ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Success"
+                                   StartIcon="@Icons.Material.Filled.CheckCircle"
+                                   OnClick="@(() => SelectDecision(KYCDecision.Approve))">
+                            Approve
+                        </MudButton>
+                        <MudButton Variant="@(_pendingDecision == KYCDecision.Reject ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Cancel"
+                                   OnClick="@(() => SelectDecision(KYCDecision.Reject))">
+                            Reject
+                        </MudButton>
+                        <MudButton Variant="@(_pendingDecision == KYCDecision.RequestResubmit ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Warning"
+                                   StartIcon="@Icons.Material.Filled.Escalator"
+                                   OnClick="@(() => SelectDecision(KYCDecision.RequestResubmit))">
+                            Escalate to Compliance
+                        </MudButton>
+                    </MudStack>
+
+                    @* Reject reason — only visible when Reject is selected *@
+                    @if (_pendingDecision == KYCDecision.Reject)
+                    {
+                        <MudTextField @bind-Value="_rejectReason"
+                                      Label="Rejection Reason"
+                                      Variant="Variant.Outlined"
+                                      Lines="3"
+                                      Required="true"
+                                      RequiredError="A rejection reason is required."
+                                      Placeholder="Describe why this submission is being rejected…"
+                                      Class="mb-3" />
+                    }
+
+                    <MudTextField @bind-Value="_reviewNotes"
+                                  Label="Additional Notes (optional)"
+                                  Variant="Variant.Outlined"
+                                  Lines="2"
+                                  Placeholder="Any additional notes for audit trail…" />
+                </MudItem>
+
+            </MudGrid>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="CloseReviewDialog" Disabled="_submitting">
+            Cancel
+        </MudButton>
+        <MudButton Color="@GetDecisionButtonColor()"
+                   Variant="Variant.Filled"
+                   Disabled="@(!CanSubmit())"
+                   OnClick="SubmitReviewAsync">
+            @if (_submitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Submit Decision
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // ──────────────────────────────────────────────────────────────────────────
+    // Stats (placeholder — no counting RPC yet)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private int _statsAutoApproved = 24;
+    private int _statsPending      = 7;
+    private int _statsRejected     = 3;
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Queue state
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private bool _loading;
+    private List<KycQueueItem> _queue = [];
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Dialog state
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private bool _reviewDialogVisible;
+    private bool _submitting;
+    private KycQueueItem? _selectedItem;
+    private KYCDecision   _pendingDecision = KYCDecision.Approve;
+    private string        _rejectReason    = string.Empty;
+    private string        _reviewNotes     = string.Empty;
+
+    private readonly DialogOptions _dialogOptions = new()
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth         = MaxWidth.Large,
+        FullWidth        = true,
+    };
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Lifecycle
+    // ──────────────────────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadQueueAsync();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Queue loading (stub data — no ListKycSubmissions RPC yet)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private async Task LoadQueueAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            // No dedicated queue RPC exists yet; use stub data so the page
+            // remains interactive during development.
+            await Task.Delay(200); // Simulate network round-trip.
+            _queue = GetStubQueue();
+            _statsPending = _queue.Count;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading KYC queue: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Row click → open dialog
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private void OnRowClick(DataGridRowClickEventArgs<KycQueueItem> args)
+    {
+        OpenReviewDialog(args.Item);
+    }
+
+    private void OpenReviewDialog(KycQueueItem item)
+    {
+        _selectedItem    = item;
+        _pendingDecision = KYCDecision.Approve;
+        _rejectReason    = string.Empty;
+        _reviewNotes     = string.Empty;
+        _reviewDialogVisible = true;
+    }
+
+    private void CloseReviewDialog()
+    {
+        _reviewDialogVisible = false;
+        _selectedItem        = null;
+    }
+
+    private void SelectDecision(KYCDecision decision)
+    {
+        _pendingDecision = decision;
+        if (decision != KYCDecision.Reject)
+            _rejectReason = string.Empty;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Submit review via ReviewKYC RPC
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private async Task SubmitReviewAsync()
+    {
+        if (_selectedItem is null || !CanSubmit()) return;
+
+        _submitting = true;
+
+        try
+        {
+            var notes = _pendingDecision == KYCDecision.Reject
+                ? $"{_rejectReason}\n{_reviewNotes}".Trim()
+                : _reviewNotes ?? string.Empty;
+
+            var request = new ReviewKYCRequest
+            {
+                DocumentId = _selectedItem.DocumentId,
+                Decision   = _pendingDecision,
+                Notes      = notes,
+                AdminId    = "admin",
+            };
+
+            await AdminClient.ReviewKYCAsync(request);
+
+            Snackbar.Add(
+                $"KYC review submitted for {_selectedItem.AccountId}. Decision: {FormatDecision(_pendingDecision)}",
+                Severity.Success);
+
+            _reviewDialogVisible = false;
+            _queue.Remove(_selectedItem);
+            _statsPending = _queue.Count;
+
+            if (_pendingDecision == KYCDecision.Approve)
+                _statsAutoApproved++;
+            else if (_pendingDecision == KYCDecision.Reject)
+                _statsRejected++;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error submitting KYC review: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting  = false;
+            _selectedItem = null;
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Guards & helpers
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private bool CanSubmit()
+    {
+        if (_submitting || _selectedItem is null) return false;
+        if (_pendingDecision == KYCDecision.Reject &&
+            string.IsNullOrWhiteSpace(_rejectReason))
+            return false;
+        return true;
+    }
+
+    private static Color GetScoreColor(double score) => score switch
+    {
+        >= 0.80 => Color.Success,
+        >= 0.60 => Color.Warning,
+        _       => Color.Error,
+    };
+
+    private static Color GetDecisionColor(string decision) => decision switch
+    {
+        "Auto-Approved" => Color.Success,
+        "Manual Review" => Color.Warning,
+        "Rejected"      => Color.Error,
+        _               => Color.Default,
+    };
+
+    private static Severity GetDecisionSeverity(string decision) => decision switch
+    {
+        "Auto-Approved" => Severity.Success,
+        "Manual Review" => Severity.Warning,
+        "Rejected"      => Severity.Error,
+        _               => Severity.Normal,
+    };
+
+    private static string FormatDecision(string decision) => decision;
+
+    private static string FormatDecision(KYCDecision decision) => decision switch
+    {
+        KYCDecision.Approve        => "Approve",
+        KYCDecision.Reject         => "Reject",
+        KYCDecision.RequestResubmit => "Escalate to Compliance",
+        _                                     => "Unknown",
+    };
+
+    private Color GetDecisionButtonColor() => _pendingDecision switch
+    {
+        KYCDecision.Approve         => Color.Success,
+        KYCDecision.Reject          => Color.Error,
+        KYCDecision.RequestResubmit => Color.Warning,
+        _                                      => Color.Primary,
+    };
+
+    private RenderFragment FieldMatchChip(string match) => __builder =>
+    {
+        var (color, label, icon) = match switch
+        {
+            "Match"        => (Color.Success, "Match",     Icons.Material.Filled.Check),
+            "Mismatch"     => (Color.Error,   "Mismatch",  Icons.Material.Filled.Close),
+            "NotAvailable" => (Color.Default, "N/A",       Icons.Material.Filled.HelpOutline),
+            _              => (Color.Default, match,       Icons.Material.Filled.HelpOutline),
+        };
+
+        <MudChip T="string" Color="@color" Size="Size.Small" Icon="@icon">@label</MudChip>
+    };
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Stub queue data
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private static List<KycQueueItem> GetStubQueue() =>
+    [
+        new KycQueueItem
+        {
+            DocumentId          = "doc-001",
+            AccountId           = "ACC-10042",
+            FullName            = "Amara Diallo",
+            SubmittedDate       = DateTime.UtcNow.AddHours(-2),
+            FaceMatchScore      = 0.73,
+            FaceMatchConfidence = "Medium",
+            AiDecision          = "Manual Review",
+            NameMatch           = "Match",
+            IdNumberMatch       = "Match",
+            DobMatch            = "Mismatch",
+            ExtractedName       = "Amara Diallo",
+            ExtractedIdNumber   = "ZW-NID-88821",
+            ExtractedDob        = "1990-03-12",
+            RejectionReason     = "",
+        },
+        new KycQueueItem
+        {
+            DocumentId          = "doc-002",
+            AccountId           = "ACC-10078",
+            FullName            = "Tendai Moyo",
+            SubmittedDate       = DateTime.UtcNow.AddHours(-5),
+            FaceMatchScore      = 0.55,
+            FaceMatchConfidence = "Low",
+            AiDecision          = "Manual Review",
+            NameMatch           = "Mismatch",
+            IdNumberMatch       = "Match",
+            DobMatch            = "Match",
+            ExtractedName       = "T. Moyo",
+            ExtractedIdNumber   = "ZW-NID-44512",
+            ExtractedDob        = "1985-07-22",
+            RejectionReason     = "Name on document does not match registration.",
+        },
+        new KycQueueItem
+        {
+            DocumentId          = "doc-003",
+            AccountId           = "ACC-10091",
+            FullName            = "Chidi Okafor",
+            SubmittedDate       = DateTime.UtcNow.AddHours(-1),
+            FaceMatchScore      = 0.48,
+            FaceMatchConfidence = "Low",
+            AiDecision          = "Rejected",
+            NameMatch           = "Match",
+            IdNumberMatch       = "Mismatch",
+            DobMatch            = "NotAvailable",
+            ExtractedName       = "Chidi Okafor",
+            ExtractedIdNumber   = "NG-NIN-00321",
+            ExtractedDob        = "",
+            RejectionReason     = "Face match score below threshold.",
+        },
+        new KycQueueItem
+        {
+            DocumentId          = "doc-004",
+            AccountId           = "ACC-10105",
+            FullName            = "Fatima Al-Hassan",
+            SubmittedDate       = DateTime.UtcNow.AddMinutes(-30),
+            FaceMatchScore      = 0.68,
+            FaceMatchConfidence = "Medium",
+            AiDecision          = "Manual Review",
+            NameMatch           = "Match",
+            IdNumberMatch       = "Match",
+            DobMatch            = "Match",
+            ExtractedName       = "Fatima Al-Hassan",
+            ExtractedIdNumber   = "ZW-NID-77543",
+            ExtractedDob        = "1994-11-05",
+            RejectionReason     = "",
+        },
+    ];
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Queue item model
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private sealed class KycQueueItem
+    {
+        public string   DocumentId          { get; init; } = string.Empty;
+        public string   AccountId           { get; init; } = string.Empty;
+        public string   FullName            { get; init; } = string.Empty;
+        public DateTime SubmittedDate       { get; init; }
+        public double   FaceMatchScore      { get; init; }
+        public string   FaceMatchConfidence { get; init; } = string.Empty;
+        public string   AiDecision          { get; init; } = string.Empty;
+        public string   NameMatch           { get; init; } = string.Empty;
+        public string   IdNumberMatch       { get; init; } = string.Empty;
+        public string   DobMatch            { get; init; } = string.Empty;
+        public string?  ExtractedName       { get; init; }
+        public string?  ExtractedIdNumber   { get; init; }
+        public string?  ExtractedDob        { get; init; }
+        public string   RejectionReason     { get; init; } = string.Empty;
+    }
+}

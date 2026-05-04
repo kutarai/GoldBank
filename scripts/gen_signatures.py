@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 # Pull (Id, first, last) from DB via podman psql
 out = subprocess.check_output([
-    "podman", "exec", "unibank-postgres", "psql", "-U", "unibank", "-d", "unibank",
+    "podman", "exec", "goldbank-postgres", "psql", "-U", "goldbank", "-d", "goldbank",
     "-At", "-F", "|",
     "-c", "SELECT \"Id\", COALESCE(first_name,''), COALESCE(last_name,'') FROM bank.accounts WHERE first_name IS NOT NULL;"
 ]).decode()
