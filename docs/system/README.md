@@ -96,7 +96,7 @@ product surfaces are worth calling out:
 ## Historical context
 
 Older timestamped docs at the top of `docs/` (e.g.
-`architecture-2026-02-24.md`, `product-brief-2026-02-24.md`) describe
-the platform's earlier shape and are kept as historical reference.
-Anything in this `docs/system/` subdirectory is the current source of
-truth.
+`architecture-goldbank-2026-02-24.md`, `product-brief-goldbank-2026-02-24.md`,
+`prd-goldbank-2026-02-24.md`, `goldbank-system-overview.md`) describe the
+platform's earlier shape and are kept as historical reference. Anything
+in this `docs/system/` subdirectory is the current source of truth.
