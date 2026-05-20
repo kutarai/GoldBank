@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace GoldBank.Migrator.Migrations.UniBankDb
+namespace GoldBank.Migrator.Migrations.GoldBankDb
 {
     /// <inheritdoc />
     public partial class AddEkubModule : Migration

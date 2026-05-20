@@ -205,11 +205,11 @@ notifications service reads from the same bus.
 
 ## Migrations
 
-Located at `server/GoldBank.Migrator/Migrations/UniBankDb/`. Folder name
-still uses the old "UniBank" prefix (rename pending; namespace inside is
-`GoldBank.Migrator.Migrations.UniBankDb`). Each migration is a hand-edited
-or `dotnet ef migrations add`-generated pair (.cs + .Designer.cs) plus a
-single shared `GoldBankDbContextModelSnapshot.cs` snapshot file.
+Located at `server/GoldBank.Migrator/Migrations/GoldBankDb/`. Namespace
+`GoldBank.Migrator.Migrations.GoldBankDb`. Each migration is a
+hand-edited or `dotnet ef migrations add`-generated pair (.cs +
+.Designer.cs) plus a single shared `GoldBankDbContextModelSnapshot.cs`
+snapshot file.
 
 Recent migrations of note:
 

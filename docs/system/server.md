@@ -337,7 +337,7 @@ breaker — if Ollama is unreachable, the calling handler falls back to a
    Add `modelBuilder.ApplyConfiguration(new TConfig())` in
    `GoldBankDbContext.OnModelCreating`.
 2. **Run** `dotnet ef migrations add <Name> --context GoldBankDbContext
-   --output-dir Migrations/UniBankDb` from `server/GoldBank.Migrator/`.
+   --output-dir Migrations/GoldBankDb` from `server/GoldBank.Migrator/`.
 3. **New gRPC service** → add a `.proto` under `GoldBank.Protos/Protos/`.
    Rebuild — stubs regenerate. Implement `XxxServiceBase`. Map in
    `GoldBank.Gateway/Program.cs`: `app.MapGrpcService<XxxGrpcService>();`.

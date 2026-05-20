@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace GoldBank.Migrator.Migrations.UniBankDb
+namespace GoldBank.Migrator.Migrations.GoldBankDb
 {
     [DbContext(typeof(GoldBankDbContext))]
     [Migration("20260501065851_AddEkubLoans")]

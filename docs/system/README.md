@@ -95,8 +95,8 @@ product surfaces are worth calling out:
 
 ## Historical context
 
-A previous version of this codebase was named **UniBank** and the rename to
-GoldBank landed in commit [4be4dd7](https://github.com/kutarai/GoldBank/commit/4be4dd7).
-Older docs at the top of `docs/` (with `unibank` in the filename) describe the
-state as of that rename and are kept as historical reference. Anything in
-this `docs/system/` subdirectory is the current source of truth.
+Older timestamped docs at the top of `docs/` (e.g.
+`architecture-2026-02-24.md`, `product-brief-2026-02-24.md`) describe
+the platform's earlier shape and are kept as historical reference.
+Anything in this `docs/system/` subdirectory is the current source of
+truth.

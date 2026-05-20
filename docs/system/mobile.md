@@ -14,7 +14,7 @@ mobile/
   androidApp/
     src/main/kotlin/com/goldbank/app/
       MainActivity.kt        single Activity host
-      UniBankApplication.kt  Application class, Koin bootstrap
+      GoldBankApplication.kt Application class, Koin bootstrap
       navigation/NavGraph.kt route table (Type-safe routes via kotlinx.serialization)
       ui/<feature>/          Compose screens, one folder per feature area
       viewmodel/<Feature>VM  ViewModels (one per screen group)
