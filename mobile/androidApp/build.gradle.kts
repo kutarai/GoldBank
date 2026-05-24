@@ -21,7 +21,10 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "GRPC_HOST", "\"10.0.2.2\"")
+            // GRPC_HOST can be overridden via -PdebugGrpcHost=<ip> on the gradle command line.
+            // Default: dev machine LAN IP (works for both emulator and a phone on same Wi-Fi).
+            val debugHost = (project.findProperty("debugGrpcHost") as? String) ?: "10.159.70.173"
+            buildConfigField("String", "GRPC_HOST", "\"$debugHost\"")
             buildConfigField("int", "GRPC_PORT", "5000")
             buildConfigField("boolean", "GRPC_USE_TLS", "false")
             // Match the server-side demo seed and the bank-teller JWT tenant.

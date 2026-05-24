@@ -95,7 +95,8 @@ services:
       context: ./switch
       dockerfile: Containerfile.migrator
     container_name: goldbank-switch-migrator
-    profiles: ["core"]
+    # ./switch submodule not initialized — opt in via "switch" profile when ready
+    profiles: ["switch"]
     environment:
       ConnectionStrings__SwitchDb: "Host=postgres;Port=5432;Database=synergy_switch;Username=${POSTGRES_USER:-goldbank};Password=${POSTGRES_PASSWORD:-goldbank_dev_password}"
     networks:
@@ -146,7 +147,8 @@ services:
       context: .
       dockerfile: terminal/GoldBank.TerminalManager/Dockerfile
     container_name: goldbank-terminal-manager
-    profiles: ["core"]
+    # terminal/ project folder missing — opt in via "terminal" profile when ready
+    profiles: ["terminal"]
     ports:
       - "${TERMINAL_MANAGER_PORT:-5004}:5004"
       - "${MQTT_PORT:-1883}:1883"
@@ -234,7 +236,8 @@ services:
       context: ./switch
       dockerfile: Containerfile
     container_name: goldbank-switch
-    profiles: ["core"]
+    # ./switch submodule not initialized — opt in via "switch" profile when ready
+    profiles: ["switch"]
     ports:
       - "${SWITCH_GRPC_PORT:-3333}:3333"
       - "${SWITCH_WEB_PORT:-8080}:8080"
